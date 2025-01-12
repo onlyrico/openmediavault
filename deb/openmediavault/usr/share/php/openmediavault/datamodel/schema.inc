@@ -4,7 +4,7 @@
  *
  * @license   http://www.gnu.org/licenses/gpl.html GPL Version 3
  * @author    Volker Theile <volker.theile@openmediavault.org>
- * @copyright Copyright (c) 2009-2022 Volker Theile
+ * @copyright Copyright (c) 2009-2025 Volker Theile
  *
  * OpenMediaVault is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -78,10 +78,27 @@ class Schema extends \OMV\Json\Schema {
 				}
 				break;
 			case "sshprivkey-rsa":
+				// Deprecated: Use "sshprivkey-pem" instead.
 				if (!preg_match('/^-----BEGIN RSA PRIVATE KEY-----(\n|\r|\f)(.+)'.
 				  '(\n|\r|\f)-----END RSA PRIVATE KEY-----$/sm', $value)) {
 					throw new \OMV\Json\SchemaValidationException(
-					  "%s: The value '%s' is not a SSH private key (RSA).",
+					  "%s: The value '%s' is not a SSH private key (PEM).",
+					  $name, $value);
+				}
+				break;
+			case "sshprivkey-pem":
+				if (!preg_match('/^-----BEGIN (OPENSSH|RSA) PRIVATE KEY-----(\n|\r|\f)(.+)'.
+				  '(\n|\r|\f)-----END (OPENSSH|RSA) PRIVATE KEY-----$/sm', $value)) {
+					throw new \OMV\Json\SchemaValidationException(
+					  "%s: The value '%s' is not a SSH private key (PEM).",
+					  $name, $value);
+				}
+				break;
+			case "pgppubkey":
+				if (!preg_match('/^-----BEGIN PGP PUBLIC KEY BLOCK-----(\n|\r|\f)(.+)'.
+				  '(\n|\r|\f)-----END PGP PUBLIC KEY BLOCK-----$/sm', $value)) {
+					throw new \OMV\Json\SchemaValidationException(
+					  "%s: The value '%s' is not a PGP public key.",
 					  $name, $value);
 				}
 				break;

@@ -1,10 +1,10 @@
-#!/bin/sh
+#!/usr/bin/env dash
 #
 # This file is part of OpenMediaVault.
 #
 # @license   http://www.gnu.org/licenses/gpl.html GPL Version 3
 # @author    Volker Theile <volker.theile@openmediavault.org>
-# @copyright Copyright (c) 2009-2022 Volker Theile
+# @copyright Copyright (c) 2009-2025 Volker Theile
 #
 # OpenMediaVault is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -24,7 +24,7 @@ set -e
 . /etc/default/openmediavault
 . /usr/share/openmediavault/scripts/helper-functions
 
-OMV_S3_APP_CONTAINER_IMAGE=${OMV_S3_APP_CONTAINER_IMAGE:-"docker.io/minio/minio:latest"}
+OMV_S3_APP_CONTAINER_IMAGE=${OMV_S3_APP_CONTAINER_IMAGE:-"quay.io/minio/minio:latest"}
 # Do NOT remove images that could be used by other plugins.
 # OMV_S3_PROXY_CONTAINER_IMAGE=${OMV_S3_PROXY_CONTAINER_IMAGE:-"docker.io/library/caddy:latest"}
 
@@ -36,8 +36,11 @@ remove_action() {
   systemctl --system daemon-reload || true
   # Remove container image.
   podman rmi "${OMV_S3_APP_CONTAINER_IMAGE}" || true
-	# Activate trigger to rebuild workbench configuration files.
-	dpkg-trigger update-workbench
+  # Activate trigger to rebuild workbench configuration files.
+  dpkg-trigger update-workbench
+  # Mark modules as dirty.
+  echo "Mark modules as dirty ..."
+  omv_module_set_dirty avahi
 }
 
 case "$1" in

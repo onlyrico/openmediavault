@@ -4,7 +4,7 @@
  *
  * @license   http://www.gnu.org/licenses/gpl.html GPL Version 3
  * @author    Volker Theile <volker.theile@openmediavault.org>
- * @copyright Copyright (c) 2009-2022 Volker Theile
+ * @copyright Copyright (c) 2009-2025 Volker Theile
  *
  * OpenMediaVault is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,10 +21,12 @@
  */
 namespace OMV;
 
+require_once("openmediavault/functions.inc");
+
 /**
  * A mutex provides mutual exclusion. Create the mutex at the beginning
  * of the scope you want to protect. The mutex will be auto-released when
- * leaving the scope.
+ * leaving the scope of the variable.
  * @ingroup api
  */
 class Mutex {
@@ -34,13 +36,17 @@ class Mutex {
 	/**
 	 * Constructor
 	 * @param string $key The unique identifier.
-	 * @param boolean $auto Automatically acquire the lock on
-	 *   creation and release it on destruction. Defaults
-	 *   to TRUE.
+	 * @param boolean $auto Automatically acquire the lock on creation
+	 *   and release it on destruction (e.g. when leaving the scope of
+	 *   the variable). Defaults to TRUE.
 	 */
 	public function __construct($key, $auto = TRUE) {
 		$this->auto = $auto;
 		$this->semIdentifier = sem_get(crc32($key));
+		if (FALSE === $this->semIdentifier) {
+			throw new \OMV\MutexException("Failed to get semaphore ID: %s",
+				last_error_msg());
+		}
 		if ($this->auto) {
 			$this->lock();
 		}
@@ -57,14 +63,15 @@ class Mutex {
 	 */
 	function lock() {
 		if (!sem_acquire($this->semIdentifier)) {
-			throw new \OMV\MutexLockException();
+			throw new \OMV\MutexException("Failed to acquire semaphore: %s",
+				last_error_msg());
 		}
 	}
 
 	/**
 	 * Release the lock.
 	 */
-	function unlock() {
+	function unlock(): bool {
 		return sem_release($this->semIdentifier);
 	}
 }

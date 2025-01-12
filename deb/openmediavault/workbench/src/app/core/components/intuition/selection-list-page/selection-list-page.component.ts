@@ -3,7 +3,7 @@
  *
  * @license   http://www.gnu.org/licenses/gpl.html GPL Version 3
  * @author    Volker Theile <volker.theile@openmediavault.org>
- * @copyright Copyright (c) 2009-2022 Volker Theile
+ * @copyright Copyright (c) 2009-2025 Volker Theile
  *
  * OpenMediaVault is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,7 +19,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { Component, Inject, OnInit, ViewChild } from '@angular/core';
 import { MatSelectionList, MatSelectionListChange } from '@angular/material/list';
 import { ActivatedRoute, Router } from '@angular/router';
-import { marker as gettext } from '@biesbjerg/ngx-translate-extract-marker';
+import { marker as gettext } from '@ngneat/transloco-keys-manager/marker';
 import * as _ from 'lodash';
 import { EMPTY } from 'rxjs';
 import { catchError, finalize } from 'rxjs/operators';
@@ -30,12 +30,11 @@ import {
   SelectionListPageConfig
 } from '~/app/core/components/intuition/models/selection-list-page-config.type';
 import { format, toBoolean } from '~/app/functions.helper';
-import { ModalDialogComponent } from '~/app/shared/components/modal-dialog/modal-dialog.component';
 import { NotificationType } from '~/app/shared/enum/notification-type.enum';
 import { DataStore } from '~/app/shared/models/data-store.type';
+import { Dirty } from '~/app/shared/models/dirty.interface';
 import { AuthSessionService } from '~/app/shared/services/auth-session.service';
 import { DataStoreService } from '~/app/shared/services/data-store.service';
-import { DialogService } from '~/app/shared/services/dialog.service';
 import { NotificationService } from '~/app/shared/services/notification.service';
 
 @Component({
@@ -45,30 +44,41 @@ import { NotificationService } from '~/app/shared/services/notification.service'
 })
 export class SelectionListPageComponent
   extends AbstractPageComponent<SelectionListPageConfig>
-  implements OnInit
+  implements OnInit, Dirty
 {
   @ViewChild('list', { static: true })
   list: MatSelectionList;
 
   public error: HttpErrorResponse;
   public loading = false;
-  public pristine = true;
+  public dirty = false;
   public data: Record<string, any>[] = [];
 
   constructor(
     @Inject(ActivatedRoute) activatedRoute: ActivatedRoute,
     @Inject(AuthSessionService) authSessionService: AuthSessionService,
+    @Inject(Router) router: Router,
     private dataStoreService: DataStoreService,
-    private dialogService: DialogService,
-    private notificationService: NotificationService,
-    private router: Router
+    private notificationService: NotificationService
   ) {
-    super(activatedRoute, authSessionService);
+    super(activatedRoute, authSessionService, router);
   }
 
-  ngOnInit(): void {
+  override ngOnInit(): void {
     super.ngOnInit();
     this.loadData();
+  }
+
+  isDirty(): boolean {
+    return this.dirty;
+  }
+
+  markAsDirty(): void {
+    this.dirty = true;
+  }
+
+  markAsPristine(): void {
+    this.dirty = false;
   }
 
   onSelectAll(): void {
@@ -82,7 +92,7 @@ export class SelectionListPageComponent
       _.forEach(this.config.store.data, (item: Record<string, any>) => {
         _.set(item, this.config.selectedProp, !allSelected);
       });
-      this.pristine = false;
+      this.markAsDirty();
     }
   }
 
@@ -95,44 +105,27 @@ export class SelectionListPageComponent
       if (-1 !== index) {
         const item: Record<string, any> = _.nth(this.config.store.data, index);
         _.set(item, this.config.selectedProp, event.options[0].selected);
-        this.pristine = false;
+        this.markAsDirty();
       }
     }
   }
 
   onButtonClick(buttonConfig: SelectionListPageButtonConfig): void {
-    const doButtonActionFn = () => {
-      switch (buttonConfig?.execute?.type) {
-        case 'click':
-          if (_.isFunction(buttonConfig.execute.click)) {
-            const values = [];
-            _.forEach(this.list.selectedOptions.selected, (selected) => {
-              values.push(selected.value);
-            });
-            buttonConfig.execute.click(buttonConfig, this.config.store, values);
-          }
-          break;
-        case 'url':
-          if (!_.isEmpty(buttonConfig.execute.url)) {
-            this.router.navigate([buttonConfig.execute.url]);
-          }
-          break;
-      }
-    };
-    if (!this.pristine && ['back', 'cancel'].includes(buttonConfig?.template)) {
-      const dialogRef = this.dialogService.open(ModalDialogComponent, {
-        data: {
-          template: 'confirmation-danger',
-          message: gettext('Your changes will be lost. Do you want to continue?')
+    switch (buttonConfig?.execute?.type) {
+      case 'click':
+        if (_.isFunction(buttonConfig.execute.click)) {
+          const values = [];
+          _.forEach(this.list.selectedOptions.selected, (selected) => {
+            values.push(selected.value);
+          });
+          buttonConfig.execute.click(buttonConfig, this.config.store, values);
         }
-      });
-      dialogRef.afterClosed().subscribe((res: any) => {
-        if (true === res) {
-          doButtonActionFn();
+        break;
+      case 'url':
+        if (_.isString(buttonConfig.execute.url)) {
+          this.router.navigateByUrl(buttonConfig.execute.url);
         }
-      });
-    } else {
-      doButtonActionFn();
+        break;
     }
   }
 
@@ -146,22 +139,24 @@ export class SelectionListPageComponent
         })
       )
       .subscribe(() => {
+        this.markAsPristine();
         // Display the configured notification message.
         const notificationTitle = _.get(this.routeConfig, 'data.notificationTitle');
         if (!_.isEmpty(notificationTitle)) {
           this.notificationService.show(
             NotificationType.success,
+            undefined,
             format(notificationTitle, this.pageContext)
           );
         }
         // Navigate to an optional URL.
-        if (!_.isEmpty(buttonConfig.execute.url)) {
-          this.router.navigate([buttonConfig.execute.url]);
+        if (_.isString(buttonConfig.execute.url)) {
+          this.router.navigateByUrl(buttonConfig.execute.url);
         }
       });
   }
 
-  protected sanitizeConfig() {
+  protected override sanitizeConfig() {
     _.defaultsDeep(this.config, {
       hasSelectAllButton: false,
       buttonAlign: 'end',

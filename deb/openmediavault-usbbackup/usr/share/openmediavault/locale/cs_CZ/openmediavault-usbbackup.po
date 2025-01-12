@@ -8,10 +8,10 @@ msgid ""
 msgstr ""
 "Project-Id-Version: openmediavault\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2022-09-17 09:39+0200\n"
+"POT-Creation-Date: 2024-01-24 19:17+0100\n"
 "PO-Revision-Date: 2013-02-15 12:55+0000\n"
 "Last-Translator: Pavel Borecki <pavel.borecki@gmail.com>, 2014-2017,2019,2021\n"
-"Language-Team: Czech (Czech Republic) (http://www.transifex.com/openmediavault/openmediavault/language/cs_CZ/)\n"
+"Language-Team: Czech (Czech Republic) (http://app.transifex.com/openmediavault/openmediavault/language/cs_CZ/)\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
@@ -25,9 +25,6 @@ msgstr "Výstup z příkazu (pokud nějaký vznikne) bude e-mailem odeslán spr�
 
 msgid "Archive"
 msgstr "Archivní režim"
-
-msgid "Comment"
-msgstr "Komentář"
 
 msgid "Compress"
 msgstr "Komprimovat"
@@ -114,6 +111,9 @@ msgstr "Včetně vnořených složek."
 msgid "Recursive"
 msgstr "Rekurzivní"
 
+msgid "Relative path"
+msgstr "Vztažený popis umístění"
+
 msgid "Run"
 msgstr "Spustit"
 
@@ -145,8 +145,11 @@ msgstr "Sdílená složka"
 msgid "Suppress non-error messages."
 msgstr "Hlásit pouze chyby, ostatní potlačit."
 
-msgid "Synchronise from/to directory on external storage device"
-msgstr "Synchronizovat z/do vyhrazené složky na vnějším úložném zařízení"
+msgid "Tags"
+msgstr "Štítky"
+
+msgid "The 'Send email' and 'Quiet' options are mutually exclusive."
+msgstr ""
 
 msgid ""
 "The external storage device. Please make sure that the device has only one "
@@ -154,10 +157,10 @@ msgid ""
 msgstr ""
 
 msgid ""
-"The shared folder content is synchronised from/to the root of the external "
-"storage device if this option is not set. The name of the directory is taken"
-" from the shared folder."
-msgstr "Pokud je vypnuto, obsah sdílené složky bude synchronizován přímo z/do kořenové složky vnějšího úložného zařízení. Pokud zapnuto, název složky bude převzatý od sdílené složky."
+"The relative directory path on the external storage device from/to which the"
+" content of the shared folder is to be synchronized. The directory is "
+"created if it does not exist."
+msgstr ""
 
 msgid ""
 "The shared folder to synchronise when the external storage device is "

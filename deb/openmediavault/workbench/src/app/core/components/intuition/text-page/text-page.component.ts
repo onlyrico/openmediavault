@@ -3,7 +3,7 @@
  *
  * @license   http://www.gnu.org/licenses/gpl.html GPL Version 3
  * @author    Volker Theile <volker.theile@openmediavault.org>
- * @copyright Copyright (c) 2009-2022 Volker Theile
+ * @copyright Copyright (c) 2009-2025 Volker Theile
  *
  * OpenMediaVault is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,9 +16,9 @@
  * GNU General Public License for more details.
  */
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, Inject, OnDestroy, OnInit } from '@angular/core';
+import { Component, ElementRef, Inject, OnInit, Renderer2, ViewChild } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { marker as gettext } from '@biesbjerg/ngx-translate-extract-marker';
+import { marker as gettext } from '@ngneat/transloco-keys-manager/marker';
 import * as _ from 'lodash';
 import { EMPTY, Subscription, timer } from 'rxjs';
 import { catchError, finalize } from 'rxjs/operators';
@@ -28,7 +28,9 @@ import {
   TextPageButtonConfig,
   TextPageConfig
 } from '~/app/core/components/intuition/models/text-page-config.type';
+import { Unsubscribe } from '~/app/decorators';
 import { Icon } from '~/app/shared/enum/icon.enum';
+import { RpcObjectResponse } from '~/app/shared/models/rpc.model';
 import { AuthSessionService } from '~/app/shared/services/auth-session.service';
 import { ClipboardService } from '~/app/shared/services/clipboard.service';
 import { RpcService } from '~/app/shared/services/rpc.service';
@@ -41,66 +43,62 @@ import { RpcService } from '~/app/shared/services/rpc.service';
   templateUrl: './text-page.component.html',
   styleUrls: ['./text-page.component.scss']
 })
-export class TextPageComponent
-  extends AbstractPageComponent<TextPageConfig>
-  implements OnInit, OnDestroy
-{
+export class TextPageComponent extends AbstractPageComponent<TextPageConfig> implements OnInit {
+  @ViewChild('textContainer', { static: true })
+  _textContainer: ElementRef;
+
+  @Unsubscribe()
+  private subscriptions: Subscription = new Subscription();
+
   public error: HttpErrorResponse;
   public icon = Icon;
   public loading = false;
-  public text = '';
-
-  private reloadSubscription: Subscription;
 
   constructor(
     @Inject(ActivatedRoute) activatedRoute: ActivatedRoute,
     @Inject(AuthSessionService) authSessionService: AuthSessionService,
+    @Inject(Router) router: Router,
     private clipboardService: ClipboardService,
-    private router: Router,
+    private renderer2: Renderer2,
     private rpcService: RpcService
   ) {
-    super(activatedRoute, authSessionService);
+    super(activatedRoute, authSessionService, router);
   }
 
-  ngOnInit(): void {
+  override ngOnInit(): void {
     super.ngOnInit();
-    this.reloadSubscription = timer(
-      0,
-      _.isNumber(this.config.autoReload) ? (this.config.autoReload as number) : null
-    ).subscribe(() => {
-      this.loadData();
-    });
-  }
-
-  ngOnDestroy(): void {
-    this.reloadSubscription?.unsubscribe();
-    super.ngOnDestroy();
+    this.subscriptions.add(
+      timer(
+        0,
+        _.isNumber(this.config.autoReload) ? (this.config.autoReload as number) : null
+      ).subscribe(() => {
+        this.loadData();
+      })
+    );
   }
 
   onCopyToClipboard() {
-    this.clipboardService.copy(this.text);
+    const content = this._textContainer.nativeElement.textContent;
+    this.clipboardService.copy(content);
   }
 
   onButtonClick(buttonConfig: TextPageButtonConfig) {
     if (_.isFunction(buttonConfig.click)) {
       buttonConfig.click();
     } else {
-      this.router.navigate([buttonConfig.url]);
+      this.router.navigateByUrl(buttonConfig.url);
     }
   }
 
   loadData() {
-    if (
-      _.isPlainObject(this.config.request) &&
-      _.isString(this.config.request.service) &&
-      _.isPlainObject(this.config.request.get)
-    ) {
+    const request = this.config.request;
+    if (_.isPlainObject(request) && _.isString(request.service) && _.isPlainObject(request.get)) {
       this.loading = true;
       // noinspection DuplicatedCode
-      this.rpcService[this.config.request.get.task ? 'requestTask' : 'request'](
-        this.config.request.service,
-        this.config.request.get.method,
-        this.config.request.get.params
+      this.rpcService[request.get.task ? 'requestTask' : 'request'](
+        request.service,
+        request.get.method,
+        request.get.params
       )
         .pipe(
           catchError((error) => {
@@ -112,12 +110,15 @@ export class TextPageComponent
           })
         )
         .subscribe((res: any) => {
-          this.text = res;
+          if (_.isString(request.get.format) && RpcObjectResponse.isType(res)) {
+            res = RpcObjectResponse.format(request.get.format, res);
+          }
+          this.renderer2.setProperty(this._textContainer.nativeElement, 'textContent', res);
         });
     }
   }
 
-  protected sanitizeConfig() {
+  protected override sanitizeConfig() {
     _.defaultsDeep(this.config, {
       autoReload: false,
       hasReloadButton: false,
@@ -143,7 +144,7 @@ export class TextPageComponent
     });
   }
 
-  protected onRouteParams() {
+  protected override onRouteParams() {
     // Format tokenized configuration properties.
     this.formatConfig(['title', 'subTitle', 'request.get.method', 'request.get.params']);
   }

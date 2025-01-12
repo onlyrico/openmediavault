@@ -4,7 +4,7 @@
 #
 # @license   http://www.gnu.org/licenses/gpl.html GPL Version 3
 # @author    Volker Theile <volker.theile@openmediavault.org>
-# @copyright Copyright (c) 2009-2022 Volker Theile
+# @copyright Copyright (c) 2009-2025 Volker Theile
 #
 # OpenMediaVault is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -18,6 +18,7 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with OpenMediaVault. If not, see <http://www.gnu.org/licenses/>.
+import base64
 import os
 import re
 import urllib.parse
@@ -203,7 +204,7 @@ def is_fs_uuid(value):
     return openmediavault.stringutils.is_fs_uuid(value)
 
 
-def get_fs_parent_device_file(id_):
+def get_fs_parent_device_file(id_, canonicalize=False):
     """
     Get the parent device file of the specified filesystem.
     :param id_: The filesystem identifier, e.g.
@@ -217,12 +218,18 @@ def get_fs_parent_device_file(id_):
     * 2ED43920D438EC29 (NTFS)
 
     :type id_: str
+    :param canonicalize: If set to True the canonical device file will
+        be used. Defaults to `False`.
+    :type canonicalize: bool
     :return: Returns the device file of the underlying storage device
       or ``None`` in case of an error.
     :rtype: str|None
     """
     fs = openmediavault.fs.Filesystem(id_)
-    return fs.parent_device_file
+    result = fs.parent_device_file
+    if canonicalize and os.path.islink(result):
+        result = os.path.realpath(result)
+    return result
 
 
 def get_root_filesystem():
@@ -485,3 +492,10 @@ def _urlparse(value):
       given URL.
     """
     return urllib.parse.urlparse(value)._asdict()  # pylint: disable=protected-access
+
+
+@jinja_filter('file_base64_encode')
+def _file_base64_encode(file):
+    with open(file, 'rb') as f:
+        content = f.read()
+    return base64.b64encode(content).decode('utf-8')

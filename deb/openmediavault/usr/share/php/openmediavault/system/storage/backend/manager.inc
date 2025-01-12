@@ -4,7 +4,7 @@
  *
  * @license   http://www.gnu.org/licenses/gpl.html GPL Version 3
  * @author    Volker Theile <volker.theile@openmediavault.org>
- * @copyright Copyright (c) 2009-2022 Volker Theile
+ * @copyright Copyright (c) 2009-2025 Volker Theile
  *
  * OpenMediaVault is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -59,7 +59,7 @@ class Manager implements \IteratorAggregate {
 			// insert the storage device backend class to register.
 			$offset = FALSE;
 			foreach ($this->backends as $backendk => $backendv) {
-				if (("\OMV\System\Storage\Backend\BackendAbstract" === $parent) ||
+				if (("\OMV\System\Storage\Backend\BackendAbstract" == $parent) ||
 				  (FALSE === ($backendv instanceof $parent)))
 					continue;
 				$offset = $backendk;

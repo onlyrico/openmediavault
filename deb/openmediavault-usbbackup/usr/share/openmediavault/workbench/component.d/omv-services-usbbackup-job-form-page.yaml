@@ -53,21 +53,49 @@ data:
               prop: devicefile
         validators:
           required: true
-      - type: checkbox
-        name: usesubdir
-        label: _("Synchronise from/to directory on external storage device")
-        hint: _("The shared folder content is synchronised from/to the root of the external storage device if this option is not set. The name of the directory is taken from the shared folder.")
-        value: true
+      - type: textInput
+        name: reldirpath
+        label: _("Relative path")
+        hint: _("The relative directory path on the external storage device from/to which the content of the shared folder is to be synchronized. The directory is created if it does not exist.")
+        value: '/'
+        validators:
+          required: true
       - type: checkbox
         name: sendemail
         label: _("Send email")
         value: true
         hint: _("An email message with the command output (if any produced) is send to the administrator.")
+        validators:
+          custom:
+            - constraint:
+                operator: or
+                arg0:
+                  operator: falsy
+                  arg0:
+                    prop: sendemail
+                arg1:
+                  operator: falsy
+                  arg0:
+                    prop: optionquiet
+              errorData: _("The 'Send email' and 'Quiet' options are mutually exclusive.")
       - type: checkbox
         name: optionquiet
         label: _("Quiet")
         hint: _("Suppress non-error messages.")
         value: false
+        validators:
+          custom:
+            - constraint:
+                operator: or
+                arg0:
+                  operator: falsy
+                  arg0:
+                    prop: sendemail
+                arg1:
+                  operator: falsy
+                  arg0:
+                    prop: optionquiet
+              errorData: _("The 'Send email' and 'Quiet' options are mutually exclusive.")
       - type: checkbox
         name: optionarchive
         label: _("Archive")
@@ -142,9 +170,9 @@ data:
         label: _("Extra options")
         hint: _("Please check the <a href='http://www.samba.org/ftp/rsync/rsync.html' target='_blank'>manual page</a> for more details.")
         value: ""
-      - type: textInput
+      - type: tagInput
         name: comment
-        label: _("Comment")
+        label: _("Tags")
         value: ""
     buttons:
       - template: submit

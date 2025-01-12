@@ -3,7 +3,7 @@
  *
  * @license   http://www.gnu.org/licenses/gpl.html GPL Version 3
  * @author    Volker Theile <volker.theile@openmediavault.org>
- * @copyright Copyright (c) 2009-2022 Volker Theile
+ * @copyright Copyright (c) 2009-2025 Volker Theile
  *
  * OpenMediaVault is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,22 +15,24 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  */
-import { Component, OnInit, ViewChild } from '@angular/core';
-import { marker as gettext } from '@biesbjerg/ngx-translate-extract-marker';
+import { Component, OnInit } from '@angular/core';
+import { AbstractControl } from '@angular/forms';
+import { marker as gettext } from '@ngneat/transloco-keys-manager/marker';
 import * as _ from 'lodash';
-import { BlockUI, NgBlockUI } from 'ng-block-ui';
 import { EMPTY } from 'rxjs';
-import { catchError, finalize } from 'rxjs/operators';
+import { catchError, distinctUntilChanged, finalize } from 'rxjs/operators';
 
-import { FormPageComponent } from '~/app/core/components/intuition/form-page/form-page.component';
+import { FormValues } from '~/app/core/components/intuition/models/form.type';
 import {
   FormPageButtonConfig,
   FormPageConfig
 } from '~/app/core/components/intuition/models/form-page-config.type';
 import { translate } from '~/app/i18n.helper';
+import { BaseFormPageComponent } from '~/app/pages/base-page-component';
 import { ModalDialogComponent } from '~/app/shared/components/modal-dialog/modal-dialog.component';
 import { NotificationType } from '~/app/shared/enum/notification-type.enum';
 import { RpcObjectResponse } from '~/app/shared/models/rpc.model';
+import { BlockUiService } from '~/app/shared/services/block-ui.service';
 import { DialogService } from '~/app/shared/services/dialog.service';
 import { NotificationService } from '~/app/shared/services/notification.service';
 import { RpcService } from '~/app/shared/services/rpc.service';
@@ -38,13 +40,7 @@ import { RpcService } from '~/app/shared/services/rpc.service';
 @Component({
   template: '<omv-intuition-form-page [config]="this.config"></omv-intuition-form-page>'
 })
-export class SharedFolderAclFormPageComponent implements OnInit {
-  @BlockUI()
-  blockUI: NgBlockUI;
-
-  @ViewChild(FormPageComponent, { static: true })
-  private page: FormPageComponent;
-
+export class SharedFolderAclFormPageComponent extends BaseFormPageComponent implements OnInit {
   public config: FormPageConfig = {
     fields: [
       {
@@ -65,77 +61,22 @@ export class SharedFolderAclFormPageComponent implements OnInit {
         value: '/'
       },
       {
-        type: 'datatable',
-        name: 'perms',
-        label: gettext('User/Group permissions'),
-        limit: 5,
-        hasActionBar: true,
-        hasSearchField: true,
-        selectionType: 'none',
-        columns: [
-          { name: gettext('Name'), prop: 'name', flexGrow: 2, sortable: true },
-          {
-            name: gettext('Type'),
-            prop: 'type',
-            flexGrow: 1,
-            sortable: true,
-            cellTemplateName: 'chip',
-            cellTemplateConfig: {
-              map: {
-                user: { value: gettext('User') },
-                group: { value: gettext('Group') }
-              }
-            }
-          },
-          {
-            name: gettext('System account'),
-            prop: 'system',
-            flexGrow: 1,
-            cellTemplateName: 'checkIcon',
-            sortable: true
-          },
-          {
-            name: gettext('Permissions'),
-            prop: 'perms',
-            flexGrow: 3,
-            sortable: true,
-            cellTemplateName: 'buttonToggle',
-            cellTemplateConfig: {
-              buttons: [
-                {
-                  value: '7',
-                  text: gettext('Read/Write')
-                },
-                {
-                  value: '5',
-                  text: gettext('Read-only')
-                },
-                {
-                  value: '0',
-                  text: gettext('No access')
-                }
-              ]
-            }
-          }
-        ],
-        actions: [
-          {
-            icon: 'mdi:transfer',
-            tooltip: gettext('Copy privileges'),
-            click: this.onCopyPrivileges.bind(this)
-          }
-        ],
-        sorters: [
-          {
-            dir: 'asc',
-            prop: 'system'
-          },
-          {
-            dir: 'asc',
-            prop: 'name'
-          }
-        ],
-        value: []
+        type: 'checkbox',
+        name: 'replace',
+        label: gettext('Replace'),
+        hint: gettext('Replace all existing permissions.'),
+        value: true
+      },
+      {
+        type: 'checkbox',
+        name: 'recursive',
+        label: gettext('Recursive'),
+        hint: gettext('Apply permissions to files and subfolders.'),
+        value: false
+      },
+      {
+        type: 'divider',
+        title: gettext('File owner and group')
       },
       {
         type: 'container',
@@ -249,21 +190,81 @@ export class SharedFolderAclFormPageComponent implements OnInit {
         value: 0
       },
       {
-        type: 'divider'
+        type: 'divider',
+        title: gettext('File access control lists')
       },
       {
-        type: 'checkbox',
-        name: 'replace',
-        label: gettext('Replace'),
-        hint: gettext('Replace all existing permissions.'),
-        value: true
-      },
-      {
-        type: 'checkbox',
-        name: 'recursive',
-        label: gettext('Recursive'),
-        hint: gettext('Apply permissions to files and subfolders.'),
-        value: false
+        type: 'datatable',
+        name: 'perms',
+        label: gettext('User/Group permissions'),
+        limit: 5,
+        hasActionBar: true,
+        hasSearchField: true,
+        selectionType: 'none',
+        columns: [
+          { name: gettext('Name'), prop: 'name', flexGrow: 2, sortable: true },
+          {
+            name: gettext('Type'),
+            prop: 'type',
+            flexGrow: 1,
+            sortable: true,
+            cellTemplateName: 'chip',
+            cellTemplateConfig: {
+              map: {
+                user: { value: gettext('User') },
+                group: { value: gettext('Group') }
+              }
+            }
+          },
+          {
+            name: gettext('System account'),
+            prop: 'system',
+            flexGrow: 1,
+            cellTemplateName: 'checkIcon',
+            sortable: true
+          },
+          {
+            name: gettext('Permissions'),
+            prop: 'perms',
+            flexGrow: 3,
+            sortable: true,
+            cellTemplateName: 'buttonToggle',
+            cellTemplateConfig: {
+              buttons: [
+                {
+                  value: '7',
+                  text: gettext('Read/Write')
+                },
+                {
+                  value: '5',
+                  text: gettext('Read-only')
+                },
+                {
+                  value: '0',
+                  text: gettext('No access')
+                }
+              ]
+            }
+          }
+        ],
+        actions: [
+          {
+            icon: 'mdi:transfer',
+            tooltip: gettext('Copy permissions'),
+            click: this.onCopyPermissions.bind(this)
+          }
+        ],
+        sorters: [
+          {
+            dir: 'asc',
+            prop: 'system'
+          },
+          {
+            dir: 'asc',
+            prop: 'name'
+          }
+        ],
+        value: []
       }
     ],
     buttons: [
@@ -285,41 +286,46 @@ export class SharedFolderAclFormPageComponent implements OnInit {
   };
 
   constructor(
+    private blockUiService: BlockUiService,
     private dialogService: DialogService,
     private notificationService: NotificationService,
     private rpcService: RpcService
-  ) {}
+  ) {
+    super();
+  }
 
   ngOnInit(): void {
     const self = this.page;
     self.editing = true;
     self.loadData = () => this.loadData('/');
     self.afterViewInitEvent.subscribe(() => {
-      const control = self.form.formGroup.get('file');
-      control.valueChanges.subscribe((value) => this.loadData(value));
+      const control: AbstractControl = self.form.formGroup.get('file');
+      control?.valueChanges.pipe(distinctUntilChanged()).subscribe((value) => this.loadData(value));
     });
   }
 
-  onCopyPrivileges() {
-    const uuid = _.get(this.page.routeParams, 'uuid');
-    const values = this.page.getFormValues();
+  onCopyPermissions() {
+    const uuid: string = _.get(this.page.routeParams, 'uuid');
+    const values: FormValues = this.page.getFormValues();
     this.dialogService
       .open(ModalDialogComponent, {
         data: {
           template: 'confirmation',
-          title: gettext('Copy privileges'),
-          message: gettext('Do you really want to copy the privileges from the shared folder?')
+          title: gettext('Copy permissions'),
+          message: gettext('Do you really want to copy the permissions from the shared folder?')
         }
       })
       .afterClosed()
       .subscribe((choice: boolean) => {
         if (choice) {
-          this.blockUI.start(translate(gettext('Please wait, updating the permissions ...')));
+          this.blockUiService.start(
+            translate(gettext('Please wait, updating the permissions ...'))
+          );
           this.rpcService
             .request('ShareMgmt', 'getPrivileges', { uuid })
             .pipe(
               finalize(() => {
-                this.blockUI.stop();
+                this.blockUiService.stop();
               })
             )
             .subscribe((privs: Record<string, any>) => {
@@ -342,7 +348,7 @@ export class SharedFolderAclFormPageComponent implements OnInit {
   }
 
   onSubmit(buttonConfig: FormPageButtonConfig, values: Record<string, any>) {
-    this.blockUI.start(translate(gettext('Please wait, updating access control lists ...')));
+    this.blockUiService.start(translate(gettext('Please wait, updating access control lists ...')));
     // Process RPC parameters.
     const perms = _.map(_.reject(values.perms, ['perms', null]), (obj) => {
       obj.perms = _.toInteger(obj.perms);
@@ -355,10 +361,11 @@ export class SharedFolderAclFormPageComponent implements OnInit {
       .requestTask('ShareMgmt', 'setFileACL', rpcParams)
       .pipe(
         finalize(() => {
-          this.blockUI.stop();
+          this.blockUiService.stop();
         })
       )
       .subscribe(() => {
+        this.page.markAsPristine();
         this.notificationService.show(
           NotificationType.success,
           _.get(this.page.routeConfig, 'data.notificationTitle')
@@ -367,7 +374,7 @@ export class SharedFolderAclFormPageComponent implements OnInit {
   }
 
   protected loadData(file: string) {
-    const uuid = _.get(this.page.routeParams, 'uuid');
+    const uuid: string = _.get(this.page.routeParams, 'uuid');
     this.page.loading = true;
     this.rpcService
       .request('ShareMgmt', 'getFileACL', {

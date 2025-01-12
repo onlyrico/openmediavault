@@ -3,7 +3,7 @@
  *
  * @license   http://www.gnu.org/licenses/gpl.html GPL Version 3
  * @author    Volker Theile <volker.theile@openmediavault.org>
- * @copyright Copyright (c) 2009-2022 Volker Theile
+ * @copyright Copyright (c) 2009-2025 Volker Theile
  *
  * OpenMediaVault is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,7 +16,7 @@
  * GNU General Public License for more details.
  */
 import { Component } from '@angular/core';
-import { marker as gettext } from '@biesbjerg/ngx-translate-extract-marker';
+import { marker as gettext } from '@ngneat/transloco-keys-manager/marker';
 import * as _ from 'lodash';
 
 import { AbstractFormFieldComponent } from '~/app/core/components/intuition/form/components/abstract-form-field-component';
@@ -28,8 +28,11 @@ import { Icon } from '~/app/shared/enum/icon.enum';
   styleUrls: ['./form-datatable.component.scss']
 })
 export class FormDatatableComponent extends AbstractFormFieldComponent {
-  protected sanitizeConfig(): void {
+  protected override sanitizeConfig(): void {
     super.sanitizeConfig();
+    if (this.config.hasSearchField || this.config.actions.length) {
+      this.config.hasActionBar = true;
+    }
     _.forEach(this.config.actions, (action) => {
       switch (action.template) {
         case 'add':

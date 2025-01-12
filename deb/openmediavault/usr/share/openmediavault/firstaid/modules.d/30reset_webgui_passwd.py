@@ -4,7 +4,7 @@
 #
 # @license   http://www.gnu.org/licenses/gpl.html GPL Version 3
 # @author    Volker Theile <volker.theile@openmediavault.org>
-# @copyright Copyright (c) 2009-2022 Volker Theile
+# @copyright Copyright (c) 2009-2025 Volker Theile
 #
 # OpenMediaVault is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -28,7 +28,7 @@ import openmediavault.rpc
 class Module(openmediavault.firstaid.IModule):
     @property
     def description(self):
-        return "Change control panel administrator password"
+        return "Change Workbench administrator password"
 
     def execute(self):
         d = dialog.Dialog(dialog="dialog")
@@ -78,14 +78,14 @@ class Module(openmediavault.firstaid.IModule):
                     height=5,
                     width=30,
                 )
-        print("Updating control panel administrator password. Please wait ...")
+        print("Updating Workbench administrator password. Please wait ...")
         openmediavault.rpc.call(
             "UserMgmt", "setPasswordByContext", {"password": password}
         )
         # openmediavault.rpc.call("Config", "applyChanges",
         # 	{ "modules": [], "force": False })
         print(
-            "The control panel administrator password was successfully "
+            "The Workbench administrator password was successfully "
             "changed."
         )
         return 0

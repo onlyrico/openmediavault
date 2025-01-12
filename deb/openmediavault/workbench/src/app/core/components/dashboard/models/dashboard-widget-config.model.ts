@@ -3,7 +3,7 @@
  *
  * @license   http://www.gnu.org/licenses/gpl.html GPL Version 3
  * @author    Volker Theile <volker.theile@openmediavault.org>
- * @copyright Copyright (c) 2009-2022 Volker Theile
+ * @copyright Copyright (c) 2009-2025 Volker Theile
  *
  * OpenMediaVault is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -77,7 +77,13 @@ export type DashboardWidgetConfig = {
       // The template to generate the URL to navigate to when
       // a grid item is clicked.
       url?: string;
+      // The minimum width of an item. Defaults to `100px`.
+      minWidth?: string;
     };
+    // The empty message. Defaults to `No data to display`.
+    emptyMessage?: string;
+    // Show an empty message if there is no data. Defaults to `true`.
+    hasEmptyMessage?: boolean;
     // The data to be displayed.
     store: DataStore;
   };
@@ -86,6 +92,7 @@ export type DashboardWidgetConfig = {
     columns: Array<DatatableColumn>;
     columnMode?: 'standard' | 'flex' | 'force';
     sorters?: Array<Sorter>;
+    sortType?: 'single' | 'multi';
     // The data to be displayed.
     store: DataStore;
     hasHeader?: boolean; // Defaults to `true`.
@@ -93,7 +100,8 @@ export type DashboardWidgetConfig = {
   };
 
   rrd?: {
-    name: string;
+    kind: string;
+    period: 'hour' | 'day' | 'week' | 'month' | 'year';
   };
 
   chart?: {

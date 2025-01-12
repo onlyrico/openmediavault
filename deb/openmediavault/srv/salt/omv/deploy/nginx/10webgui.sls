@@ -2,7 +2,7 @@
 #
 # @license   http://www.gnu.org/licenses/gpl.html GPL Version 3
 # @author    Volker Theile <volker.theile@openmediavault.org>
-# @copyright Copyright (c) 2009-2022 Volker Theile
+# @copyright Copyright (c) 2009-2025 Volker Theile
 #
 # OpenMediaVault is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -27,11 +27,6 @@
 {% set include_dir = salt['pillar.get']('default:OMV_NGINX_SITE_WEBGUI_INCLUDE_DIR', '/etc/nginx/openmediavault-webgui.d') %}
 {% set config = salt['omv_conf.get']('conf.webadmin') %}
 
-prereq_nginx_certificates:
-  salt.state:
-    - tgt: '*'
-    - sls: omv.deploy.certificates
-
 configure_nginx_site_webgui:
   file.managed:
     - name: "/etc/nginx/sites-available/openmediavault-webgui"
@@ -43,8 +38,6 @@ configure_nginx_site_webgui:
     - user: root
     - group: root
     - mode: 644
-    - watch_in:
-      - service: restart_nginx_service
 
 configure_nginx_security:
   file.managed:
@@ -57,8 +50,6 @@ configure_nginx_security:
     - user: root
     - group: root
     - mode: 644
-    - watch_in:
-      - service: restart_nginx_service
 
 execute_nginx_ensite:
   cmd.run:

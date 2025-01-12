@@ -4,7 +4,7 @@
  *
  * @license   http://www.gnu.org/licenses/gpl.html GPL Version 3
  * @author    Volker Theile <volker.theile@openmediavault.org>
- * @copyright Copyright (c) 2009-2022 Volker Theile
+ * @copyright Copyright (c) 2009-2025 Volker Theile
  *
  * OpenMediaVault is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -86,11 +86,13 @@ abstract class BackendAbstract {
 		$dir = new \DirectoryIterator("/sys/class/net");
 		foreach ($dir as $item) {
 			// Skip everything that is not a symlink.
-			if ($item->isDot() || !$item->isLink())
+			if ($item->isDot() || !$item->isLink()) {
 				continue;
+			}
 			// Validate network interface name.
-			if (1 !== preg_match($regex, $item->getFilename()))
+			if (1 !== preg_match($regex, $item->getFilename())) {
 				continue;
+			}
 			$result[] = $item->getFilename();
 		}
 		return $result;

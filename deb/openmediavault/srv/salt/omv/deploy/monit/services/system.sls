@@ -2,7 +2,7 @@
 #
 # @license   http://www.gnu.org/licenses/gpl.html GPL Version 3
 # @author    Volker Theile <volker.theile@openmediavault.org>
-# @copyright Copyright (c) 2009-2022 Volker Theile
+# @copyright Copyright (c) 2009-2025 Volker Theile
 #
 # OpenMediaVault is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -37,8 +37,8 @@ configure_monit_system_service:
     - context:
         email_config: {{ email_config | json }}
         loadavg_notification_config: {{ loadavg_notification_config | json }}
-        memory_usage_notification_config: {{ loadavg_notification_config | json }}
-        cpu_usage_notification_config: {{ loadavg_notification_config | json }}
+        memory_usage_notification_config: {{ memory_usage_notification_config | json }}
+        cpu_usage_notification_config: {{ cpu_usage_notification_config | json }}
     - user: root
     - group: root
     - mode: 644

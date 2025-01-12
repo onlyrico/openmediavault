@@ -4,7 +4,7 @@
  *
  * @license   http://www.gnu.org/licenses/gpl.html GPL Version 3
  * @author    Volker Theile <volker.theile@openmediavault.org>
- * @copyright Copyright (c) 2009-2022 Volker Theile
+ * @copyright Copyright (c) 2009-2025 Volker Theile
  *
  * OpenMediaVault is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -33,7 +33,7 @@ class Apt {
 	 * @return void
 	 * @throw \OMV\AssertException
 	 */
-	public function assertNotLocked(): void {
+	public static function assertNotLocked(): void {
 		if (is_locked("/var/lib/dpkg/lock")) {
 			throw new \OMV\AssertException(
 				"The package database is held by another process. ".

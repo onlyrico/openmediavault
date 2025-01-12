@@ -1,13 +1,13 @@
 <mat-toolbar *ngIf="hasActionBar"
-             [ngClass]="{'omv-sticky': hasStickyActionBar}"
-             fxLayout="row">
+             class="omv-display-flex"
+             [ngClass]="{'omv-sticky': hasStickyActionBar}">
   <!-- Custom action buttons -->
   <ng-content select="omv-datatable-actions"></ng-content>
-  <span fxFlex></span>
+  <span class="omv-flex-1"></span>
   <!-- Default action buttons -->
   <button *ngIf="stateId"
           mat-icon-button
-          matTooltip="{{ 'Show/Hide columns' | translate }}"
+          matTooltip="{{ 'Show/Hide columns' | transloco }}"
           [matMenuTriggerFor]="columnMenu">
     <mat-icon svgIcon="{{ icon.table }}"></mat-icon>
   </button>
@@ -23,7 +23,7 @@
              (ngModelChange)="onSearchFilterChange()">
       <button mat-icon-button
               matSuffix
-              matTooltip="{{ 'Clear' | translate }}"
+              matTooltip="{{ 'Clear' | transloco }}"
               (click)="clearSearchFilter()">
         <mat-icon svgIcon="{{ icon.clear }}"></mat-icon>
       </button>
@@ -31,7 +31,7 @@
   </div>
   <button *ngIf="hasReloadButton"
           mat-icon-button
-          matTooltip="{{ 'Reload' | translate }}"
+          matTooltip="{{ 'Reload' | transloco }}"
           (click)="reloadData()">
     <mat-icon svgIcon="{{ icon.reload }}"></mat-icon>
   </button>
@@ -59,6 +59,7 @@
                [externalPaging]="remotePaging"
                [externalSorting]="remoteSorting"
                [sorts]="sorters"
+               [sortType]="sortType"
                (sort)="onSort($event)"
                (page)="onPage($event)">
 </ngx-datatable>
@@ -67,7 +68,7 @@
   <ng-template matMenuContent>
     <button *ngFor="let column of columns"
             mat-menu-item
-            (click)="onToggleColumn(column)">
+            (click)="$event.stopPropagation(); onToggleColumn(column)">
       <mat-icon *ngIf="!column.hidden"
                 svgIcon="{{ icon.checkBoxMarked }}">
       </mat-icon>
@@ -81,7 +82,21 @@
 
 <ng-template #textTpl
              let-value="value">
+  <span [innerHTML]="value | escapeHtml"></span>
+</ng-template>
+
+<ng-template #htmlTpl
+             let-value="value">
   <span [innerHTML]="value | sanitizeHtml"></span>
+</ng-template>
+
+<ng-template #imageTpl
+             let-value="value"
+             let-column="column"
+             let-row="row">
+  <img src="{{ !column?.cellTemplateConfig?.src ? value : column.cellTemplateConfig.src | template:row }}"
+       [alt]="column?.cellTemplateConfig?.alt"
+       [ngClass]="column?.cellTemplateConfig?.class ? column.cellTemplateConfig.class : 'omv-max-w-100'">
 </ng-template>
 
 <ng-template #checkIconTpl
@@ -138,13 +153,19 @@
   {{ value | localeDate:'relative':true }}
 </ng-template>
 
+<ng-template #cronToHumanTpl
+             let-value="value">
+  {{ value | cron2human }}
+</ng-template>
+
 <ng-template #progressBarTpl
              let-value="value"
              let-column="column"
              let-row="row">
   <omv-progress-bar [value]="value"
                     [text]="column?.cellTemplateConfig?.text | template:row"
-                    [warningThreshold]="column?.cellTemplateConfig?.warningThreshold | template:row">
+                    [warningThreshold]="column?.cellTemplateConfig?.warningThreshold | template:row"
+                    [decimalPlaces]="column?.cellTemplateConfig?.decimalPlaces">
   </omv-progress-bar>
 </ng-template>
 
@@ -153,7 +174,7 @@
              let-column="column"
              let-row="row">
   <mat-chip-list>
-    <mat-chip *ngFor="let item of (value | array)"
+    <mat-chip *ngFor="let item of (value | split:column?.cellTemplateConfig?.separator | array)"
               [selectable]="false"
               [disableRipple]="true"
               [ngClass]="(column?.cellTemplateConfig?.map && column?.cellTemplateConfig?.map[item]?.class) ? column.cellTemplateConfig.map[item].class : (column?.cellTemplateConfig?.class ? column.cellTemplateConfig.class : 'omv-background-color-pair-gray')"
@@ -176,10 +197,10 @@
              let-value="value"
              let-column="column"
              let-row="row">
-  <mat-button-toggle-group fxLayout="row"
+  <mat-button-toggle-group class="omv-display-flex omv-flex-row"
                            value="{{ value }}">
     <mat-button-toggle *ngFor="let button of column.cellTemplateConfig.buttons"
-                       fxFlex
+                       class="omv-flex-1"
                        [value]="button.value"
                        (change)="onButtonToggleChange($event, row, column)">
       <span>{{ button.text }}</span>
@@ -189,14 +210,15 @@
 
 <ng-template #copyToClipboardTpl
              let-value="value">
-  <ng-container *ngIf="value">
+  <div *ngIf="value !== null && value !== undefined && value !== ''"
+       class="omv-display-flex omv-flex-row omv-gap-1 omv-flex-wrap omv-align-items-center">
     <span [matTooltip]="value">{{ value | preventHtml }}</span>
-    <mat-icon class="omv-icon-sm omv-cursor-pointer omv-ml-q"
+    <mat-icon class="omv-display-flex omv-icon-sm omv-cursor-pointer"
               svgIcon="{{ icon.copy }}"
-              matTooltip="{{ 'Copy to clipboard' | translate }}"
-              (click)="onCopyToClipboard(value)">
+              matTooltip="{{ 'Copy to clipboard' | transloco }}"
+              (click)="onCopyToClipboard($event, value)">
     </mat-icon>
-  </ng-container>
+  </div>
 </ng-template>
 
 <ng-template #templateTpl

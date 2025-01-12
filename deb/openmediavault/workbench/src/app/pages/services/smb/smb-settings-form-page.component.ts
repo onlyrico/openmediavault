@@ -3,7 +3,7 @@
  *
  * @license   http://www.gnu.org/licenses/gpl.html GPL Version 3
  * @author    Volker Theile <volker.theile@openmediavault.org>
- * @copyright Copyright (c) 2009-2022 Volker Theile
+ * @copyright Copyright (c) 2009-2025 Volker Theile
  *
  * OpenMediaVault is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,14 +16,15 @@
  * GNU General Public License for more details.
  */
 import { Component } from '@angular/core';
-import { marker as gettext } from '@biesbjerg/ngx-translate-extract-marker';
+import { marker as gettext } from '@ngneat/transloco-keys-manager/marker';
 
 import { FormPageConfig } from '~/app/core/components/intuition/models/form-page-config.type';
+import { BaseFormPageComponent } from '~/app/pages/base-page-component';
 
 @Component({
   template: '<omv-intuition-form-page [config]="this.config"></omv-intuition-form-page>'
 })
-export class SmbSettingsFormPageComponent {
+export class SmbSettingsFormPageComponent extends BaseFormPageComponent {
   public config: FormPageConfig = {
     request: {
       service: 'SMB',
@@ -92,14 +93,95 @@ export class SmbSettingsFormPageComponent {
       },
       {
         type: 'checkbox',
+        name: 'homesinheritacls',
+        label: gettext('Inherit ACLs'),
+        hint: gettext(
+          'This parameter can be used to ensure that if default acls exist on parent directories, they are always honored when creating a new file or subdirectory in these parent directories.'
+        ),
+        value: false
+      },
+      {
+        type: 'checkbox',
+        name: 'homesinheritpermissions',
+        label: gettext('Inherit permissions'),
+        hint: gettext(
+          'The permissions on new files and directories are normally governed by create mask and directory mask but the inherit permissions parameter overrides this. This can be particularly useful on systems with many users to allow a single share to be used flexibly by each user.'
+        ),
+        value: false
+      },
+      {
+        type: 'checkbox',
         name: 'homesrecyclebin',
         label: gettext('Enable recycle bin'),
         hint: gettext('This will create a recycle bin for each user home directory.'),
         value: false
       },
       {
+        type: 'checkbox',
+        name: 'homesfollowsymlinks',
+        label: gettext('Follow symlinks'),
+        hint: gettext('Allow following symbolic links in the home directories.'),
+        value: true,
+        modifiers: [
+          {
+            type: 'checked',
+            opposite: false,
+            constraint: { operator: 'truthy', arg0: { prop: 'homeswidelinks' } }
+          }
+        ]
+      },
+      {
+        type: 'checkbox',
+        name: 'homeswidelinks',
+        label: gettext('Wide links'),
+        hint: gettext('Allow symbolic links to areas that are outside the home directories.'),
+        value: false,
+        modifiers: [
+          {
+            type: 'unchecked',
+            opposite: false,
+            constraint: { operator: 'falsy', arg0: { prop: 'homesfollowsymlinks' } }
+          }
+        ]
+      },
+      {
+        type: 'textarea',
+        name: 'homesextraoptions',
+        label: gettext('Extra options'),
+        hint: gettext(
+          "Please check the <a href='http://www.samba.org/samba/docs/man/manpages-3/smb.conf.5.html' target='_blank'>manual page</a> for more details." // eslint-disable-line @typescript-eslint/quotes
+        ),
+        value: ''
+      },
+      {
         type: 'divider',
-        title: gettext('WINS')
+        title: gettext('Advanced settings')
+      },
+      {
+        type: 'select',
+        name: 'minprotocol',
+        label: gettext('Minimum protocol version'),
+        hint:
+          gettext(
+            'This setting controls the minimum protocol version that the server will allow the client to use.'
+          ) +
+          ' ' +
+          gettext('Note that SMB1 is deprecated and should only be used in mandatory cases.'),
+        value: 'SMB2',
+        store: {
+          data: [
+            ['SMB1', 'SMB1'],
+            ['SMB2', 'SMB2'],
+            ['SMB3', 'SMB3']
+          ]
+        }
+      },
+      {
+        type: 'checkbox',
+        name: 'netbios',
+        label: gettext('Enable NetBIOS'),
+        hint: gettext('Support name resolution and network discovery for legacy systems.'),
+        value: false
       },
       {
         type: 'checkbox',
@@ -150,8 +232,19 @@ export class SmbSettingsFormPageComponent {
         }
       },
       {
-        type: 'divider',
-        title: gettext('Advanced settings')
+        type: 'checkbox',
+        name: 'usesendfile',
+        label: gettext('Use sendfile'),
+        hint: gettext(
+          "Use the more efficient sendfile system call for files that are exclusively oplocked. This may make more efficient use of the system CPU's and cause Samba to be faster. Samba automatically turns this off for clients that use protocol levels lower than NT LM 0.12 and when it detects a client is Windows 9x."
+        ),
+        value: true
+      },
+      {
+        type: 'checkbox',
+        name: 'aio',
+        label: gettext('Asynchronous I/O'),
+        value: true
       },
       {
         type: 'select',
@@ -167,21 +260,6 @@ export class SmbSettingsFormPageComponent {
             [10, gettext('Debug')]
           ]
         }
-      },
-      {
-        type: 'checkbox',
-        name: 'usesendfile',
-        label: gettext('Use sendfile'),
-        hint: gettext(
-          "Use the more efficient sendfile system call for files that are exclusively oplocked. This may make more efficient use of the system CPU's and cause Samba to be faster. Samba automatically turns this off for clients that use protocol levels lower than NT LM 0.12 and when it detects a client is Windows 9x."
-        ),
-        value: true
-      },
-      {
-        type: 'checkbox',
-        name: 'aio',
-        label: gettext('Asynchronous I/O'),
-        value: true
       },
       {
         type: 'textarea',

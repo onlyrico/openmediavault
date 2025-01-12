@@ -3,7 +3,7 @@
  *
  * @license   http://www.gnu.org/licenses/gpl.html GPL Version 3
  * @author    Volker Theile <volker.theile@openmediavault.org>
- * @copyright Copyright (c) 2009-2022 Volker Theile
+ * @copyright Copyright (c) 2009-2025 Volker Theile
  *
  * OpenMediaVault is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,23 +16,26 @@
  * GNU General Public License for more details.
  */
 import { DatatablePageActionConfig } from '~/app/core/components/intuition/models/datatable-page-action-config.type';
+import { PageHintConfig } from '~/app/core/components/intuition/models/page-config.type';
 import { DataStore } from '~/app/shared/models/data-store.type';
 import { DatatableColumn } from '~/app/shared/models/datatable-column.type';
 import { Sorter } from '~/app/shared/models/sorter.type';
 
 export type DatatablePageConfig = {
-  // A title within the header.
+  // A list of hints to be displayed at the top of the page.
+  hints?: Array<PageHintConfig>;
+  // A title within the datatable header.
   title?: string;
-  // A subtitle within the header.
+  // A subtitle within the datatable header.
   subTitle?: string;
-  // An image used as an avatar within the header.
+  // An image used as an avatar within the datatable header.
   icon?: string;
   // An identifier which identifies this datatable uniquely.
   // This is used to store/restore the column state.
   stateId?: string;
   // The name of the property that identifies a row uniquely.
   rowId?: string;
-  // The format string that is used to generate a human readable
+  // The format string that is used to generate a human-readable
   // identifier of a row. This is used, for example, in the delete
   // dialog to enumerate the selected row(s).
   rowEnumFmt?: string;
@@ -46,6 +49,7 @@ export type DatatablePageConfig = {
   selectionType?: 'none' | 'single' | 'multi';
   updateSelectionOnReload?: 'always' | 'onChange' | 'never';
   // Page size to show. To disable paging, set the limit to 0.
+  // Defaults to 25.
   limit?: number;
   // If set to `true`, the parameters `start` and `limit` from the data
   // table paging component are added to the RPC request parameters.
@@ -66,6 +70,7 @@ export type DatatablePageConfig = {
   // Defaults to `false`.
   autoReload?: boolean | number;
   sorters?: Array<Sorter>;
+  sortType?: 'single' | 'multi';
   store?: DataStore;
   actions?: Array<DatatablePageActionConfig>;
   // The page footer buttons.

@@ -3,7 +3,7 @@
  *
  * @license   http://www.gnu.org/licenses/gpl.html GPL Version 3
  * @author    Volker Theile <volker.theile@openmediavault.org>
- * @copyright Copyright (c) 2009-2022 Volker Theile
+ * @copyright Copyright (c) 2009-2025 Volker Theile
  *
  * OpenMediaVault is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,11 +15,10 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  */
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ViewEncapsulation } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { marker as gettext } from '@biesbjerg/ngx-translate-extract-marker';
+import { marker as gettext } from '@ngneat/transloco-keys-manager/marker';
 import * as _ from 'lodash';
-import { BlockUI, NgBlockUI } from 'ng-block-ui';
 import { finalize } from 'rxjs/operators';
 
 import {
@@ -29,18 +28,17 @@ import {
 import { translate } from '~/app/i18n.helper';
 import { Icon } from '~/app/shared/enum/icon.enum';
 import { AuthService } from '~/app/shared/services/auth.service';
+import { BlockUiService } from '~/app/shared/services/block-ui.service';
 import { DialogService } from '~/app/shared/services/dialog.service';
 import { LocaleService } from '~/app/shared/services/locale.service';
 
 @Component({
   selector: 'omv-login-page',
   templateUrl: './login-page.component.html',
-  styleUrls: ['./login-page.component.scss']
+  styleUrls: ['./login-page.component.scss'],
+  encapsulation: ViewEncapsulation.None
 })
 export class LoginPageComponent implements OnInit {
-  @BlockUI()
-  blockUI: NgBlockUI;
-
   public currentLocale: string;
   public locales: Record<string, string> = {};
 
@@ -85,26 +83,27 @@ export class LoginPageComponent implements OnInit {
   constructor(
     private activatedRoute: ActivatedRoute,
     private authService: AuthService,
+    private blockUiService: BlockUiService,
     private dialogService: DialogService,
     private router: Router
   ) {
-    this.currentLocale = LocaleService.getLocale();
-    this.locales = LocaleService.getLocales();
+    this.currentLocale = LocaleService.getCurrentLocale();
+    this.locales = LocaleService.getSupportedLocales();
   }
 
   ngOnInit(): void {
-    this.blockUI.resetGlobal();
+    this.blockUiService.resetGlobal();
     // Ensure all currently opened dialogs are closed.
     this.dialogService.closeAll();
   }
 
   onLogin(buttonConfig: FormPageButtonConfig, values: Record<string, any>) {
-    this.blockUI.start(translate(gettext('Please wait ...')));
+    this.blockUiService.start(translate(gettext('Please wait ...')));
     this.authService
       .login(values.username, values.password)
       .pipe(
         finalize(() => {
-          this.blockUI.stop();
+          this.blockUiService.stop();
         })
       )
       .subscribe(() => {
@@ -115,7 +114,7 @@ export class LoginPageComponent implements OnInit {
 
   onSelectLocale(locale) {
     // Update the browser cookie and reload the page.
-    LocaleService.setLocale(locale);
+    LocaleService.setCurrentLocale(locale);
     this.router.navigate(['/reload']);
   }
 }

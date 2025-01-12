@@ -4,7 +4,7 @@
  *
  * @license   http://www.gnu.org/licenses/gpl.html GPL Version 3
  * @author    Volker Theile <volker.theile@openmediavault.org>
- * @copyright Copyright (c) 2009-2022 Volker Theile
+ * @copyright Copyright (c) 2009-2025 Volker Theile
  *
  * OpenMediaVault is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -29,6 +29,10 @@ class Avahi extends \OMV\Engine\Module\ServiceAbstract
 
 	public function getAlias() {
 		return "zeroconf";
+	}
+
+	public function deployAfter(): array {
+		return ["systemd-networkd"];
 	}
 
 	public function getDescription() {

@@ -3,7 +3,7 @@
  *
  * @license   http://www.gnu.org/licenses/gpl.html GPL Version 3
  * @author    Volker Theile <volker.theile@openmediavault.org>
- * @copyright Copyright (c) 2009-2022 Volker Theile
+ * @copyright Copyright (c) 2009-2025 Volker Theile
  *
  * OpenMediaVault is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,14 +16,16 @@
  * GNU General Public License for more details.
  */
 import { Component } from '@angular/core';
-import { marker as gettext } from '@biesbjerg/ngx-translate-extract-marker';
+import { marker as gettext } from '@ngneat/transloco-keys-manager/marker';
 
 import { DatatablePageConfig } from '~/app/core/components/intuition/models/datatable-page-config.type';
+import { BaseFormPageComponent } from '~/app/pages/base-page-component';
 
 @Component({
-  template: '<omv-intuition-datatable-page [config]="this.config"></omv-intuition-datatable-page>'
+  template:
+    '<omv-intuition-datatable-page #page [config]="this.config"></omv-intuition-datatable-page>'
 })
-export class InterfaceDatatablePageComponent {
+export class InterfaceDatatablePageComponent extends BaseFormPageComponent {
   public config: DatatablePageConfig = {
     stateId: '1c782151-4393-493b-9767-257620370fb2',
     autoReload: false,
@@ -41,7 +43,13 @@ export class InterfaceDatatablePageComponent {
         hidden: true,
         cellTemplateName: 'chip',
         cellTemplateConfig: {
-          template: '{{ type | title }}'
+          map: {
+            ethernet: { value: gettext('Ethernet') },
+            bond: { value: gettext('Bond') },
+            vlan: { value: gettext('VLAN') },
+            wifi: { value: gettext('Wi-Fi') },
+            bridge: { value: gettext('Bridge') }
+          }
         }
       },
       {
@@ -52,7 +60,7 @@ export class InterfaceDatatablePageComponent {
         cellTemplateName: 'template',
         cellTemplateConfig:
           // eslint-disable-next-line max-len
-          'IPv4: {{ method | replace("manual", "Disabled") | replace("dhcp", "DHCP") | replace("auto", "Auto") | replace("static", "Static") | translate }}<br>IPv6: {{ method6 | replace("manual", "Disabled") | replace("dhcp", "DHCP") | replace("auto", "Auto") | replace("static", "Static") | translate }}'
+          'IPv4: {{ method | replace("manual", "Disabled") | replace("dhcp", "DHCP") | replace("auto", "Automatic") | replace("static", "Static") | translate }}<br>IPv6: {{ method6 | replace("manual", "Disabled") | replace("dhcp", "DHCP") | replace("auto", "Automatic") | replace("static", "Static") | translate }}'
       },
       {
         name: gettext('Address'),
@@ -90,9 +98,12 @@ export class InterfaceDatatablePageComponent {
         cellTemplateName: 'checkIcon'
       },
       {
-        name: gettext('Comment'),
+        name: gettext('Tags'),
         prop: 'comment',
-        cellTemplateName: 'text',
+        cellTemplateName: 'chip',
+        cellTemplateConfig: {
+          separator: ','
+        },
         flexGrow: 1,
         sortable: true
       }

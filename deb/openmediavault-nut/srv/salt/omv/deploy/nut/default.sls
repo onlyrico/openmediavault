@@ -2,7 +2,7 @@
 #
 # @license   http://www.gnu.org/licenses/gpl.html GPL Version 3
 # @author    Volker Theile <volker.theile@openmediavault.org>
-# @copyright Copyright (c) 2009-2022 Volker Theile
+# @copyright Copyright (c) 2009-2025 Volker Theile
 #
 # OpenMediaVault is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -33,10 +33,13 @@
 {% if nut_config.enable | to_bool %}
 
 {% set email_config = salt['omv_conf.get']('conf.system.notification.email') %}
+{% set notification_config = salt['omv_conf.get_by_filter'](
+  'conf.system.notification.notification',
+  {'operator': 'stringEquals', 'arg0': 'id', 'arg1': 'nut'})[0] %}
 {% set admin_user = salt['pillar.get']('default:OMV_NUT_UPSDUSERS_ADMIN_USER', 'admin') %}
-{% set admin_passwd = salt['pillar.get']('default:OMV_NUT_UPSDUSERS_ADMIN_PASSWORD', salt['random.get_str'](16)) %}
+{% set admin_passwd = salt['pillar.get']('default:OMV_NUT_UPSDUSERS_ADMIN_PASSWORD', salt['random.get_str'](16)) | replace('#', '\#') | replace('=', '\=') %}
 {% set monitor_user = salt['pillar.get']('default:OMV_NUT_UPSDUSERS_ADMIN_USER', 'monmaster') %}
-{% set monitor_passwd = salt['pillar.get']('default:OMV_NUT_UPSDUSERS_MONITOR_PASSWORD', salt['random.get_str'](16)) %}
+{% set monitor_passwd = salt['pillar.get']('default:OMV_NUT_UPSDUSERS_MONITOR_PASSWORD', salt['random.get_str'](16)) | replace('#', '\#') | replace('=', '\=') %}
 
 configure_nut_nut_conf:
   file.managed:
@@ -86,9 +89,9 @@ configure_nut_upsd_users:
     - context:
         config: {{ nut_config | json }}
         admin_user: {{ admin_user }}
-        admin_passwd: {{ admin_passwd }}
+        admin_passwd: {{ admin_passwd | yaml_encode }}
         monitor_user: {{ monitor_user }}
-        monitor_passwd: {{ monitor_passwd }}
+        monitor_passwd: {{ monitor_passwd | yaml_encode }}
     - user: root
     - group: nut
     - mode: 640
@@ -102,7 +105,7 @@ configure_nut_upsmon_conf:
     - context:
         config: {{ nut_config | json }}
         monitor_user: {{ monitor_user }}
-        monitor_passwd: {{ monitor_passwd }}
+        monitor_passwd: {{ monitor_passwd | yaml_encode }}
     - user: root
     - group: nut
     - mode: 640
@@ -130,11 +133,13 @@ divert_nut_upssched_conf:
 configure_nut_default_upssched_cmd:
   file.managed:
     - name: "/etc/default/upssched-cmd"
-    - contents: |
-        {{ pillar['headers']['auto_generated'] }}
-        {{ pillar['headers']['warning'] }}
-        OMV_NUT_UPSSCHEDCMD_EMAIL_ENABLE="{{ "YES" if email_config.enable | to_bool else "NO" }}"
-        OMV_NUT_UPSSCHEDCMD_SHUTDOWNTIMER={{ nut_config.shutdowntimer }}
+    - source:
+      - salt://{{ tpldir }}/files/etc-default-upssched-cmd.j2
+    - template: jinja
+    - context:
+        nut_config: {{ nut_config | json }}
+        email_config: {{ email_config | json }}
+        notification_config: {{ notification_config | json }}
     - user: root
     - group: nut
     - mode: 640
@@ -169,14 +174,21 @@ remove_nut_udev_serialups_rule:
 
 {% endif %}
 
+start_nut_target:
+  service.running:
+    - name: nut.target
+    - enable: True
+
 {% if nut_config.mode != 'netclient' %}
 
-start_nut_driver_service:
-  service.running:
-    - name: nut-driver
-    - enable: True
-    - watch:
-      - file: configure_nut_ups_conf
+enable_nut_driver_enumerator_service:
+  service.enabled:
+    - name: nut-driver-enumerator
+
+restart_nut_driver_enumerator_service:
+  module.run:
+    - service.restart:
+      - name: nut-driver-enumerator
 
 start_nut_server_service:
   service.running:
@@ -190,6 +202,16 @@ monitor_nut_server_service:
   module.run:
     - monit.monitor:
       - name: nut-server
+
+{% else %}
+
+disable_nut_driver_enumerator_service:
+  service.disabled:
+    - name: nut-driver-enumerator
+
+stop_all_nut_driver_service_instances:
+  cmd.run:
+    - name: "systemctl stop 'nut-driver@*'"
 
 {% endif %}
 
@@ -219,6 +241,11 @@ unmonitor_nut_server_service:
   cmd.run:
     - name: monit unmonitor nut-server || true
 
+stop_nut_target:
+  service.dead:
+    - name: nut.target
+    - enable: False
+
 stop_nut_monitor_service:
   service.dead:
     - name: nut-monitor
@@ -229,9 +256,12 @@ stop_nut_server_service:
     - name: nut-server
     - enable: False
 
-stop_nut_driver_service:
-  service.dead:
-    - name: nut-driver
-    - enable: False
+disable_nut_driver_enumerator_service:
+  service.disabled:
+    - name: nut-driver-enumerator
+
+stop_all_nut_driver_service_instances:
+  cmd.run:
+    - name: "systemctl stop 'nut-driver@*'"
 
 {% endif %}

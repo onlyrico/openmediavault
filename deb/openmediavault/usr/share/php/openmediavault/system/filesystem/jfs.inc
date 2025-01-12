@@ -4,7 +4,7 @@
  *
  * @license   http://www.gnu.org/licenses/gpl.html GPL Version 3
  * @author    Volker Theile <volker.theile@openmediavault.org>
- * @copyright Copyright (c) 2009-2022 Volker Theile
+ * @copyright Copyright (c) 2009-2025 Volker Theile
  *
  * OpenMediaVault is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -22,6 +22,19 @@
 namespace OMV\System\Filesystem;
 
 class Jfs extends Filesystem {
+	/**
+	 * See parent class definition.
+	 */
+	public function getDetails() {
+		$cmdArgs = [];
+		$cmdArgs[] = "-l";
+		$cmdArgs[] = escapeshellarg($this->getDeviceFile());
+		$cmd = new \OMV\System\Process("jfs_tune", $cmdArgs);
+		$cmd->setRedirect2to1();
+		$cmd->execute($output);
+		return implode("\n", $output);
+	}
+
 	/**
 	 * Grow the filesystem.
 	 * @return void

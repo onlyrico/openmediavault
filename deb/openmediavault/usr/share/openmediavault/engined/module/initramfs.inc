@@ -4,7 +4,7 @@
  *
  * @license   http://www.gnu.org/licenses/gpl.html GPL Version 3
  * @author    Volker Theile <volker.theile@openmediavault.org>
- * @copyright Copyright (c) 2009-2022 Volker Theile
+ * @copyright Copyright (c) 2009-2025 Volker Theile
  *
  * OpenMediaVault is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,20 +21,8 @@
  */
 namespace Engined\Module;
 
-class Initramfs extends \OMV\Engine\Module\ServiceAbstract
-		implements \OMV\Engine\Notify\IListener {
+class Initramfs extends \OMV\Engine\Module\ServiceAbstract {
 	public function getName() {
 		return "initramfs";
-	}
-
-	public function deployAfter(): array {
-		return ["mdadm"];
-	}
-
-	function bindListeners(\OMV\Engine\Notify\Dispatcher $dispatcher) {
-		$dispatcher->addListener(
-			OMV_NOTIFY_CREATE | OMV_NOTIFY_MODIFY | OMV_NOTIFY_DELETE,
-			"org.openmediavault.conf.system.mdadm.device",
-			[$this, "setDirty"]);
 	}
 }

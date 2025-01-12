@@ -3,7 +3,7 @@
  *
  * @license   http://www.gnu.org/licenses/gpl.html GPL Version 3
  * @author    Volker Theile <volker.theile@openmediavault.org>
- * @copyright Copyright (c) 2009-2022 Volker Theile
+ * @copyright Copyright (c) 2009-2025 Volker Theile
  *
  * OpenMediaVault is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,13 +15,14 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  */
-import { Component, Input, OnDestroy, OnInit } from '@angular/core';
+import { Component, Input, OnInit } from '@angular/core';
 import { Event, NavigationEnd, NavigationStart, Router } from '@angular/router';
 import * as _ from 'lodash';
 import { Subscription } from 'rxjs';
 import { filter } from 'rxjs/operators';
 
 import { NavigationBarListItem } from '~/app/core/components/navigation-bar/navigation-bar-list-item/navigation-bar-list-item.type';
+import { Unsubscribe } from '~/app/decorators';
 import { Icon } from '~/app/shared/enum/icon.enum';
 
 @Component({
@@ -29,15 +30,17 @@ import { Icon } from '~/app/shared/enum/icon.enum';
   templateUrl: './navigation-bar-list-item.component.html',
   styleUrls: ['./navigation-bar-list-item.component.scss']
 })
-export class NavigationBarListItemComponent implements OnInit, OnDestroy {
+export class NavigationBarListItemComponent implements OnInit {
   @Input()
   item: NavigationBarListItem;
 
   @Input()
   depth = 0;
 
-  public icon = Icon;
+  @Unsubscribe()
   private subscriptions = new Subscription();
+
+  public icon = Icon;
 
   constructor(private router: Router) {
     this.subscriptions.add(
@@ -74,10 +77,6 @@ export class NavigationBarListItemComponent implements OnInit, OnDestroy {
       this.item.active = _.startsWith(this.router.url, this.item.url);
     }
     this.item.expanded = _.startsWith(this.router.url, this.item.url);
-  }
-
-  ngOnDestroy(): void {
-    this.subscriptions.unsubscribe();
   }
 
   onClick(item: NavigationBarListItem) {

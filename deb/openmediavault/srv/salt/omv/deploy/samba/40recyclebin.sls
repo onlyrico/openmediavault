@@ -2,7 +2,7 @@
 #
 # @license   http://www.gnu.org/licenses/gpl.html GPL Version 3
 # @author    Volker Theile <volker.theile@openmediavault.org>
-# @copyright Copyright (c) 2009-2022 Volker Theile
+# @copyright Copyright (c) 2009-2025 Volker Theile
 #
 # OpenMediaVault is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -29,7 +29,7 @@ configure_samba_recyclebin_cron:
   file.managed:
     - name: "/etc/cron.daily/openmediavault-samba-recycle"
     - contents: |
-        #!/bin/sh
+        #!/usr/bin/env dash
         {{ pillar['headers']['multiline'] | indent(8) }}
         set -e
         run-parts --new-session --regex='{{ cron_scripts_prefix }}*' {{ scripts_dir }} >/dev/null 2>&1

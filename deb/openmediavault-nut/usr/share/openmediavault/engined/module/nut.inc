@@ -4,7 +4,7 @@
  *
  * @license   http://www.gnu.org/licenses/gpl.html GPL Version 3
  * @author    Volker Theile <volker.theile@openmediavault.org>
- * @copyright Copyright (c) 2009-2022 Volker Theile
+ * @copyright Copyright (c) 2009-2025 Volker Theile
  *
  * OpenMediaVault is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,8 +19,9 @@
  * You should have received a copy of the GNU General Public License
  * along with OpenMediaVault. If not, see <http://www.gnu.org/licenses/>.
  */
-class NetworkUPSTools extends \OMV\Engine\Module\ServiceAbstract
-		implements \OMV\Engine\Notify\IListener, \OMV\Engine\Module\IServiceStatus {
+class NetworkUPSTools extends \OMV\Engine\Module\ServiceAbstract implements
+		\OMV\Engine\Notify\IListener, \OMV\Engine\Module\IServiceStatus,
+		\OMV\Engine\Module\INotification {
 	public function getName() {
 		return "nut";
 	}
@@ -50,6 +51,16 @@ class NetworkUPSTools extends \OMV\Engine\Module\ServiceAbstract
 		];
 	}
 
+	public function getNotificationConfig() {
+		return [
+			[
+				"id" => "nut",
+				"type" => getText("Administration"),
+				"title" => gettext("UPS")
+			]
+		];
+	}
+
 	/**
 	 * Update service if a network interface has been modified. Note,
 	 * the service must not be updated if remote monitoring is disabled.
@@ -74,6 +85,10 @@ class NetworkUPSTools extends \OMV\Engine\Module\ServiceAbstract
 			OMV_NOTIFY_MODIFY,
 			"org.openmediavault.conf.system.notification.email",
 			[ $this, "setDirty" ]);
+		$dispatcher->addListener(
+			OMV_NOTIFY_CREATE | OMV_NOTIFY_MODIFY,
+			"org.openmediavault.conf.system.notification.notification",
+			[$this, "setDirty"]);
 		$dispatcher->addListener(
 			OMV_NOTIFY_CREATE | OMV_NOTIFY_MODIFY | OMV_NOTIFY_DELETE,
 			"org.openmediavault.conf.system.network.interfaces.iface",

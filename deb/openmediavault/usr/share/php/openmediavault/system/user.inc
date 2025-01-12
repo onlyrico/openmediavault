@@ -4,7 +4,7 @@
  *
  * @license   http://www.gnu.org/licenses/gpl.html GPL Version 3
  * @author    Volker Theile <volker.theile@openmediavault.org>
- * @copyright Copyright (c) 2009-2022 Volker Theile
+ * @copyright Copyright (c) 2009-2025 Volker Theile
  *
  * OpenMediaVault is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -379,6 +379,7 @@ class User {
 		$tmpFile->write(sprintf("%s:%s", $this->getName(), $password));
 		$cmd = new \OMV\System\Process("chpasswd");
 		$cmd->setInputFromFile($tmpFile->getFilename());
+		$cmd->setRedirect2to1();
 		$cmd->execute();
 	}
 

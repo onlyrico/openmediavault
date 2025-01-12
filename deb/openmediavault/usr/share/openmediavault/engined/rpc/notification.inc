@@ -4,7 +4,7 @@
  *
  * @license   http://www.gnu.org/licenses/gpl.html GPL Version 3
  * @author    Volker Theile <volker.theile@openmediavault.org>
- * @copyright Copyright (c) 2009-2022 Volker Theile
+ * @copyright Copyright (c) 2009-2025 Volker Theile
  *
  * OpenMediaVault is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -73,12 +73,28 @@ class Notification extends \OMV\Rpc\ServiceAbstract {
 		foreach ($notificationConfig as $configk => $configv) {
 			// Get the notification configuration object.
 			$db = \OMV\Config\Database::getInstance();
-			$object = $db->getByFilter(
-			  "conf.system.notification.notification", [
-				  "operator" => "stringEquals",
-				  "arg0" => "id",
-				  "arg1" => $configv['id']
-			  ], 1);
+			$filter = [
+				"operator" => "stringEquals",
+				"arg0" => "id",
+				"arg1" => $configv['id']
+			];
+			if ($db->exists("conf.system.notification.notification",
+					$filter)) {
+				// Load the configuration object from database. Raise
+				// an error if several objects exist.
+				$object = $db->getByFilter(
+					"conf.system.notification.notification",
+					$filter, 1);
+			} else {
+				// Create a new database object. The notification is
+				// disabled by default.
+				$object = new \OMV\Config\ConfigObject(
+					"conf.system.notification.notification");
+				$object->setFlatAssoc([
+					"id" => $configv['id'],
+					"enable" => FALSE
+				]);
+			}
 			// Add additional properties.
 			$object->add("title", "string");
 			$object->add("type", "string");
@@ -111,7 +127,7 @@ class Notification extends \OMV\Rpc\ServiceAbstract {
 		foreach ($notificationConfig as $configk => $configv) {
 			// Set default values.
 			$object = new \OMV\Config\ConfigObject(
-			  "conf.system.notification.notification");
+				"conf.system.notification.notification");
 			$object->set("id", $configv['id']);
 			$object->set("enable", FALSE);
 			// Process the RPC arguments.

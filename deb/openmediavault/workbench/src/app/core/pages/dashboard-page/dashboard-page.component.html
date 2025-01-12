@@ -1,9 +1,8 @@
 <div class="omv-dashboard-page-container">
   <omv-alert-panel *ngIf="!widgets.length"
-                   type="info">
-    <span translate>
-      The dashboard has not yet been configured. To personalize it, please go to the <a routerLink="/dashboard/settings">settings page</a>.
-    </span>
+                   type="info"
+                   [hasMargin]="false">
+    <span [innerHTML]="notConfiguredMessage | transloco | sanitizeHtml"></span>
   </omv-alert-panel>
   <div class="widgets-container">
     <div *ngFor="let widget of widgets">

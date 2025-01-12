@@ -4,7 +4,7 @@
  *
  * @license   http://www.gnu.org/licenses/gpl.html GPL Version 3
  * @author    Volker Theile <volker.theile@openmediavault.org>
- * @copyright Copyright (c) 2009-2022 Volker Theile
+ * @copyright Copyright (c) 2009-2025 Volker Theile
  *
  * OpenMediaVault is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -42,14 +42,13 @@ class Json {
 	 * @return The RPC response as JSON encoded data.
 	 */
 	public function handle() {
-		// Get the RPC params.
-		if (FALSE === $this->getParams())
+		// Get the RPC parameters `service`, `method`, `params` and `options`.
+		if (FALSE === $this->getParams()) {
 			throw new Exception("Failed to get the RPC parameters.");
-
+		}
 		// Validate RPC parameters.
 		$this->validate();
-
-		// Process optional RPC options.
+		// Handle the optional `options` parameter.
 		$updateLastAccess = TRUE;
 		if (array_key_exists("options", $this->params) && !is_null(
 		  $this->params['options']) && array_key_exists("updatelastaccess",
@@ -102,13 +101,39 @@ class Json {
 	}
 
 	/**
-	 * Get the RPC parameters.
+	 * Get the RPC parameters from POST or GET.
 	 * @return TRUE if successful, otherwise FALSE.
 	 */
 	protected function getParams() {
-		// See http://in.php.net/wrappers.php for more details
-		$this->params = json_decode(file_get_contents("php://input"), TRUE);
-		return is_assoc_array($this->params);
+		if (!empty($_GET)) {
+			$this->params = [];
+		 	foreach ($_GET as $key => $value) {
+		 		$this->params[$key] = $value;
+		 	}
+		} else {
+			$this->params = @file_get_contents("php://input");
+			if (FALSE === $this->params) {
+				return FALSE;
+			}
+			$this->params = json_decode($this->params, TRUE);
+		}
+		if (!is_assoc_array($_POST)) {
+			return FALSE;
+		}
+		// Make sure the `params` property exists and is properly
+		// decoded if it is a JSON string.
+		$paramsProp = array_value($this->params, "params");
+		if (!empty($paramsProp)) {
+			if (is_string($paramsProp)) {
+				$paramsProp = htmlspecialchars_decode($paramsProp);
+			}
+			if (is_json($paramsProp)) {
+				$paramsProp = json_decode($paramsProp, TRUE);
+			}
+			$this->params['params'] = $paramsProp;
+		} else {
+			$this->params['params'] = [];
+		}
 	}
 
 	/**
@@ -139,7 +164,7 @@ class Json {
 
 	/**
 	 * Do additional stuff after RPC has been executed.
-	 * @param response The RPC response
+	 * @param response The RPC response.
 	 * @return void
 	 */
 	protected function postExecute(&$response) {
@@ -147,8 +172,8 @@ class Json {
 	}
 
 	/**
-	 * Print the RPC responce.
-	 * @param response The RPC response
+	 * Print the RPC response.
+	 * @param response The RPC response.
 	 * @return void
 	 */
 	protected function handleResponse($response) {
@@ -156,10 +181,10 @@ class Json {
 		header("Cache-Control: max-age=0, no-cache, no-store, must-revalidate");
 		header("Pragma: no-cache");
 		header("Expires: 0");
-		print json_encode_safe(array(
+		print json_encode_safe([
 			"response" => $response,
 			"error" => null
-		));
+		]);
 	}
 
 	/**

@@ -3,17 +3,17 @@
 # This file is distributed under the same license as the openmediavault-usbbackup package.
 # 
 # Translators:
-# Quim Farriol <qfarriol@valette.cat>, 2021-2022
+# Quim Farriol <qfarriol@valette.cat>, 2021-2022,2024
 # Quim Farriol <qfarriol@valette.cat>, 2018,2020
 # Quim Farriol <qfarriol@valette.cat>, 2016
 msgid ""
 msgstr ""
 "Project-Id-Version: openmediavault\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2022-09-17 09:39+0200\n"
+"POT-Creation-Date: 2024-01-24 19:17+0100\n"
 "PO-Revision-Date: 2013-02-15 12:55+0000\n"
-"Last-Translator: Quim Farriol <qfarriol@valette.cat>, 2021-2022\n"
-"Language-Team: Catalan (Spain) (http://www.transifex.com/openmediavault/openmediavault/language/ca_ES/)\n"
+"Last-Translator: Quim Farriol <qfarriol@valette.cat>, 2021-2022,2024\n"
+"Language-Team: Catalan (Spain) (http://app.transifex.com/openmediavault/openmediavault/language/ca_ES/)\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
@@ -27,9 +27,6 @@ msgstr "S'envia un missatge a l'administrador amb la sortida de la comanda (si n
 
 msgid "Archive"
 msgstr "Fitxer"
-
-msgid "Comment"
-msgstr "Comentari"
 
 msgid "Compress"
 msgstr "Comprimir"
@@ -116,6 +113,9 @@ msgstr "Recórrer recursivament els directoris"
 msgid "Recursive"
 msgstr "Recursiu"
 
+msgid "Relative path"
+msgstr "Ruta relativa "
+
 msgid "Run"
 msgstr "Executar"
 
@@ -147,8 +147,11 @@ msgstr "Carpeta compartida"
 msgid "Suppress non-error messages."
 msgstr "Suprimeix missatges que no siguin d'error"
 
-msgid "Synchronise from/to directory on external storage device"
-msgstr "Sincronitzar des del/cap al directori del dispositiu extern."
+msgid "Tags"
+msgstr "Etiquetes"
+
+msgid "The 'Send email' and 'Quiet' options are mutually exclusive."
+msgstr "Les opcions \"Enviar correu electrònic\" i \"Silenciosa\" s'exclouen mútuament."
 
 msgid ""
 "The external storage device. Please make sure that the device has only one "
@@ -156,10 +159,10 @@ msgid ""
 msgstr "El dispositiu d'emmagatzematge extern. Assegureu-vos que el dispositiu només té un sistema de fitxers."
 
 msgid ""
-"The shared folder content is synchronised from/to the root of the external "
-"storage device if this option is not set. The name of the directory is taken"
-" from the shared folder."
-msgstr "Si aquesta opció no està marcada, el contingut de la carpeta compartida es sincronitza des del/cap al directori arrel del dispositiu d'emmagatzematge extern. El nom del directori serà el de la carpeta compartida."
+"The relative directory path on the external storage device from/to which the"
+" content of the shared folder is to be synchronized. The directory is "
+"created if it does not exist."
+msgstr "La ruta relativa del directori del dispositiu d'emmagatzematge extern des de o a on s'ha de sincronitzar el contingut de la carpeta compartida. El directori es crea si no existeix."
 
 msgid ""
 "The shared folder to synchronise when the external storage device is "

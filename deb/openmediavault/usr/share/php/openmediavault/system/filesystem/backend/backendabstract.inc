@@ -4,7 +4,7 @@
  *
  * @license   http://www.gnu.org/licenses/gpl.html GPL Version 3
  * @author    Volker Theile <volker.theile@openmediavault.org>
- * @copyright Copyright (c) 2009-2022 Volker Theile
+ * @copyright Copyright (c) 2009-2025 Volker Theile
  *
  * OpenMediaVault is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -284,8 +284,8 @@ abstract class BackendAbstract {
 				array_push($options, "nofail");
 			}
 		}
-		// Remove duplicate entries.
-		return array_unique($options);
+		// Remove duplicates and re-index the array.
+		return array_values(array_unique($options));
 	}
 
 	/**

@@ -3,7 +3,7 @@
  *
  * @license   http://www.gnu.org/licenses/gpl.html GPL Version 3
  * @author    Volker Theile <volker.theile@openmediavault.org>
- * @copyright Copyright (c) 2009-2022 Volker Theile
+ * @copyright Copyright (c) 2009-2025 Volker Theile
  *
  * OpenMediaVault is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,14 +16,15 @@
  * GNU General Public License for more details.
  */
 import { Component } from '@angular/core';
-import { marker as gettext } from '@biesbjerg/ngx-translate-extract-marker';
+import { marker as gettext } from '@ngneat/transloco-keys-manager/marker';
 
 import { FormPageConfig } from '~/app/core/components/intuition/models/form-page-config.type';
+import { BaseFormPageComponent } from '~/app/pages/base-page-component';
 
 @Component({
   template: '<omv-intuition-form-page [config]="this.config"></omv-intuition-form-page>'
 })
-export class NfsShareFormPageComponent {
+export class NfsShareFormPageComponent extends BaseFormPageComponent {
   public config: FormPageConfig = {
     request: {
       service: 'NFS',
@@ -77,7 +78,7 @@ export class NfsShareFormPageComponent {
       {
         type: 'select',
         name: 'options',
-        label: gettext('Privilege'),
+        label: gettext('Permission'),
         value: 'ro',
         store: {
           data: [
@@ -97,9 +98,9 @@ export class NfsShareFormPageComponent {
         value: 'subtree_check,insecure'
       },
       {
-        type: 'textInput',
+        type: 'tagInput',
         name: 'comment',
-        label: gettext('Comment'),
+        label: gettext('Tags'),
         value: ''
       },
       {

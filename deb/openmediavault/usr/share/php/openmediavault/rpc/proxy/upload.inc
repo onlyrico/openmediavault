@@ -4,7 +4,7 @@
  *
  * @license   http://www.gnu.org/licenses/gpl.html GPL Version 3
  * @author    Volker Theile <volker.theile@openmediavault.org>
- * @copyright Copyright (c) 2009-2022 Volker Theile
+ * @copyright Copyright (c) 2009-2025 Volker Theile
  *
  * OpenMediaVault is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -26,16 +26,6 @@ namespace OMV\Rpc\Proxy;
  * @ingroup api
  */
 class Upload extends Json {
-	protected function getParams() {
-		$this->params = $_POST;
-		if (empty($this->params))
-			return FALSE;
-		$this->params['params'] = empty($this->params['params']) ?
-		  array() : json_decode(htmlspecialchars_decode(
-		  $this->params['params']), TRUE);
-		return TRUE;
-	}
-
 	/**
 	 * Copy the uploaded file to a temporary location. Modify this
 	 * filename to allow the RPC service method to process the correct
@@ -64,10 +54,10 @@ class Upload extends Json {
 	 */
 	protected function handleResponse($response) {
 		header("Content-Type: text/html");
-		print json_encode_safe(array(
+		print json_encode_safe([
 			"success" => true, // required by ExtJS
 			"responseText" => $response // required by ExtJS
-		));
+		]);
 	}
 
 	/**

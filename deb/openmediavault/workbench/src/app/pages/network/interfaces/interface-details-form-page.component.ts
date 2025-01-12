@@ -3,7 +3,7 @@
  *
  * @license   http://www.gnu.org/licenses/gpl.html GPL Version 3
  * @author    Volker Theile <volker.theile@openmediavault.org>
- * @copyright Copyright (c) 2009-2022 Volker Theile
+ * @copyright Copyright (c) 2009-2025 Volker Theile
  *
  * OpenMediaVault is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,7 +16,7 @@
  * GNU General Public License for more details.
  */
 import { Component } from '@angular/core';
-import { marker as gettext } from '@biesbjerg/ngx-translate-extract-marker';
+import { marker as gettext } from '@ngneat/transloco-keys-manager/marker';
 
 import { FormPageConfig } from '~/app/core/components/intuition/models/form-page-config.type';
 
@@ -33,11 +33,29 @@ export class InterfaceDetailsFormPageComponent {
           devicename: '{{ _routeParams.devicename }}'
         },
         transform: {
-          netmask6: '{{ netmask6 | replace("-1", "") }}'
+          prefix: '{{ prefix | replace("-1", "") }}',
+          prefix6: '{{ prefix6 | replace("-1", "") }}'
         }
       }
     },
     fields: [
+      {
+        type: 'select',
+        name: 'type',
+        label: gettext('Type'),
+        disabled: true,
+        submitValue: false,
+        value: 'bond',
+        store: {
+          data: [
+            ['ethernet', gettext('Ethernet')],
+            ['bond', gettext('Bond')],
+            ['vlan', gettext('VLAN')],
+            ['wifi', gettext('Wi-Fi')],
+            ['bridge', gettext('Bridge')]
+          ]
+        }
+      },
       {
         type: 'textInput',
         name: 'devicename',
@@ -76,15 +94,22 @@ export class InterfaceDetailsFormPageComponent {
       },
       {
         type: 'textInput',
+        name: 'prefix',
+        label: gettext('Prefix length'),
+        disabled: true
+      },
+      {
+        type: 'textInput',
         name: 'netmask',
-        label: gettext('Netmask'),
+        label: gettext('Prefix address'),
         disabled: true
       },
       {
         type: 'textInput',
         name: 'gateway',
         label: gettext('Gateway'),
-        disabled: true
+        disabled: true,
+        hasCopyToClipboardButton: true
       },
       {
         type: 'divider',
@@ -99,15 +124,22 @@ export class InterfaceDetailsFormPageComponent {
       },
       {
         type: 'textInput',
-        name: 'netmask6',
+        name: 'prefix6',
         label: gettext('Prefix length'),
+        disabled: true
+      },
+      {
+        type: 'textInput',
+        name: 'netmask6',
+        label: gettext('Prefix address'),
         disabled: true
       },
       {
         type: 'textInput',
         name: 'gateway6',
         label: gettext('Gateway'),
-        disabled: true
+        disabled: true,
+        hasCopyToClipboardButton: true
       }
     ]
   };

@@ -2,7 +2,7 @@
 //
 // @license   http://www.gnu.org/licenses/gpl.html GPL Version 3
 // @author    Volker Theile <volker.theile@openmediavault.org>
-// @copyright Copyright (c) 2009-2022 Volker Theile
+// @copyright Copyright (c) 2009-2025 Volker Theile
 //
 // OpenMediaVault is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -13,23 +13,20 @@
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License for more details.
-@use 'src/scss/defaults/colors' as dc;
+@use "sass:map";
+@use 'scss/defaults/colors' as dc;
 
 $omv-color-primary-palette: dc.$omv-color-corporate-palette;
 $omv-color-primary: dc.$omv-color-corporate-default;
 $omv-color-primary-contrast: dc.$omv-color-white;
-
 $omv-color-accent-palette: dc.$omv-color-yellow-palette;
 $omv-color-accent: dc.$omv-color-yellow;
 $omv-color-accent-contrast: dc.$omv-color-brown-coffee;
-
 $omv-color-warn-palette: dc.$omv-color-red-palette;
-
 $omv-color-success: dc.$omv-color-green;
 $omv-color-error: dc.$omv-color-red;
 $omv-color-warning: dc.$omv-color-yellow;
 $omv-color-info: dc.$omv-color-corporate-dark;
-
 $omv-color-pairs: (
   'primary': (
     background-color: $omv-color-primary,
@@ -46,6 +43,10 @@ $omv-color-pairs: (
   'yellow': (
     background-color: dc.$omv-color-yellow,
     color: dc.$omv-color-brown-coffee
+  ),
+  'orange': (
+    background-color: dc.$omv-color-dark-orange,
+    color: dc.$omv-color-white
   ),
   'red': (
     background-color: dc.$omv-color-red,
@@ -65,11 +66,11 @@ $omv-color-pairs: (
   ),
   'white': (
     background-color: dc.$omv-color-white,
-    color: rgba(0, 0, 0, 0.87)
+    color: rgba(0 0 0 / 87%)
   ),
   'whitesmoke': (
     background-color: dc.$omv-color-whitesmoke,
-    color: rgba(0, 0, 0, 0.87)
+    color: rgba(0 0 0 / 87%)
   ),
   'error': (
     background-color: $omv-color-error,
@@ -95,6 +96,6 @@ $omv-color-pairs: (
 );
 
 @mixin background-color-pair($name) {
-  color: map-get($omv-color-pairs, $name, color);
-  background-color: map-get($omv-color-pairs, $name, background-color);
+  color: map.get($omv-color-pairs, $name, color);
+  background-color: map.get($omv-color-pairs, $name, background-color);
 }

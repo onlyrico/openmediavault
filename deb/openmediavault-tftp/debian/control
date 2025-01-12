@@ -5,11 +5,11 @@ Priority: optional
 Maintainer: Volker Theile <volker.theile@openmediavault.org>
 Build-Depends: debhelper (>= 12), gettext
 Standards-Version: 3.9.6
-Homepage: http://www.openmediavault.org
+Homepage: https://www.openmediavault.org
 
 Package: openmediavault-tftp
 Architecture: all
-Depends: openmediavault (>= 6.0.25), tftpd-hpa
+Depends: openmediavault (>= 7.0), tftpd-hpa
 Priority: optional
 Description: openmediavault TFTP-Server plugin
  A TFTP server is mainly required for booting operating systems or

@@ -1,21 +1,30 @@
-@use 'src/scss/defaults/variables' as dv;
-@use 'src/scss/theme';
+@use 'sass:color';
+@use 'scss/defaults/colors' as dc;
 
-.omv-standby-page {
-  @include theme.background-color-pair('primary');
+:host {
+  .background {
+    content: url('^./assets/images/standby.jpg');
+    object-fit: cover;
+  }
 
-  align-items: center;
-  background-image: url('/assets/images/openmediavault_logo.svg');
-  background-attachment: scroll;
-  background-repeat: no-repeat;
-  background-position: center bottom dv.$omv-margin;
-  display: flex;
-  height: 100%;
-  justify-content: center;
+  .topbar {
+    background-color: hsla(
+      color.hue(dc.$omv-color-corporate-default),
+      color.saturation(dc.$omv-color-corporate-default),
+      color.lightness(dc.$omv-color-corporate-default),
+      54%
+    );
+    backdrop-filter: blur(4px);
 
-  .omv-standby-page-icon,
-  .omv-standby-page-icon-background {
-    position: absolute;
+    .logo {
+      content: url('^./assets/images/openmediavault_logo.svg');
+      width: auto;
+      height: auto;
+    }
+  }
+
+  .icon,
+  .icon-background {
     width: 4rem;
     height: 4rem;
     top: 50%;
@@ -23,7 +32,7 @@
     transform: translate(-50%, -50%);
   }
 
-  .omv-standby-page-icon-background {
+  .icon-background {
     width: 5rem;
     height: 5rem;
   }

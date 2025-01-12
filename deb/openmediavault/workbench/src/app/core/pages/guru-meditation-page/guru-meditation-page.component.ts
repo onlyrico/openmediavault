@@ -3,7 +3,7 @@
  *
  * @license   http://www.gnu.org/licenses/gpl.html GPL Version 3
  * @author    Volker Theile <volker.theile@openmediavault.org>
- * @copyright Copyright (c) 2009-2022 Volker Theile
+ * @copyright Copyright (c) 2009-2025 Volker Theile
  *
  * OpenMediaVault is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,6 +19,7 @@ import { Component, ElementRef, OnDestroy, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import * as _ from 'lodash';
 
+import { BlockUiService } from '~/app/shared/services/block-ui.service';
 import { DialogService } from '~/app/shared/services/dialog.service';
 
 @Component({
@@ -35,6 +36,7 @@ export class GuruMeditationPageComponent implements OnInit, OnDestroy {
 
   constructor(
     private activatedRoute: ActivatedRoute,
+    private blockUiService: BlockUiService,
     private dialogService: DialogService,
     private elementRef: ElementRef,
     private router: Router
@@ -51,6 +53,7 @@ export class GuruMeditationPageComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
+    this.blockUiService.resetGlobal();
     // Ensure all currently opened dialogs are closed.
     this.dialogService.closeAll();
     this.elementRef.nativeElement.addEventListener('click', this.onClick.bind(this));
@@ -61,6 +64,11 @@ export class GuruMeditationPageComponent implements OnInit, OnDestroy {
   }
 
   private onClick() {
-    this.router.navigate([this.url]);
+    let url = this.url;
+    // Sanitize the URL so that it does not refer to itself.
+    if (['/404', '/503'].includes(url)) {
+      url = '/';
+    }
+    this.router.navigate([url]);
   }
 }

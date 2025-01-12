@@ -4,7 +4,7 @@
 #
 # @license   http://www.gnu.org/licenses/gpl.html GPL Version 3
 # @author    Volker Theile <volker.theile@openmediavault.org>
-# @copyright Copyright (c) 2009-2022 Volker Theile
+# @copyright Copyright (c) 2009-2025 Volker Theile
 #
 # OpenMediaVault is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -34,12 +34,13 @@ def is_ethernet(name):
         return False
     # Examples:
     # - eth0
-    # - venet2
-    # - vethb1
     # - enp2s0
-    # - enp2s0f0
+    # - enp2s0f0, enp5165p0s0
     # - enx00259025963a
     # - ens1
+    # - eno16777736
+    # - encf5f0, enx026d3c00000a
+    # - end0
     #
     # Predictable network interface device name types:
     # - BCMA bus core number
@@ -48,7 +49,7 @@ def is_ethernet(name):
     #   c<bus_id>
     # - on-board device index number
     #   o<index>[n<phys_port_name>|d<dev_port>]
-    # - hotplug slot index number
+    # - hot-plug slot index number
     #   s<slot>[f<function>][n<phys_port_name>|d<dev_port>]
     # - MAC address
     #   x<MAC>
@@ -56,13 +57,15 @@ def is_ethernet(name):
     #   [P<domain>]p<bus>s<slot>[f<function>][n<phys_port_name>|d<dev_port>]
     # - USB port number chain
     #   [P<domain>]p<bus>s<slot>[f<function>][u<port>][..][c<config>][i<interface>]
+    # - Device tree
+    #   d<number>
     #
     # Understanding systemd’s predictable network device names:
     # https://github.com/systemd/systemd/blob/master/src/udev/udev-builtin-net_id.c
     return bool(
         re.match(
-            r'^(eth|venet)[0-9]+|veth[a-z0-9]+|'
-            r'en(b\d+|c\d+|o\d+(n\S+|d\d+)?|s\d+(f\d+)?(n\S+|d\d+)?|'
+            r'^eth[0-9]+|'
+            r'en(b\d+|c\d+|d\d+|o\d+(n\S+|d\d+)?|s\d+(f\d+)?(n\S+|d\d+)?|'
             r'x[\da-f]{12}|(P\d+)?p\d+s\d+(f\d+)?(n\S+|d\d+)?|'
             r'(P\d+)?p\d+s\d+(f\d+)?(u\d+)*(c\d+)?(i\d+)?)$',
             name
@@ -92,7 +95,7 @@ def is_wifi(name):
     #   c<bus_id>
     # - on-board device index number
     #   o<index>[n<phys_port_name>|d<dev_port>]
-    # - hotplug slot index number
+    # - hot-plug slot index number
     #   s<slot>[f<function>][n<phys_port_name>|d<dev_port>]
     # - MAC address
     #   x<MAC>

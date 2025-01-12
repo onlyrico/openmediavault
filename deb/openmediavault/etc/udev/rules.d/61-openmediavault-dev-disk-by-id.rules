@@ -2,7 +2,7 @@
 #
 # @license   http://www.gnu.org/licenses/gpl.html GPL Version 3
 # @author    Volker Theile <volker.theile@openmediavault.org>
-# @copyright Copyright (c) 2009-2022 Volker Theile
+# @copyright Copyright (c) 2009-2025 Volker Theile
 #
 # OpenMediaVault is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -208,6 +208,68 @@ ATTRS{idVendor}=="0080", \
 # E: TAGS=:systemd:
 ENV{ID_VENDOR_ID}=="152d", \
   ENV{ID_MODEL_ID}=="0567", \
+  IMPORT{program}="serial_id %N", \
+  ENV{ID_SERIAL}="$env{ID_VENDOR}_$env{ID_MODEL}_$env{ID_SERIAL_SHORT}-$env{ID_INSTANCE}", \
+  SYMLINK="disk/by-path/$env{ID_PATH}", \
+  SYMLINK+="disk/by-id/$env{ID_BUS}-$env{ID_SERIAL}"
+
+# JMicron JMS576 USB 3.1 Gen 1 to SATA 6Gb/s with Integrated USB Type-C
+# JMicron JMS580 USB 3.1 Gen 2 to SATA 6Gb/s with Integrated USB Type-C
+#
+# Congdi 2.5-Inch USB 3.1 Type-C Hard Drive Enclosure
+# https://www.aliexpress.com/item/1005006038604901.html
+#
+# P: /devices/pci0000:00/0000:00:1e.0/0000:02:1b.0/usb3/3-2/3-2:1.0/host4/target4:0:0/4:0:0:0/block/sdc
+# M: sdc
+# U: block
+# T: disk
+# D: b 8:32
+# N: sdc
+# L: 0
+# S: disk/by-id/usb-JMicron_Generic_W38012HV-0:0
+# S: disk/by-path/pci-0000:02:1b.0-usb-0:2:1.0-scsi-0:0:0:0
+# Q: 13
+# E: DEVPATH=/devices/pci0000:00/0000:00:1e.0/0000:02:1b.0/usb3/3-2/3-2:1.0/host4/target4:0:0/4:0:0:0/block/sdc
+# E: DEVNAME=/dev/sdc
+# E: DEVTYPE=disk
+# E: DISKSEQ=13
+# E: MAJOR=8
+# E: MINOR=32
+# E: SUBSYSTEM=block
+# E: USEC_INITIALIZED=1755150019
+# E: ID_BUS=usb
+# E: ID_MODEL=Generic
+# E: ID_MODEL_ENC=Generic\x20\x20\x20\x20\x20\x20\x20\x20\x20
+# E: ID_MODEL_ID=0580
+# E: ID_SERIAL=JMicron_Generic_W38012HV-0:0
+# E: ID_SERIAL_SHORT=W38012HV
+# E: ID_VENDOR=JMicron
+# E: ID_VENDOR_ENC=JMicron\x20
+# E: ID_VENDOR_ID=152d
+# E: ID_REVISION=0202
+# E: ID_TYPE=disk
+# E: ID_INSTANCE=0:0
+# E: ID_USB_MODEL=Generic
+# E: ID_USB_MODEL_ENC=Generic\x20\x20\x20\x20\x20\x20\x20\x20\x20
+# E: ID_USB_MODEL_ID=0580
+# E: ID_USB_SERIAL=JMicron_Generic_0123456789ABCDEF-0:0
+# E: ID_USB_SERIAL_SHORT=0123456789ABCDEF
+# E: ID_USB_VENDOR=JMicron
+# E: ID_USB_VENDOR_ENC=JMicron\x20
+# E: ID_USB_VENDOR_ID=152d
+# E: ID_USB_REVISION=0202
+# E: ID_USB_TYPE=disk
+# E: ID_USB_INSTANCE=0:0
+# E: ID_USB_INTERFACES=:080650:080662:
+# E: ID_USB_INTERFACE_NUM=00
+# E: ID_USB_DRIVER=uas
+# E: ID_PATH=pci-0000:02:1b.0-usb-0:2:1.0-scsi-0:0:0:0
+# E: ID_PATH_TAG=pci-0000_02_1b_0-usb-0_2_1_0-scsi-0_0_0_0
+# E: DEVLINKS=/dev/disk/by-id/usb-JMicron_Generic_W38012HV-0:0 /dev/disk/by-path/pci-0000:02:1b.0-usb-0:2:1.0-scsi-0:0:0:0
+# E: TAGS=:systemd:
+# E: CURRENT_TAGS=:systemd:
+ENV{ID_VENDOR_ID}=="152d", \
+  ENV{ID_MODEL_ID}=="0580", \
   IMPORT{program}="serial_id %N", \
   ENV{ID_SERIAL}="$env{ID_VENDOR}_$env{ID_MODEL}_$env{ID_SERIAL_SHORT}-$env{ID_INSTANCE}", \
   SYMLINK="disk/by-path/$env{ID_PATH}", \
@@ -460,6 +522,7 @@ ENV{ID_VENDOR_ID}=="152d", \
 
 # GENESYS USB2.0/SATA ADAPTER
 # https://devicehunt.com/view/type/usb/vendor/05E3/device/0718
+#
 # P: /devices/platform/soc/3f980000.usb/usb1/1-1/1-1.2/1-1.2:1.0/host0/target0:0:0/0:0:0:0/block/sda
 # N: sda
 # L: 0
@@ -500,9 +563,165 @@ ENV{ID_VENDOR_ID}=="05e3", \
   SYMLINK="disk/by-path/$env{ID_PATH}", \
   SYMLINK+="disk/by-id/$env{ID_BUS}-$env{ID_SERIAL}"
 
+# QNAP TR-002
+# https://www.qnap.com/en-us/product/tr-002
+# https://devicehunt.com/search/type/usb/vendor/1C04/device/0012
+# https://github.com/openmediavault/openmediavault/issues/1683
+#
+# DEVPATH=/devices/pci0000:00/0000:00:15.0/usb2/2-1/2-1.1/2-1.1:1.0/host1/target1:0:0/1:0:0:0/block/sdb
+# DEVNAME=/dev/sdb
+# DEVTYPE=disk
+# DISKSEQ=2
+# MAJOR=8
+# MINOR=16
+# ACTION=add
+# SUBSYSTEM=block
+# TAGS=:systemd:
+# ID_BUS=usb
+# ID_MODEL=TR-002_DISK00
+# ID_MODEL_ENC=TR-002\x20DISK00\x20\x20\x20
+# ID_MODEL_ID=0012
+# ID_SERIAL=QNAP_TR-002_DISK00_WW62NQRY-0:0
+# ID_SERIAL_SHORT=WW62NQRY
+# ID_VENDOR=QNAP
+# ID_VENDOR_ENC=QNAP\x20\x20\x20\x20
+# ID_VENDOR_ID=1c04
+# ID_REVISION=6109
+# ID_TYPE=disk
+# ID_INSTANCE=0:0
+# ID_USB_MODEL=TR-002_DISK00
+# ID_USB_MODEL_ENC=TR-002\x20DISK00\x20\x20\x20
+# ID_USB_MODEL_ID=0012
+# ID_USB_SERIAL=QNAP_TR-002_DISK00_51323341423030393130-0:0
+# ID_USB_SERIAL_SHORT=51323341423030393130
+# ID_USB_VENDOR=QNAP
+# ID_USB_VENDOR_ENC=QNAP\x20\x20\x20\x20
+# ID_USB_VENDOR_ID=1c04
+# ID_USB_REVISION=6109
+# ID_USB_TYPE=disk
+# ID_USB_INSTANCE=0:0
+# ID_USB_INTERFACES=:080650:
+# ID_USB_INTERFACE_NUM=00
+# ID_USB_DRIVER=usb-storage
+# DEVLINKS=/dev/disk/by-path/pci-0000:00:15.0-usb-0:1.1:1.0-scsi-0:0:0:0 /dev/disk/by-id/usb-QNAP_TR-002_DISK00_WW62NQRY-0:0
+# ID_PATH=pci-0000:00:15.0-usb-0:1.1:1.0-scsi-0:0:0:0
+# ID_PATH_TAG=pci-0000_00_15_0-usb-0_1_1_1_0-scsi-0_0_0_0
+# ID_PART_TABLE_UUID=a51e6e80-c2be-462b-90f9-3ac6681f854f
+# ID_PART_TABLE_TYPE=gpt
+# CURRENT_TAGS=:systemd:
+# USEC_INITIALIZED=6089547
+ENV{ID_VENDOR_ID}=="1c04", \
+  ENV{ID_MODEL_ID}=="0012", \
+  IMPORT{program}="serial_id %N", \
+  ENV{ID_SERIAL}="$env{ID_VENDOR}_$env{ID_MODEL}_$env{ID_SERIAL_SHORT}-$env{ID_INSTANCE}", \
+  SYMLINK="disk/by-path/$env{ID_PATH}", \
+  SYMLINK+="disk/by-id/$env{ID_BUS}-$env{ID_SERIAL}"
+
+# QNAP TR-004
+# https://www.qnap.com/en-us/product/tr-004
+# https://devicehunt.com/search/type/usb/vendor/1C04/device/0013
+# https://github.com/openmediavault/openmediavault/issues/1302
+# https://forum.openmediavault.org/index.php?thread/47388-qnap-tr-004-usb-raid-enclosure-duplicate-serial-number-fix/
+#
+# P: /devices/pci0000:00/0000:00:14.0/usb2/2-2/2-2.3/2-2.3:1.0/host0/target0:0:0/0:0:0:0/block/sda
+# N: sda
+# L: 0
+# S: disk/by-id/usb-QNAP_TR-004_DISK00_51313943493135333139-0:0
+# S: disk/by-path/pci-0000:00:14.0-usb-0:2.3:1.0-scsi-0:0:0:0
+# E: DEVPATH=/devices/pci0000:00/0000:00:14.0/usb2/2-2/2-2.3/2-2.3:1.0/host0/target0:0:0/0:0:0:0/block/sda
+# E: DEVNAME=/dev/sda
+# E: DEVTYPE=disk
+# E: DISKSEQ=8
+# E: MAJOR=8
+# E: MINOR=0
+# E: SUBSYSTEM=block
+# E: USEC_INITIALIZED=863778658
+# E: ID_VENDOR=QNAP
+# E: ID_VENDOR_ENC=QNAP\x20\x20\x20\x20
+# E: ID_VENDOR_ID=1c04
+# E: ID_MODEL=TR-004_DISK00
+# E: ID_MODEL_ENC=TR-004\x20DISK00\x20\x20\x20
+# E: ID_MODEL_ID=0013
+# E: ID_REVISION=6111
+# E: ID_SERIAL=QNAP_TR-004_DISK00_51313943493135333139-0:0
+# E: ID_SERIAL_SHORT=51313943493135333139
+# E: ID_TYPE=disk
+# E: ID_INSTANCE=0:0
+# E: ID_BUS=usb
+# E: ID_USB_INTERFACES=:080650:
+# E: ID_USB_INTERFACE_NUM=00
+# E: ID_USB_DRIVER=usb-storage
+# E: ID_PATH=pci-0000:00:14.0-usb-0:2.3:1.0-scsi-0:0:0:0
+# E: ID_PATH_TAG=pci-0000_00_14_0-usb-0_2_3_1_0-scsi-0_0_0_0
+# E: DEVLINKS=/dev/disk/by-id/usb-QNAP_TR-004_DISK00_51313943493135333139-0:0 /dev/disk/by-path/pci-0000:00:14.0-usb-0:2.3:1.0-scsi-0:0:0:0
+# E: TAGS=:systemd:
+# E: CURRENT_TAGS=:systemd:
+ENV{ID_VENDOR_ID}=="1c04", \
+  ENV{ID_MODEL_ID}=="0013", \
+  IMPORT{program}="serial_id %N", \
+  ENV{ID_SERIAL}="$env{ID_VENDOR}_$env{ID_MODEL}_$env{ID_SERIAL_SHORT}-$env{ID_INSTANCE}", \
+  SYMLINK="disk/by-path/$env{ID_PATH}", \
+  SYMLINK+="disk/by-id/$env{ID_BUS}-$env{ID_SERIAL}"
+
+# Insignia 2-Bay HDD docking station NS-PCHDEDS19
+# https://www.bestbuy.com/site/insignia-2-bay-hdd-docking-station/6153102.p?skuId=6153102
+# https://devicehunt.com/view/type/usb/vendor/0578/device/0578
+# https://github.com/openmediavault/openmediavault/issues/1816
+# https://forum.openmediavault.org/index.php?thread/47388-qnap-tr-004-usb-raid-enclosure-duplicate-serial-number-fix/&postID=398618#post398618
+#
+# DEVPATH=/devices/pci0000:00/0000:00:14.0/usb2/2-2/2-2.1/2-2.1:1.0/host2/target2:0:0/2:0:0:0/block/sda
+# DEVNAME=/dev/sda
+# DEVTYPE=disk
+# DISKSEQ=2
+# MAJOR=8
+# MINOR=0
+# SUBSYSTEM=block
+# USEC_INITIALIZED=6790221
+# ID_VENDOR=WDC_WD14
+# ID_VENDOR_ENC=WDC\x20WD14
+# ID_VENDOR_ID=0578
+# ID_MODEL=0EDGZ-11B2DA2
+# ID_MODEL_ENC=0EDGZ-11B2DA2\x20\x20\x20
+# ID_MODEL_ID=0578
+# ID_REVISION=7101
+# ID_SERIAL=WDC_WD14_0EDGZ-11B2DA2_DD564198838DA-0:0
+# ID_SERIAL_SHORT=DD564198838DA
+# ID_TYPE=disk
+# ID_INSTANCE=0:0
+# ID_BUS=usb
+# ID_USB_INTERFACES=:080650:080662:
+# ID_USB_INTERFACE_NUM=00
+# ID_USB_DRIVER=uas
+# ID_PATH=pci-0000:00:14.0-usb-0:2.1:1.0-scsi-0:0:0:0
+# ID_PATH_TAG=pci-0000_00_14_0-usb-0_2_1_1_0-scsi-0_0_0_0
+# ID_PART_TABLE_UUID=d0461568-446e-bf46-b956-ded8ccffa411
+# ID_PART_TABLE_TYPE=gpt
+# DEVLINKS=/dev/disk/by-id/usb-WDC_WD14_0EDGZ-11B2DA2_DD564198838DA-0:0 /dev/disk/by-path/pci-0000:00:14.0-usb-0:2.1:1.0-scsi-0:0:0:0
+# TAGS=:systemd:
+ENV{ID_VENDOR_ID}=="0578", \
+  ENV{ID_MODEL_ID}=="0578", \
+  IMPORT{program}="serial_id %N", \
+  ENV{ID_SERIAL}="$env{ID_VENDOR}_$env{ID_MODEL}_$env{ID_SERIAL_SHORT}-$env{ID_INSTANCE}", \
+  SYMLINK="disk/by-path/$env{ID_PATH}", \
+  SYMLINK+="disk/by-id/$env{ID_BUS}-$env{ID_SERIAL}"
+
+# by-uuid links (filesystem metadata)
+# Skip bcache backing devices, handled in `/lib/udev/rules.d/69-bcache.rules`.
+ENV{ID_FS_TYPE}=="bcache", GOTO="omv_skip_by_uuid"
+# Skip devices that already have a `disk/by-uuid` link.
+SYMLINK=="*disk/by-uuid/*", GOTO="omv_skip_by_uuid"
+ENV{ID_FS_USAGE}=="filesystem|other|crypto", ENV{ID_FS_UUID_ENC}=="?*", SYMLINK+="disk/by-uuid/$env{ID_FS_UUID_ENC}"
+LABEL="omv_skip_by_uuid"
+
 # by-id (World Wide Name)
 SYMLINK=="*disk/by-id/wwn-*", GOTO="omv_skip_by_id_wwn"
 ENV{ID_WWN_WITH_EXTENSION}=="?*", SYMLINK+="disk/by-id/wwn-$env{ID_WWN_WITH_EXTENSION}"
 LABEL="omv_skip_by_id_wwn"
+
+# by-partuuid links (partition metadata)
+# Skip devices that already have a `disk/by-partuuid` link.
+SYMLINK=="*disk/by-partuuid/*", GOTO="omv_skip_by_partuuid"
+ENV{ID_PART_ENTRY_UUID}=="?*", SYMLINK+="disk/by-partuuid/$env{ID_PART_ENTRY_UUID}"
+LABEL="omv_skip_by_partuuid"
 
 LABEL="omv_dev_disk_by_id_end"

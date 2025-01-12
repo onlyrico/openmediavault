@@ -1,10 +1,10 @@
-#!/bin/sh
+#!/usr/bin/env dash
 #
 # This file is part of OpenMediaVault.
 #
 # @license   http://www.gnu.org/licenses/gpl.html GPL Version 3
 # @author    Volker Theile <volker.theile@openmediavault.org>
-# @copyright Copyright (c) 2009-2022 Volker Theile
+# @copyright Copyright (c) 2009-2025 Volker Theile
 #
 # OpenMediaVault is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -45,8 +45,8 @@ case "$1" in
 		########################################################################
 		if [ -z "$2" ]; then
 			echo "Updating service units ..."
-			deb-systemd-invoke stop onedrive || :
-			deb-systemd-helper disable onedrive || :
+			# Disabling the service is not necessary because the onedrive package
+			# does not start it automatically.
 		fi
 
 		########################################################################
@@ -75,6 +75,25 @@ case "$1" in
 		fi
 		if dpkg --compare-versions "$2" lt-nl "6.2.3"; then
 			omv_module_set_dirty onedrive
+		fi
+		if dpkg --compare-versions "$2" lt-nl "6.2.11"; then
+			omv_module_set_dirty onedrive
+		fi
+		if dpkg --compare-versions "$2" lt-nl "7.1.1"; then
+			omv_module_set_dirty onedrive
+			# Stop the old service.
+			deb-systemd-invoke stop onedrive || :
+			deb-systemd-helper disable onedrive || :
+			# Remove old configuration.
+			rm -f /etc/systemd/user/default.target.wants/onedrive.service
+			rm -rf /etc/systemd/system/onedrive.service.d/
+		fi
+		if dpkg --compare-versions "$2" lt-nl "7.1.4"; then
+			# Stop and disable the service previously installed by the plugin
+			# itself.
+			deb-systemd-invoke stop onedrive || :
+			deb-systemd-helper disable onedrive || :
+			systemctl --system daemon-reload || true
 		fi
 	;;
 

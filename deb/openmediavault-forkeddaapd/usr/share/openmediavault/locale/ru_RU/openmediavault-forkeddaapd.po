@@ -4,15 +4,15 @@
 # 
 # Translators:
 # mictian <ffrants@gmail.com>, 2012
-# Артур Мудрых <arturmon82@gmail.com>, 2012-2013
+# Artur Mudrykh <arturmon82@gmail.com>, 2012-2013
 msgid ""
 msgstr ""
 "Project-Id-Version: openmediavault\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2017-08-30 08:41+0200\n"
-"PO-Revision-Date: 2017-09-19 17:07+0000\n"
-"Last-Translator: Alexander Savchenko\n"
-"Language-Team: Russian (Russia) (http://www.transifex.com/votdev/openmediavault/language/ru_RU/)\n"
+"POT-Creation-Date: 2023-01-03 12:25+0100\n"
+"PO-Revision-Date: 2012-03-17 01:49+0000\n"
+"Last-Translator: Artur Mudrykh <arturmon82@gmail.com>, 2012-2013\n"
+"Language-Team: Russian (Russia) (http://app.transifex.com/openmediavault/openmediavault/language/ru_RU/)\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
@@ -25,11 +25,8 @@ msgstr "Требуется пароль для доступа к библиот�
 msgid "Authentication"
 msgstr "Идентификация"
 
-msgid "Enable"
-msgstr "Включить"
-
-msgid "General settings"
-msgstr "Общие параметры"
+msgid "Enabled"
+msgstr "Включено"
 
 msgid "Library name"
 msgstr "Имя библиотеки"
@@ -43,9 +40,6 @@ msgstr "Порт"
 msgid "Port to listen on."
 msgstr "Порт для прослушивания."
 
-msgid "Settings"
-msgstr "Настройки"
-
 msgid "Shared folder"
 msgstr "Общая папка"
 
@@ -54,6 +48,9 @@ msgstr "Расположение мультимедиа файлов для об
 
 msgid "The name of the library as displayed by the clients."
 msgstr "Название библиотеки, которое будет отображаться на клиентах."
+
+msgid "Updated iTunes/DAAP settings."
+msgstr ""
 
 msgid "iTunes/DAAP"
 msgstr "iTunes/DAAP"

@@ -3,7 +3,7 @@
  *
  * @license   http://www.gnu.org/licenses/gpl.html GPL Version 3
  * @author    Volker Theile <volker.theile@openmediavault.org>
- * @copyright Copyright (c) 2009-2022 Volker Theile
+ * @copyright Copyright (c) 2009-2025 Volker Theile
  *
  * OpenMediaVault is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,14 +16,15 @@
  * GNU General Public License for more details.
  */
 import { Component } from '@angular/core';
-import { marker as gettext } from '@biesbjerg/ngx-translate-extract-marker';
+import { marker as gettext } from '@ngneat/transloco-keys-manager/marker';
 
 import { FormPageConfig } from '~/app/core/components/intuition/models/form-page-config.type';
+import { BaseFormPageComponent } from '~/app/pages/base-page-component';
 
 @Component({
   template: '<omv-intuition-form-page [config]="this.config"></omv-intuition-form-page>'
 })
-export class SmbShareFormPageComponent {
+export class SmbShareFormPageComponent extends BaseFormPageComponent {
   public config: FormPageConfig = {
     request: {
       service: 'SMB',
@@ -70,9 +71,12 @@ export class SmbShareFormPageComponent {
         type: 'select',
         name: 'guest',
         label: gettext('Public'),
-        hint: gettext(
-          "If 'Guests allowed' is selected and no login credential is provided, then access as guest. Always access as guest when 'Guests only' is selecting; in this case no password is required to connect to the share." // eslint-disable-line @typescript-eslint/quotes
-        ),
+        hint: [
+          gettext(
+            "If 'Guests allowed' is selected and no login credential is provided, then access as guest. Always access as guest when 'Guests only' is selecting; in this case no password is required to connect to the share." // eslint-disable-line @typescript-eslint/quotes
+          ),
+          gettext('Make sure that the guest user <em>nobody</em> can access the files.')
+        ].join(' '),
         value: 'no',
         store: {
           data: [
@@ -105,6 +109,15 @@ export class SmbShareFormPageComponent {
         name: 'timemachine',
         label: gettext('Time Machine support'),
         hint: gettext('Enable Time Machine support for this share.'),
+        value: false
+      },
+      {
+        type: 'checkbox',
+        name: 'transportencryption',
+        label: gettext('Transport encryption'),
+        hint: gettext(
+          'Enforce transport encryption for this share. Clients that do not support encryption will be denied access to the share.'
+        ),
         value: false
       },
       {
@@ -237,12 +250,40 @@ export class SmbShareFormPageComponent {
       },
       {
         type: 'checkbox',
+        name: 'followsymlinks',
+        label: gettext('Follow symlinks'),
+        hint: gettext('Allow following symbolic links in the share.'),
+        value: true,
+        modifiers: [
+          {
+            type: 'checked',
+            opposite: false,
+            constraint: { operator: 'truthy', arg0: { prop: 'widelinks' } }
+          }
+        ]
+      },
+      {
+        type: 'checkbox',
+        name: 'widelinks',
+        label: gettext('Wide links'),
+        hint: gettext('Allow symbolic links to areas that are outside the share.'),
+        value: false,
+        modifiers: [
+          {
+            type: 'unchecked',
+            opposite: false,
+            constraint: { operator: 'falsy', arg0: { prop: 'followsymlinks' } }
+          }
+        ]
+      },
+      {
+        type: 'checkbox',
         name: 'easupport',
         label: gettext('Extended attributes'),
         hint: gettext(
-          'Allow clients to attempt to store OS/2 state extended attributes on a share.'
+          'Allow clients to attempt to access extended attributes on a share. The underlying filesystem exposed by the share must support extended attributes.'
         ),
-        value: false
+        value: true
       },
       {
         type: 'checkbox',

@@ -3,7 +3,7 @@
  *
  * @license   http://www.gnu.org/licenses/gpl.html GPL Version 3
  * @author    Volker Theile <volker.theile@openmediavault.org>
- * @copyright Copyright (c) 2009-2022 Volker Theile
+ * @copyright Copyright (c) 2009-2025 Volker Theile
  *
  * OpenMediaVault is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,7 +17,7 @@
  */
 import { Clipboard } from '@angular/cdk/clipboard';
 import { Injectable } from '@angular/core';
-import { marker as gettext } from '@biesbjerg/ngx-translate-extract-marker';
+import { marker as gettext } from '@ngneat/transloco-keys-manager/marker';
 
 import { NotificationType } from '~/app/shared/enum/notification-type.enum';
 import { NotificationService } from '~/app/shared/services/notification.service';
@@ -26,7 +26,10 @@ import { NotificationService } from '~/app/shared/services/notification.service'
   providedIn: 'root'
 })
 export class ClipboardService {
-  constructor(private notificationService: NotificationService, private clipboard: Clipboard) {}
+  constructor(
+    private notificationService: NotificationService,
+    private clipboard: Clipboard
+  ) {}
 
   /**
    * Copy the given text to the clipboard.
@@ -46,6 +49,6 @@ export class ClipboardService {
       success: gettext('The data has been copied to the clipboard.'),
       error: gettext('Failed to copy data to the clipboard.')
     };
-    this.notificationService.show(NotificationType.success, messages[type]);
+    this.notificationService.show(NotificationType[type], messages[type]);
   }
 }

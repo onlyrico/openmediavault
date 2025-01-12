@@ -1,10 +1,10 @@
-#!/bin/sh
+#!/usr/bin/env dash
 #
 # This file is part of OpenMediaVault.
 #
 # @license   http://www.gnu.org/licenses/gpl.html GPL Version 3
 # @author    Volker Theile <volker.theile@openmediavault.org>
-# @copyright Copyright (c) 2009-2022 Volker Theile
+# @copyright Copyright (c) 2009-2025 Volker Theile
 #
 # OpenMediaVault is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -27,13 +27,20 @@ set -e
 case "$1" in
 	configure)
 		if [ -z "$2" ]; then
-			LANG=C.UTF-8 omv-salt deploy run --no-color --quiet collectd || :
+			LC_ALL=C.UTF-8 omv-salt deploy run --no-color --quiet collectd || :
 		fi
 
 		########################################################################
 		# Activate trigger to rebuild workbench configuration files.
 		########################################################################
 		dpkg-trigger update-workbench
+
+		########################################################################
+		# Action to be done depending on the previous version.
+		########################################################################
+		if dpkg --compare-versions "$2" lt-nl "6.0.2"; then
+			omv_module_set_dirty collectd
+		fi
 	;;
 
 	abort-upgrade|abort-remove|abort-deconfigure)

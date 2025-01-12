@@ -3,7 +3,7 @@
  *
  * @license   http://www.gnu.org/licenses/gpl.html GPL Version 3
  * @author    Volker Theile <volker.theile@openmediavault.org>
- * @copyright Copyright (c) 2009-2022 Volker Theile
+ * @copyright Copyright (c) 2009-2025 Volker Theile
  *
  * OpenMediaVault is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,9 +18,8 @@
 /* eslint-disable max-len */
 import { CommonModule } from '@angular/common';
 import { NgModule } from '@angular/core';
-import { FlexLayoutModule } from '@angular/flex-layout';
 import { RouterModule } from '@angular/router';
-import { TranslateModule } from '@ngx-translate/core';
+import { TranslocoModule } from '@ngneat/transloco';
 
 import { DashboardWidgetComponent } from '~/app/core/components/dashboard/dashboard-widget/dashboard-widget.component';
 import { DashboardWidgetChartComponent } from '~/app/core/components/dashboard/dashboard-widget-chart/dashboard-widget-chart.component';
@@ -56,13 +55,6 @@ import { SharedModule } from '~/app/shared/shared.module';
     DashboardWidgetTextComponent,
     DashboardWidgetValueComponent
   ],
-  imports: [
-    CommonModule,
-    FlexLayoutModule,
-    MaterialModule,
-    RouterModule,
-    SharedModule,
-    TranslateModule.forChild()
-  ]
+  imports: [CommonModule, MaterialModule, RouterModule, SharedModule, TranslocoModule]
 })
 export class DashboardModule {}

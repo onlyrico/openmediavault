@@ -9,7 +9,7 @@
 {%- set recycle_exclude = salt['pillar.get']('default:OMV_SAMBA_SHARE_RECYCLE_EXCLUDE', '') -%}
 {%- set recycle_exclude_dir = salt['pillar.get']('default:OMV_SAMBA_SHARE_RECYCLE_EXCLUDEDIR', '') -%}
 {%- set full_audit_prefix = salt['pillar.get']('default:OMV_SAMBA_SHARE_AUDIT_PREFIX', '%u|%I|%m|%P|%S') -%}
-{%- set full_audit_success = salt['pillar.get']('default:OMV_SAMBA_SHARE_AUDIT_SUCCESS', 'mkdir rename unlink rmdir pwrite') -%}
+{%- set full_audit_success = salt['pillar.get']('default:OMV_SAMBA_SHARE_AUDIT_SUCCESS', 'mkdirat renameat unlinkat pwrite') -%}
 {%- set full_audit_failure = salt['pillar.get']('default:OMV_SAMBA_SHARE_AUDIT_FAILURE', 'connect') -%}
 {%- set full_audit_facility = salt['pillar.get']('default:OMV_SAMBA_SHARE_AUDIT_FACILITY', 'local7') -%}
 {%- set full_audit_priority = salt['pillar.get']('default:OMV_SAMBA_SHARE_AUDIT_PRIORITY', 'NOTICE') -%}
@@ -19,7 +19,6 @@
 {%- set directory_mask = salt['pillar.get']('default:OMV_SAMBA_SHARE_DIRECTORYMASK', '0775') -%}
 {%- set force_directory_mode = salt['pillar.get']('default:OMV_SAMBA_SHARE_FORCEDIRECTORYMODE', '0775') -%}
 {%- set hide_special_files = salt['pillar.get']('default:OMV_SAMBA_SHARE_HIDESPECIALFILES', 'yes') -%}
-{%- set follow_symlinks = salt['pillar.get']('default:OMV_SAMBA_SHARE_FOLLOWSYMLINKS', 'yes') -%}
 {%- set fruit_locking = salt['pillar.get']('default:OMV_SAMBA_SHARE_FRUIT_LOCKING', 'none') -%}
 {%- set fruit_encoding = salt['pillar.get']('default:OMV_SAMBA_SHARE_FRUIT_ENCODING', 'private') -%}
 {%- set fruit_metadata = salt['pillar.get']('default:OMV_SAMBA_SHARE_FRUIT_METADATA', 'stream') -%}
@@ -27,13 +26,18 @@
 {%- set fruit_veto_appledouble = salt['pillar.get']('default:OMV_SAMBA_SHARE_FRUIT_VETOAPPLEDOUBLE', 'no') -%}
 {%- set fruit_wipe_intentionally_left_blank_rfork = salt['pillar.get']('default:OMV_SAMBA_SHARE_FRUIT_WIPEINTENTIONALLYLEFTBLANKRFORK', 'yes') -%}
 {%- set fruit_delete_empty_adfiles = salt['pillar.get']('default:OMV_SAMBA_SHARE_FRUIT_DELETEEMPTYADFILES', 'yes') -%}
+{%- set shadow_sort = salt['pillar.get']('default:OMV_SAMBA_SHARE_SHADOW_SORT', 'desc') -%}
+{%- set dfree_command = salt['pillar.get']('default:OMV_SAMBA_SHARE_DFREECOMMAND', '/usr/sbin/omv-btrfs-dfree') -%}
+{%- set dfree_cache_time = salt['pillar.get']('default:OMV_SAMBA_SHARE_DFREECACHETIME', '30') -%}
 #======================= Share Definitions =======================
 {%- for share in config.shares.share | selectattr('enable') %}
-[{{ salt['omv_conf.get_sharedfolder_name'](share.sharedfolderref) }}]
+{%- set sf_name = salt['omv_conf.get_sharedfolder_name'](share.sharedfolderref) %}
+{%- set sf_path = salt['omv_conf.get_sharedfolder_path'](share.sharedfolderref) %}
+[{{ sf_name }}]
 {%- if share.comment | length > 0 %}
 comment = {{ share.comment }}
 {%- endif %}
-path = {{ salt['omv_conf.get_sharedfolder_path'](share.sharedfolderref) }}
+path = {{ sf_path }}
 guest ok = {{ (share.guest != 'no') | yesno }}
 guest only = {{ (share.guest == 'only') | yesno }}
 read only = {{ share.readonly | to_bool | yesno }}
@@ -42,6 +46,9 @@ inherit acls = {{ share.inheritacls | to_bool | yesno }}
 inherit permissions = {{ share.inheritpermissions | to_bool | yesno }}
 ea support = {{ share.easupport | to_bool | yesno }}
 store dos attributes = {{ share.storedosattributes | to_bool | yesno }}
+{%- if share.transportencryption | to_bool %}
+smb encrypt = required
+{%- endif %}
 {%- set vfs_objects = vfs_objects.split(' ') %}
 {%- if share.audit | to_bool %}
 {%- set _ = vfs_objects.append('full_audit') %}
@@ -80,6 +87,18 @@ recycle:maxsize = {{ share.recyclemaxsize }}
 {%- endif %}
 {%- if share.sharedfolderref | omv_conf_get_by_identifier('conf.system.sharedfolder') | attr('mntentref') | omv_conf_get_by_identifier('conf.system.filesystem.mountpoint') | attr('type') == 'btrfs' %}
 {%- set _ = vfs_objects.append('btrfs') %}
+{%- set _ = vfs_objects.append('shadow_copy2') %}
+{%- set sf_mount_path = salt['omv_conf.get_sharedfolder_mount_path'](share.sharedfolderref) %}
+shadow:mountpoint = {{ sf_mount_path }}
+shadow:snapdir = {{ sf_mount_path | path_join('.snapshots') | path_prettify }}
+shadow:basedir = {{ sf_path }}
+shadow:sort = {{ shadow_sort }}
+shadow:format = _%Y%m%dT%H%M%S
+shadow:delimiter = _
+shadow:snapprefix = ^{{ sf_name }}\(@hourly\)\{0,1\}\(@daily\)\{0,1\}\(@weekly\)\{0,1\}\(@monthly\)\{0,1\}\(@yearly\)\{0,1\}$
+shadow:localtime = no
+dfree command = {{ dfree_command }}
+dfree cache time = {{ dfree_cache_time }}
 {%- endif %}
 vfs objects = {{ vfs_objects | unique | join(' ') }}
 printable = {{ printable }}
@@ -88,7 +107,8 @@ force create mode = {{ force_create_mode }}
 directory mask = {{ directory_mask }}
 force directory mode = {{ force_directory_mode }}
 hide special files = {{ hide_special_files }}
-follow symlinks = {{ follow_symlinks }}
+follow symlinks = {{ share.followsymlinks | to_bool | yesno }}
+wide links = {{ share.widelinks | to_bool | yesno }}
 {%- if share.hostsallow | length > 0 %}
 hosts allow = {{ share.hostsallow }}
 {%- endif %}

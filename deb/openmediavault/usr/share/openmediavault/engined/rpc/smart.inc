@@ -4,7 +4,7 @@
  *
  * @license   http://www.gnu.org/licenses/gpl.html GPL Version 3
  * @author    Volker Theile <volker.theile@openmediavault.org>
- * @copyright Copyright (c) 2009-2022 Volker Theile
+ * @copyright Copyright (c) 2009-2025 Volker Theile
  *
  * OpenMediaVault is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -87,31 +87,61 @@ class Smart extends \OMV\Rpc\ServiceAbstract {
 					return FALSE;
 				}
 				// Get the S.M.A.R.T. information about the given device.
-				$smartInfo = $sd->getSmartInformation();
+				$si = $sd->getSmartInformation();
 				// Try to get the device temperature via S.M.A.R.T.
-				$temperature = $smartInfo->getTemperature();
+				$temperature = $si->getTemperature();
+				// Get the device details collected via S.M.A.R.T.
+				$info = $si->getInformation();
 				// Prepare device object
 				return [
 					"devicename" => $sd->getDeviceName(),
 					"canonicaldevicefile" => $sd->getCanonicalDeviceFile(),
 					"devicefile" => $sd->getPredictableDeviceFile(),
 					"devicelinks" => $sd->getDeviceFileSymlinks(),
-					"model" => $sd->getModel(),
+					"model" => !empty($info['devicemodel']) ?
+						$info['devicemodel'] : $sd->getModel(),
 					"size" => $sd->getSize(),
 					"temperature" => (FALSE === $temperature) ?
-						"" : sprintf("%d°C", $temperature),
+						"" : $temperature,
 					"description" => $sd->getDescription(),
 					"vendor" => $sd->getVendor(),
-					"serialnumber" => $sd->getSerialNumber(),
+					"serialnumber" => !empty($info['serialnumber']) ?
+						$info['serialnumber'] : $sd->getSerialNumber(),
 					"wwn" => $sd->getWorldWideName(),
-					"overallstatus" => $smartInfo->getOverallStatus()
+					"overallstatus" => $si->getOverallStatus()
+				];
+			}, function($e) use ($devv) {
+				// Try to get as much information as possible about this device.
+				// However, this will not contain any SMART information.
+				$sd = \OMV\System\Storage\StorageDevice::getStorageDevice($devv);
+				if (is_null($sd) || !$sd->exists()) {
+					return FALSE;
+				}
+				return [
+					"result" => [
+						"devicename" => $sd->getDeviceName(),
+						"canonicaldevicefile" => $sd->getCanonicalDeviceFile(),
+						"devicefile" => $sd->getPredictableDeviceFile(),
+						"devicelinks" => $sd->getDeviceFileSymlinks(),
+						"model" => $sd->getModel(),
+						"size" => $sd->getSize(),
+						"temperature" => "",
+						"description" => $sd->getDescription(),
+						"vendor" => $sd->getVendor(),
+						"serialnumber" => $sd->getSerialNumber(),
+						"wwn" => $sd->getWorldWideName(),
+						"overallstatus" => \OMV\System\Storage\SmartInformation::SMART_ASSESSMENT_BAD_STATUS
+					],
+					"error" => FALSE
 				];
 			});
 		}
-		// Remove elements that are no associative arrays (these are devices
-		// without S.M.A.R.T. support).
-		return array_values(array_filter($this->waitAsyncProcs($procs),
-			"is_assoc_array"));
+		// Remove elements that are no associative arrays (those devices
+		// that have returned FALSE because of missing S.M.A.R.T. support).
+		// Re-index the filtered array.
+		return array_values(array_filter(
+			$this->waitAsyncProcs($procs), "is_assoc_array")
+		);
 	}
 
 	/**
@@ -373,8 +403,8 @@ class Smart extends \OMV\Rpc\ServiceAbstract {
 		// Ensure that the device has S.M.A.R.T. support.
 		$sd->assertHasSmartSupport();
 		// Get the S.M.A.R.T. information.
-		$smartInfo = $sd->getSmartInformation();
-		return $smartInfo->getExtendedInformation();
+		$si = $sd->getSmartInformation();
+		return $si->getExtendedInformation();
 	}
 
 	/**
@@ -397,8 +427,8 @@ class Smart extends \OMV\Rpc\ServiceAbstract {
 		// Ensure that the device has S.M.A.R.T. support.
 		$sd->assertHasSmartSupport();
 		// Get the S.M.A.R.T. information.
-		$smartInfo = $sd->getSmartInformation();
-		return $smartInfo->getAttributes();
+		$si = $sd->getSmartInformation();
+		return $si->getAttributes();
 	}
 
 	/**
@@ -421,8 +451,8 @@ class Smart extends \OMV\Rpc\ServiceAbstract {
 		// Ensure that the device has S.M.A.R.T. support.
 		$sd->assertHasSmartSupport();
 		// Get the S.M.A.R.T. information.
-		$smartInfo = $sd->getSmartInformation();
-		return $smartInfo->getSelfTestLogs();
+		$si = $sd->getSmartInformation();
+		return $si->getSelfTestLogs();
 	}
 
 	/**
@@ -445,8 +475,22 @@ class Smart extends \OMV\Rpc\ServiceAbstract {
 		// Ensure that the device has S.M.A.R.T. support.
 		$sd->assertHasSmartSupport();
 		// Get the S.M.A.R.T. information.
-		$smartInfo = $sd->getSmartInformation();
-		return $smartInfo->getInformation();
+		$si = $sd->getSmartInformation();
+		$result = $si->getInformation();
+		// Get additional information:
+		// - Temperature
+		// - Power Cycle Count
+		// - Power-On Hours (POH)
+		if (FALSE !== ($value = $si->getTemperature())) {
+			$result['temperature'] = $value;
+		}
+		if (-1 !== ($value = $si->getPowerCycleCount())) {
+			$result['powercycles'] = $value;
+		}
+		if (-1 !== ($value = $si->getPowerOnHours())) {
+			$result['poweronhours'] = $value;
+		}
+		return $result;
 	}
 
 	/**
@@ -593,12 +637,24 @@ class Smart extends \OMV\Rpc\ServiceAbstract {
 		// Get the configuration object.
 		$db = \OMV\Config\Database::getInstance();
 		$jobObject = $db->get("conf.service.smartmontools.job", $params['uuid']);
-		// Get the associated device configuration object.
-		$deviceObject = $db->getByFilter("conf.service.smartmontools.device", [
-			"operator" => "stringEquals",
+		// Build the filter to query the device settings.
+		$filter = [
+			"operator" => "stringEnum",
 			"arg0" => "devicefile",
-			"arg1" => $jobObject->get("devicefile")
-		], 1);
+			"arg1" => [ $jobObject->get("devicefile") ]
+		];
+		// If the given device file exists, then extend the filter by
+		// adding the all device files retrieved via UDEV. This will
+		// increase the probability that we will have a hit on the
+		// database query.
+		$sd = \OMV\System\Storage\StorageDevice::getStorageDevice(
+			$jobObject->get("devicefile"));
+		if (!is_null($sd) && $sd->exists()) {
+			array_push($filter["arg1"], ...$sd->getDeviceFileSymlinks());
+		}
+		// Get the associated device configuration object.
+		$deviceObject = $db->getByFilter("conf.service.smartmontools.device",
+			$filter, 1);
 		// Create the background process.
 		return $this->execBgProc(function($bgStatusFilename, $bgOutputFilename)
 		  use ($jobObject, $deviceObject) {
@@ -622,16 +678,14 @@ class Smart extends \OMV\Rpc\ServiceAbstract {
 			$cmd = new \OMV\System\Process("smartctl", $cmdArgs);
 			$cmd->setRedirect2to1();
 			// Execute the command.
-			$exitStatus = $this->exec($cmd->getCommandLine(), $output,
-				$bgOutputFilename);
+			$exitStatus = $this->exec($cmd, $output, $bgOutputFilename);
 			// Check the exit status:
 			// Bit 0: Command line did not parse
 			// Bit 1: Device open failed, or device did not return an
 			//        IDENTIFY DEVICE structure
 			if (($exitStatus !== 0) && (($exitStatus & 0) ||
 				($exitStatus & 1))) {
-				throw new \OMV\ExecException($cmd->getCommandLine(), $output,
-					$exitStatus);
+				throw new \OMV\ExecException($cmd, $output, $exitStatus);
 			}
 			return $output;
 		});

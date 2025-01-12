@@ -1,10 +1,10 @@
-#!/bin/sh
+#!/usr/bin/env dash
 #
 # This file is part of OpenMediaVault.
 #
 # @license   http://www.gnu.org/licenses/gpl.html GPL Version 3
 # @author    Volker Theile <volker.theile@openmediavault.org>
-# @copyright Copyright (c) 2009-2022 Volker Theile
+# @copyright Copyright (c) 2009-2025 Volker Theile
 #
 # OpenMediaVault is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -36,6 +36,8 @@ case "$1" in
 			deb-systemd-helper disable clamav-freshclam || :
 			deb-systemd-invoke stop clamav-daemon || :
 			deb-systemd-helper disable clamav-daemon || :
+			# Reload custom clamav-freshclam service configuration.
+			systemctl daemon-reload || :
 		fi
 
 		########################################################################
@@ -59,6 +61,19 @@ case "$1" in
 		  omv_module_set_dirty clamav
 		fi
 		if dpkg --compare-versions "$2" lt-nl "5.0.11"; then
+		  omv_module_set_dirty clamav
+		fi
+		if dpkg --compare-versions "$2" lt-nl "6.0.6"; then
+		  omv_module_set_dirty clamav
+		fi
+		if dpkg --compare-versions "$2" lt-nl "6.0.7"; then
+		  systemctl daemon-reload || :
+		  omv_module_set_dirty clamav
+		fi
+		if dpkg --compare-versions "$2" lt-nl "7.0"; then
+		  omv_module_set_dirty clamav
+		fi
+		if dpkg --compare-versions "$2" lt-nl "7.0.2"; then
 		  omv_module_set_dirty clamav
 		fi
 	;;

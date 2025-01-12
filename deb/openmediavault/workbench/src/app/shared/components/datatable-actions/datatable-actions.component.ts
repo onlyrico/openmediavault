@@ -3,7 +3,7 @@
  *
  * @license   http://www.gnu.org/licenses/gpl.html GPL Version 3
  * @author    Volker Theile <volker.theile@openmediavault.org>
- * @copyright Copyright (c) 2009-2022 Volker Theile
+ * @copyright Copyright (c) 2009-2025 Volker Theile
  *
  * OpenMediaVault is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -56,7 +56,7 @@ export class DatatableActionsComponent implements OnInit {
     });
   }
 
-  isDisabled(action: DatatableAction) {
+  isDisabled(action: DatatableAction): boolean {
     if (_.isPlainObject(action.enabledConstraints)) {
       const validators: Array<DatatableActionEnabledConstraintsFn> = [];
       if (_.isBoolean(action.enabledConstraints.hasData)) {
@@ -87,19 +87,19 @@ export class DatatableActionsComponent implements OnInit {
     return false;
   }
 
-  onButtonClick(action: DatatableAction) {
+  onButtonClick(action: DatatableAction): void {
     if (_.isFunction(action.click)) {
       action.click(action, this.table);
     }
   }
 
-  onSelectionChange(event: MatSelectChange, action: DatatableAction) {
+  onSelectionChange(event: MatSelectChange, action: DatatableAction): void {
     if (_.isFunction(action.selectionChange)) {
       action.selectionChange(action, event.value, this.table);
     }
   }
 
-  protected sanitizeConfig() {
+  protected sanitizeConfig(): void {
     _.forEach(this.actions, (action) => {
       // Map icon from 'foo' to 'mdi:foo' if necessary.
       action.icon = _.get(Icon, action.icon, action.icon);

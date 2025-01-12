@@ -4,7 +4,7 @@
  *
  * @license   http://www.gnu.org/licenses/gpl.html GPL Version 3
  * @author    Volker Theile <volker.theile@openmediavault.org>
- * @copyright Copyright (c) 2009-2022 Volker Theile
+ * @copyright Copyright (c) 2009-2025 Volker Theile
  *
  * OpenMediaVault is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -23,16 +23,24 @@ namespace OMV\System\Filesystem;
 
 class Xfs extends Filesystem {
 	/**
+	 * See parent class definition.
+	 */
+	public function getDetails() {
+		$cmdArgs = [];
+		$cmdArgs[] = escapeshellarg($this->getDeviceFile());
+		$cmd = new \OMV\System\Process("xfs_info", $cmdArgs);
+		$cmd->setRedirect2to1();
+		$cmd->execute($output);
+		return implode("\n", $output);
+	}
+
+	/**
 	 * Grow the filesystem.
 	 * @return void
 	 * @throw \OMV\ExecException
 	 */
 	final public function grow() {
-		if (!$this->isMounted()) {
-			throw new \OMV\Exception(
-				"File system '%s' must be mounted to be grown.",
-				$this->getDeviceFile());
-		}
+		$this->assertIsMounted();
 		$cmdArgs = [];
 		$cmdArgs[] = escapeshellarg($this->getMountPoint());
 		$cmd = new \OMV\System\Process("xfs_growfs", $cmdArgs);

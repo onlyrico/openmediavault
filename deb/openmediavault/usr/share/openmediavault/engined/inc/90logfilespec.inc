@@ -4,7 +4,7 @@
  *
  * @license   http://www.gnu.org/licenses/gpl.html GPL Version 3
  * @author    Volker Theile <volker.theile@openmediavault.org>
- * @copyright Copyright (c) 2009-2022 Volker Theile
+ * @copyright Copyright (c) 2009-2025 Volker Theile
  *
  * OpenMediaVault is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,102 +21,12 @@
  */
 require_once("openmediavault/functions.inc");
 
-// /var/log/syslog:
-// Oct 19 04:24:36 openmediavault init: Switching to runlevel: 6
-// Oct 19 04:24:38 openmediavault watchdog[1589]: stopping daemon (5.9)
+// 2023-11-06T23:11:43+0000 omv7box monit[602]: Awakened by User defined signal 1
 \OMV\System\LogFileSpec::registerSpecification("syslog", [
+  "command" => "export SYSTEMD_COLORS=0; journalctl ".
+	"--quiet --output=short-iso --no-pager",
   "filename" => "syslog",
-  "filepath" => "/var/log/syslog",
-  "regex" => "/^(\S+\s+\d+\s+\S+)\s+(\S+)\s+(.*)$/",
-  "columns" => [
-	  "ts" => [
-		  "index" => 1,
-		  "func" => function($v) { return strpdate($v,"M j G:i:s"); }
-	  ],
-	  "date" => [
-		  "index" => 1,
-		  "func" => function($v) {
-			  return strftime("%c", strpdate($v,"M j G:i:s"));
-		  }
-	  ],
-	  "hostname" => 2,
-	  "message" => 3
-  ]]);
-
-// /var/log/daemon.log:
-// Oct 19 04:25:07 openmediavault dhclient: Sending on   Socket/fallback
-// Oct 19 04:25:08 openmediavault wd_keepalive[1164]: stopping watchdog keepalive daemon (5.9)
-\OMV\System\LogFileSpec::registerSpecification("daemon", [
-  "filename" => "daemon.log",
-  "filepath" => "/var/log/daemon.log",
-  "regex" => "/^(\S+\s+\d+\s+\S+)\s+(\S+)\s+(.*)$/",
-  "columns" => [
-	  "ts" => [
-		  "index" => 1,
-		  "func" => function($v) { return strpdate($v,"M j G:i:s"); }
-	  ],
-	  "date" => [
-		  "index" => 1,
-		  "func" => function($v) {
-			  return strftime("%c", strpdate($v,"M j G:i:s"));
-		  }
-	  ],
-	  "hostname" => 2,
-	  "message" => 3
-  ]]);
-
-// /var/log/auth.log:
-// Oct 19 04:24:44 openmediavault sshd[1550]: Received signal 15; terminating.
-// Oct 19 04:24:44 openmediavault sshd[2472]: Exiting on signal 15
-\OMV\System\LogFileSpec::registerSpecification("auth", [
-  "filename" => "auth.log",
-  "filepath" => "/var/log/auth.log",
-  "regex" => "/^(\S+\s+\d+\s+\S+)\s+(\S+)\s+(.*)$/",
-  "columns" => [
-	  "ts" => [
-		  "index" => 1,
-		  "func" => function($v) { return strpdate($v,"M j G:i:s"); }
-	  ],
-	  "date" => [
-		  "index" => 1,
-		  "func" => function($v) {
-			  return strftime("%c", strpdate($v,"M j G:i:s"));
-		  }
-	  ],
-	  "hostname" => 2,
-	  "message" => 3
-  ]]);
-
-// /var/log/messages:
-// Oct 19 04:24:36 openmediavault shutdown[9419]: shutting down for system reboot
-// Oct 19 04:24:49 openmediavault kernel: Kernel logging (proc) stopped.
-\OMV\System\LogFileSpec::registerSpecification("messages", [
-  "filename" => "messages",
-  "filepath" => "/var/log/messages",
-  "regex" => "/^(\S+\s+\d+\s+\S+)\s+(\S+)\s+(.*)$/",
-  "columns" => [
-	  "ts" => [
-		  "index" => 1,
-		  "func" => function($v) { return strpdate($v,"M j G:i:s"); }
-	  ],
-	  "date" => [
-		  "index" => 1,
-		  "func" => function($v) {
-			  return strftime("%c", strpdate($v,"M j G:i:s"));
-		  }
-	  ],
-	  "hostname" => 2,
-	  "message" => 3
-  ]]);
-
-// Retrieved via journalctl.
-// 2016-06-26T21:24:08+0200 vmpc05 kernel: Booting paravirtualized kernel on bare hardware
-// 2016-06-26T21:24:08+0200 vmpc05 kernel: SCSI subsystem initialized
-\OMV\System\LogFileSpec::registerSpecification("boot", [
-  "command" => "export SYSTEMD_COLORS=0; journalctl --boot=-0 --quiet ".
-    "--output=short-iso --no-pager",
-  "filename" => "boot",
-  "regex" => "/^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}([+-]\d{4})?)\s+(\S+)\s+(.+)$/",
+  "regex" => "/^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}[+-]\d{4})\s+(\S+)\s+(.+)$/",
   "columns" => [
 	  "ts" => [
 		  "index" => 1,
@@ -128,8 +38,93 @@ require_once("openmediavault/functions.inc");
 			  return strftime("%c", strpdate($v,"Y-m-d*H:i:sT"));
 		  }
 	  ],
-	  "hostname" => 3,
-	  "message" => 4
+	  "hostname" => 2,
+	  "message" => 3
+  ]]);
+
+\OMV\System\LogFileSpec::registerSpecification("daemon", [
+  "command" => "export SYSTEMD_COLORS=0; journalctl --facility=daemon ".
+	"--quiet --output=short-iso --no-pager",
+  "filename" => "daemon",
+  "regex" => "/^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}[+-]\d{4})\s+(\S+)\s+(.+)$/",
+  "columns" => [
+	  "ts" => [
+		  "index" => 1,
+		  "func" => function($v) { return strpdate($v,"Y-m-d*H:i:sT"); }
+	  ],
+	  "date" => [
+		  "index" => 1,
+		  "func" => function($v) {
+			  return strftime("%c", strpdate($v,"Y-m-d*H:i:sT"));
+		  }
+	  ],
+	  "hostname" => 2,
+	  "message" => 3
+  ]]);
+
+\OMV\System\LogFileSpec::registerSpecification("auth", [
+  "command" => "export SYSTEMD_COLORS=0; journalctl ".
+  	"--facility=auth,authpriv ".
+	"--quiet --output=short-iso --no-pager",
+  "filename" => "auth",
+  "regex" => "/^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}[+-]\d{4})\s+(\S+)\s+(.+)$/",
+  "columns" => [
+	  "ts" => [
+		  "index" => 1,
+		  "func" => function($v) { return strpdate($v,"Y-m-d*H:i:sT"); }
+	  ],
+	  "date" => [
+		  "index" => 1,
+		  "func" => function($v) {
+			  return strftime("%c", strpdate($v,"Y-m-d*H:i:sT"));
+		  }
+	  ],
+	  "hostname" => 2,
+	  "message" => 3
+  ]]);
+
+\OMV\System\LogFileSpec::registerSpecification("messages", [
+  "command" => "export SYSTEMD_COLORS=0; journalctl ".
+  	"--priority=warning..info ".
+  	"--facility=auth,authpriv,cron,daemon,mail ".
+	"--quiet --output=short-iso --no-pager",
+  "filename" => "messages",
+  "regex" => "/^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}[+-]\d{4})\s+(\S+)\s+(.+)$/",
+  "columns" => [
+	  "ts" => [
+		  "index" => 1,
+		  "func" => function($v) { return strpdate($v,"Y-m-d*H:i:sT"); }
+	  ],
+	  "date" => [
+		  "index" => 1,
+		  "func" => function($v) {
+			  return strftime("%c", strpdate($v,"Y-m-d*H:i:sT"));
+		  }
+	  ],
+	  "hostname" => 2,
+	  "message" => 3
+  ]]);
+
+// 2016-06-26T21:24:08+0200 vmpc05 kernel: Booting paravirtualized kernel on bare hardware
+// 2016-06-26T21:24:08+0200 vmpc05 kernel: SCSI subsystem initialized
+\OMV\System\LogFileSpec::registerSpecification("boot", [
+  "command" => "export SYSTEMD_COLORS=0; journalctl --boot=-0 --quiet ".
+    "--output=short-iso --no-pager",
+  "filename" => "boot",
+  "regex" => "/^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}[+-]\d{4})\s+(\S+)\s+(.+)$/",
+  "columns" => [
+	  "ts" => [
+		  "index" => 1,
+		  "func" => function($v) { return strpdate($v,"Y-m-d*H:i:sT"); }
+	  ],
+	  "date" => [
+		  "index" => 1,
+		  "func" => function($v) {
+			  return strftime("%c", strpdate($v,"Y-m-d*H:i:sT"));
+		  }
+	  ],
+	  "hostname" => 2,
+	  "message" => 3
   ]]);
 
 // /var/log/dpkg.log
@@ -156,21 +151,21 @@ require_once("openmediavault/functions.inc");
   ]]);
 
 // Retrieved via journalctl.
-// Oct  5 08:58:35 vmomv5 rsyncd[2645]: rsyncd version 3.1.1 starting, listening on port 873
+// 2023-10-05T08:58:35+0000 omv7box rsyncd[10731]: rsyncd version 3.2.7 starting, listening on port 873
 \OMV\System\LogFileSpec::registerSpecification("rsyncd", [
   "command" => "export SYSTEMD_COLORS=0; journalctl --quiet --no-pager ".
-    "SYSLOG_IDENTIFIER='rsyncd' --output=short",
+    "SYSLOG_IDENTIFIER='rsyncd' --output=short-iso",
   "filename" => "rsyncd",
-  "regex" => "/^(\S+\s+\d+\s+\S+)\s+(\S+)\s+rsyncd\[\d+\]:\s+(.*)$/",
+  "regex" => "/^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}[+-]\d{4})\s+(\S+)\s+rsyncd\[\d+\]:\s+(.*)$/",
   "columns" => [
 	  "ts" => [
 		  "index" => 1,
-		  "func" => function($v) { return strpdate($v,"M j G:i:s"); }
+		  "func" => function($v) { return strpdate($v,"Y-m-d*H:i:sT"); }
 	  ],
 	  "date" => [
 		  "index" => 1,
 		  "func" => function($v) {
-			  return strftime("%c", strpdate($v,"M j G:i:s"));
+			  return strftime("%c", strpdate($v,"Y-m-d*H:i:sT"));
 		  }
 	  ],
 	  "hostname" => 2,
@@ -178,101 +173,44 @@ require_once("openmediavault/functions.inc");
   ]]);
 
 // Retrieved via journalctl.
-// Oct  5 08:48:09 vmomv5 smartd[2094]: smartd 6.4 2014-10-07 r4002 [x86_64-linux-3.16.0-4-amd64] (local build)
-// Oct  5 08:48:09 vmomv5 smartd[2094]: Copyright (C) 2002-14, Bruce Allen, Christian Franke, www.smartmontools.org
-// Oct  5 08:48:09 vmomv5 smartd[2094]: Opened configuration file /etc/smartd.conf
+// 2023-12-26T15:47:55+0000 omv7box smartd[565]: smartd 7.3 2022-02-28 r5338 [x86_64-linux-6.1.0-16-amd64] (local build)
+// 2023-12-26T15:47:55+0000 omv7box smartd[565]: Copyright (C) 2002-22, Bruce Allen, Christian Franke, www.smartmontools.org
+// 2023-12-26T15:47:55+0000 omv7box smartd[565]: Opened configuration file /etc/smartd.conf
 \OMV\System\LogFileSpec::registerSpecification("smartd", [
   "command" => "export SYSTEMD_COLORS=0; journalctl --quiet --no-pager ".
-    "SYSLOG_IDENTIFIER='smartd' --output=short",
+    "SYSLOG_IDENTIFIER='smartd' --output=short-iso",
   "filename" => "smartd.log",
-  "regex" => "/^(\S+\s+\d+\s+\S+)\s+(\S+)\ssmartd\[\d+\]:\s+(.*)$/",
+  "regex" => "/^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}[+-]\d{4})\s+(\S+)\ssmartd\[\d+\]:\s+(.*)$/",
   "columns" => [
 	  "ts" => [
 		  "index" => 1,
-		  "func" => function($v) { return strpdate($v,"M j G:i:s"); }
+		  "func" => function($v) { return strpdate($v,"Y-m-d*H:i:sT"); }
 	  ],
 	  "date" => [
 		  "index" => 1,
 		  "func" => function($v) {
-			  return strftime("%c", strpdate($v,"M j G:i:s"));
+			  return strftime("%c", strpdate($v,"Y-m-d*H:i:sT"));
 		  }
 	  ],
 	  "message" => 3
   ]]);
 
 // Retrieved via journalctl.
-// Oct 17 18:19:00 vmomv5 proftpd[17127]: 192.167.178.101 (::ffff:192.168.178.254[::ffff:192.168.178.254]) - USER test: Login successful.
-// Oct 17 18:20:00 vmomv5 proftpd: pam_unix(proftpd:session): session closed for user test
-\OMV\System\LogFileSpec::registerSpecification("proftpd", [
-  "command" => "export SYSTEMD_COLORS=0; journalctl --quiet --no-pager ".
-    "SYSLOG_IDENTIFIER='proftpd' --output=short",
-  "filename" => "proftpd.log",
-  "regex" => "/^(\S+\s+\d+\s+\d{2}:\d{2}:\d{2})\s+(\S+)\sproftpd\[\d+\]:\s+(.*)$/",
-  "columns" => [
-	  "ts" => [
-		  "index" => 1,
-		  "func" => function($v) { return strpdate($v,"M j G:i:s"); }
-	  ],
-	  "date" => [
-		  "index" => 1,
-		  "func" => function($v) {
-			  return strftime("%c", strpdate($v,"M j G:i:s"));
-		  }
-	  ],
-	  "hostname" => 2,
-	  "message" => 3
-  ]]);
-
-// /var/log/proftpd/xferlog
-// <currenttime> <transfertime> <remotehost> <filesize> <filename> <transfertype> <specialactionflag> <direction> <accessmode> <username> <servicename> <authenticationmethod> <authenticateduserid> <completionstatus>
-// Thu Oct 17 18:19:00 2013 0 ::ffff:192.168.178.254 56374 /home/ftp/test/testfile b _ i r test ftp 0 * c
-\OMV\System\LogFileSpec::registerSpecification("proftpd_xferlog", [
-  "filename" => "xferlog",
-  "filepath" => "/var/log/proftpd/xferlog",
-  "regex" => "/^(\S+\s+\S+\s+\d+\s+\d{2}:\d{2}:\d{2}\s+\d+)\s+(\d+)\s+(\S+)\s+(\d+)\s+(\S+)\s+(a|b)\s+(C|U|T|_)\s+(o|i)\s+(a|g|r)\s+(\S+)\s+(\S+)\s+(0|1)\s+(\d+|\*)\s+(c|i)$/",
-  "columns" => [
-	  "ts" => [
-		  "index" => 1,
-		  "func" => function($v) { return strpdate($v,"D M d H:i:s Y"); }
-	  ],
-	  "date" => [
-		  "index" => 1,
-		  "func" => function($v) {
-			  return strftime("%c", strpdate($v,"D M d H:i:s Y"));
-		  }
-	  ],
-	  "transfertime" => 2,
-	  "remotehost" => 3,
-	  "filesize" => 4,
-	  "filename" => 5,
-	  "transfertype" => 6,
-	  "specialactionflag" => 7,
-	  "direction" => 8,
-	  "accessmode" => 9,
-	  "username" => 10,
-	  "servicename" => 11,
-	  "authenticationmethod" => 12,
-	  "authenticateduserid" => 13,
-	  "completionstatus" => 14
-  ]]);
-
-// Retrieved via journalctl.
-// Mar 13 23:50:48 vmomv5 smbd_audit[pid]: <username>|<ipaddr>|<clientnetbiosname>|<servicerootdir>|<servicename>|<operation>|<result>|<filename>
-// Mar 13 23:50:48 vmomv5 smbd_audit[4192]: test|192.168.178.30|pc01|/media/1622d31c-7f5d-4add-be13-20e382a9f5cb/test|download|pwrite|ok|xyz.tar.gz
+// 2024-01-03T09:56:51+0000 omv7box smbd_audit[17380]: testuser|192.168.121.1|foo|/srv/dev-disk-by-uuid-49453147-abb6-4939-9633-8a728c5b1a86/test|test|unlinkat|ok|/srv/dev-disk-by-uuid-49453147-abb6-4939-9633-8a728c5b1a86/test/baz.jpeg
 \OMV\System\LogFileSpec::registerSpecification("smbdaudit", [
   "command" => "export SYSTEMD_COLORS=0; journalctl --quiet --no-pager ".
-    "--priority='notice' --identifier='smbd_audit' --output=short",
+    "--priority='notice' --identifier='smbd_audit' --output=short-iso",
   "filename" => "smbd_audit.log",
-  "regex" => "/^(\S+\s+\d+\s+\d{2}:\d{2}:\d{2})\s+(\S+)\ssmbd_audit\[\d+\]:\s+([^\|]+)\|([^\|]+)\|([^\|]+)\|([^\|]+)\|([^\|]+)\|([^\|]+)\|([^\|]+)\|([^\|]+)$/",
+  "regex" => "/^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}[+-]\d{4})\s+(\S+)\ssmbd_audit\[\d+\]:\s+([^\|]+)\|([^\|]+)\|([^\|]+)\|([^\|]+)\|([^\|]+)\|([^\|]+)\|([^\|]+)\|([^\|]+)$/",
   "columns" => [
 	  "ts" => [
 		  "index" => 1,
-		  "func" => function($v) { return strpdate($v,"M j G:i:s"); }
+		  "func" => function($v) { return strpdate($v,"Y-m-d*H:i:sT"); }
 	  ],
 	  "date" => [
 		  "index" => 1,
 		  "func" => function($v) {
-			  return strftime("%c", strpdate($v,"M j G:i:s"));
+			  return strftime("%c", strpdate($v,"Y-m-d*H:i:sT"));
 		  }
 	  ],
 	  "hostname" => 2,
@@ -338,4 +276,24 @@ require_once("openmediavault/functions.inc");
   "regex" => "/^(.+)$/",
   "columns" => [
 	  "message" => 1
+  ]]);
+
+\OMV\System\LogFileSpec::registerSpecification("dmesg", [
+  "command" => "export SYSTEMD_COLORS=0; journalctl --dmesg --quiet ".
+	"--output=short-iso --no-pager",
+  "filename" => "dmesg",
+  "regex" => "/^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}[+-]\d{4})\s+(\S+)\s+(.+)$/",
+  "columns" => [
+	  "ts" => [
+		  "index" => 1,
+		  "func" => function($v) { return strpdate($v,"Y-m-d*H:i:sT"); }
+	  ],
+	  "date" => [
+		  "index" => 1,
+		  "func" => function($v) {
+			  return strftime("%c", strpdate($v,"Y-m-d*H:i:sT"));
+		  }
+	  ],
+	  "hostname" => 2,
+	  "message" => 3
   ]]);

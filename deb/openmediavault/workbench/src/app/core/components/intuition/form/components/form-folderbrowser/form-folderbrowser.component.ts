@@ -3,7 +3,7 @@
  *
  * @license   http://www.gnu.org/licenses/gpl.html GPL Version 3
  * @author    Volker Theile <volker.theile@openmediavault.org>
- * @copyright Copyright (c) 2009-2022 Volker Theile
+ * @copyright Copyright (c) 2009-2025 Volker Theile
  *
  * OpenMediaVault is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,8 +17,15 @@
  */
 import { ConnectedPosition } from '@angular/cdk/overlay';
 import { ViewportRuler } from '@angular/cdk/scrolling';
-import { ChangeDetectorRef, Component, OnDestroy, OnInit, ViewChild } from '@angular/core';
-import { FormControl } from '@angular/forms';
+import {
+  ChangeDetectorRef,
+  Component,
+  OnDestroy,
+  OnInit,
+  ViewChild,
+  ViewEncapsulation
+} from '@angular/core';
+import { AbstractControl, FormControl } from '@angular/forms';
 import { MatFormField } from '@angular/material/form-field';
 import { MatSelectionListChange } from '@angular/material/list';
 import * as _ from 'lodash';
@@ -26,13 +33,14 @@ import { EMPTY, from, Observable, Subject, Subscription } from 'rxjs';
 import { catchError, concatMap, map, startWith, takeUntil, tap, toArray } from 'rxjs/operators';
 
 import { AbstractFormFieldComponent } from '~/app/core/components/intuition/form/components/abstract-form-field-component';
-import { Icon } from '~/app/shared/enum/icon.enum';
+import { Unsubscribe } from '~/app/decorators';
 import { RpcService } from '~/app/shared/services/rpc.service';
 
 @Component({
   selector: 'omv-form-folderbrowser',
   templateUrl: './form-folderbrowser.component.html',
-  styleUrls: ['./form-folderbrowser.component.scss']
+  styleUrls: ['./form-folderbrowser.component.scss'],
+  encapsulation: ViewEncapsulation.None
 })
 export class FormFolderbrowserComponent
   extends AbstractFormFieldComponent
@@ -41,12 +49,14 @@ export class FormFolderbrowserComponent
   @ViewChild('trigger')
   trigger: MatFormField;
 
-  icon = Icon;
+  @Unsubscribe()
+  private subscriptions = new Subscription();
+
   isOpen = false;
   folders: string[] = [];
   filteredFolders$: Observable<string[]>;
   searchFilter = new FormControl('');
-  triggerRect: ClientRect;
+  triggerRect: DOMRect;
   positions: ConnectedPosition[] = [
     {
       originX: 'start',
@@ -67,8 +77,6 @@ export class FormFolderbrowserComponent
   // Emits whenever the component is destroyed.
   protected readonly destroy = new Subject<void>();
 
-  private subscriptions = new Subscription();
-
   constructor(
     private changeDetectorRef: ChangeDetectorRef,
     private rpcService: RpcService,
@@ -81,7 +89,7 @@ export class FormFolderbrowserComponent
     return this.joinPaths(this.currentPaths);
   }
 
-  ngOnInit(): void {
+  override ngOnInit(): void {
     super.ngOnInit();
     this.viewportRuler
       .change()
@@ -94,7 +102,7 @@ export class FormFolderbrowserComponent
       });
     // Subscribe to changes of the 'dirRefIdField' field.
     if (this.config.dirVisible) {
-      const dirRefIdControl = this.formGroup.get(this.config.dirRefIdField);
+      const dirRefIdControl: AbstractControl = this.formGroup.get(this.config.dirRefIdField);
       if (dirRefIdControl) {
         this.subscriptions.add(
           dirRefIdControl.valueChanges.subscribe((value) => {
@@ -134,7 +142,6 @@ export class FormFolderbrowserComponent
   ngOnDestroy(): void {
     this.destroy.next();
     this.destroy.complete();
-    this.subscriptions.unsubscribe();
   }
 
   open(): void {
@@ -166,9 +173,7 @@ export class FormFolderbrowserComponent
             );
           }),
           catchError((error) => {
-            if (_.isFunction(error.preventDefault)) {
-              error.preventDefault();
-            }
+            error.preventDefault?.();
             return EMPTY;
           }),
           toArray()
