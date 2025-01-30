@@ -2,7 +2,7 @@
 #
 # @license   http://www.gnu.org/licenses/gpl.html GPL Version 3
 # @author    Volker Theile <volker.theile@openmediavault.org>
-# @copyright Copyright (c) 2009-2022 Volker Theile
+# @copyright Copyright (c) 2009-2025 Volker Theile
 #
 # OpenMediaVault is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -21,8 +21,13 @@
 # http://us5.samba.org/samba/docs/man/manpages-3/smb.conf.5.html
 
 {% set config = salt['omv_conf.get']('conf.service.smb') %}
+{% set homedir_config = salt['omv_conf.get']('conf.system.usermngmnt.homedir') %}
 
-{% if config.homesenable | to_bool %}
+{% if config.homesenable | to_bool and homedir_config.enable | to_bool %}
+
+{% set timemachine_shares = salt['omv_conf.get_by_filter'](
+  'conf.service.smb.share',
+  {'operator': 'equals', 'arg0': 'timemachine', 'arg1': '1'}) %}
 
 configure_samba_homes:
   file.append:
@@ -32,7 +37,11 @@ configure_samba_homes:
     - template: jinja
     - context:
         config: {{ config | json }}
+        homedir_config: {{ homedir_config | json }}
+        enable_timemachine_vfs: {{ timemachine_shares | length > 0 }}
+{% if config.enable | to_bool %}
     - watch_in:
       - service: start_samba_service
+{% endif %}
 
 {% endif %}

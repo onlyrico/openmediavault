@@ -4,7 +4,7 @@
  *
  * @license   http://www.gnu.org/licenses/gpl.html GPL Version 3
  * @author    Volker Theile <volker.theile@openmediavault.org>
- * @copyright Copyright (c) 2009-2022 Volker Theile
+ * @copyright Copyright (c) 2009-2025 Volker Theile
  *
  * OpenMediaVault is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -109,17 +109,34 @@ function array_remove_key(array &$array, $key): bool {
 }
 
 /**
+ * Remove a value from the given array. The array will be re-indexed
+ * automatically.
+ * @param array $array The array to process.
+ * @param mixed $value The value to be removed.
+ * @return Returns TRUE on success, otherwise FALSE.
+ */
+function array_remove_value(array &$array, $value): bool {
+	$index = array_search($value, $array, TRUE);
+	if (FALSE === $index)
+		return FALSE;
+	// Remove value and re-index the array.
+	$array = array_values(array_diff($array, [ $value ]));
+	return TRUE;
+}
+
+/**
  * Filter a multi-dimensional array by key and value.
  * @ingroup api
  * @param array $array The array to process.
- * @param string $key The key used as filter criteria.
- * @param string $value The value used as filter criteria.
+ * @param mixed $key The key used as filter criteria.
+ * @param mixed $value The value used as filter criteria.
+ * @param mixed $default The default value. Defaults to NULL.
  * @return Returns a new array containing only that elements that match
- *   the given filter arguments or NULL on failure.
+ *   the given filter arguments or the specified default on failure.
  */
-function array_filter_ex($array, $key, $value): ?array {
+function array_filter_ex($array, $key, $value, $default = NULL) {
 	if (!is_multi_array($array)) {
-		return NULL;
+		return $default;
 	}
 	// Re-index the filtered array.
 	return array_values(
@@ -129,6 +146,25 @@ function array_filter_ex($array, $key, $value): ?array {
 			}
 			return $v[$key] == $value;
 		}, ARRAY_FILTER_USE_BOTH));
+}
+
+/**
+ * Iterates over elements of a multi-dimensional array, returning
+ * the first element the key/value matches.
+ * @param array $array The multi-dimensional array.
+ * @param mixed $key The key of the element.
+ * @param mixed $value The value of the element.
+ * @param mixed $default The default value. Defaults to FALSE.
+ * @return The element the specified key/value matches, otherwise
+ *   the given default value.
+ */
+function array_search_ex(array $array, $key, $value, $default = FALSE) {
+	if (!is_multi_array($array)) {
+		return $default;
+	}
+	return array_value(
+		array_filter_ex($array, $key, $value),
+		0, $default);
 }
 
 /**
@@ -172,12 +208,18 @@ function array_unique_key(array $array, $key): ?array {
  * @ingroup api
  * @param object $object The object instance.
  * @return Returns an associative array of defined object accessible
- *   non-static properties for the specified object  in scope.
+ *   non-static properties for the specified object in scope.
  */
 function toArray($object): array {
-	if (is_object($object))
+	if (is_null($object)) {
+		return [];
+	}
+	if (is_object($object)) {
 		$object = get_object_vars($object);
-	return is_array($object) ? array_map(__FUNCTION__, $object) : $object;
+	}
+	return array_map(function($value) {
+		return (is_array($value) || is_object($value)) ? toArray($value) : $value;
+	}, $object);
 }
 
 /**
@@ -495,10 +537,15 @@ function is_ipaddr6($var): bool {
  *   otherwise FALSE.
  */
 function is_multi_array($var): bool {
-	if (FALSE === is_array($var))
+	if (FALSE === is_array($var)) {
 		return FALSE;
-	if (count($var, COUNT_RECURSIVE) !== count($var))
+	}
+	if (empty($var)) {
 		return TRUE;
+	}
+	if (count($var, COUNT_RECURSIVE) !== count($var)) {
+		return TRUE;
+	}
 	return FALSE;
 }
 
@@ -510,8 +557,12 @@ function is_multi_array($var): bool {
  * @return TRUE if the variable is an associative array, otherwise FALSE.
  */
 function is_assoc_array($var): bool {
-	if (FALSE === is_array($var))
+	if (FALSE === is_array($var)) {
 		return FALSE;
+	}
+	if (empty($var)) {
+		return TRUE;
+	}
 	$keys = array_keys($var);
 	return array_keys($keys) !== $keys;
 }
@@ -634,6 +685,17 @@ if (!function_exists('json_last_error_msg')) {
 }
 
 /**
+ * Get the message of the last occurred error.
+ * @ingroup api
+ * @return Returns the message of the last error if possible,
+ *   otherwise `Unknown error`.
+ */
+function last_error_msg(): string {
+	$error = error_get_last();
+	return isset($error['message']) ? $error['message'] : "Unknown error";
+}
+
+/**
  * Convert a number into the highest possible binary unit.
  * @ingroup api
  * @param mixed $number The number to convert (per default this is in Bytes).
@@ -660,7 +722,7 @@ function binary_format($number, $options = NULL) {
 			$maxExp = array_search($options['maxPrefix'], $prefixes);
 	}
 
-	$number = strval($number);
+	$number = number_format($number, 0, "", "");
 	while ((-1 != bccomp($number, "1024")) && ($exp < $maxExp)) {
 		$exp++;
 		$number = bcdiv($number, "1024", $decimalPlaces);
@@ -694,18 +756,19 @@ function binary_convert($number, $fromPrefix, $toPrefix, $decimalPlaces = 0): ?s
 	$toIndex = array_search($toPrefix, $prefixes);
 	if ((FALSE === $fromIndex) || (FALSE === $toIndex))
 		return FALSE;
-	// Convert number to string and ensure the correct number of decimal
-	// numbers is set (workaround for strange bcmul behaviour).
-	$number = bcadd(strval($number), "0", $decimalPlaces);
+	if (preg_match("/E[\+-]\d+$/", strval($number))) {
+		// Convert number to string and ensure the correct number of decimal
+		// numbers is set (workaround for float numbers that are otherwise
+		// converted to exponential notation, which bcmul cannot handle).
+		$number = number_format($number, 32, ".", "");
+	}
 	// Convert the given number into the requested binary unit.
-	$steps = ($toIndex > $fromIndex) ? $toIndex - $fromIndex :
-	  $fromIndex - $toIndex;
-	for ($i = 0; $i < $steps; $i++) {
-		if ($fromIndex < $toIndex) {
-			$number = bcdiv($number, "1024", $decimalPlaces);
-		} else {
-			$number = bcmul($number, "1024", $decimalPlaces);
-		}
+	$steps = abs($toIndex - $fromIndex);
+	$factor = bcpow("1024", $steps);
+	if ($fromIndex < $toIndex) {
+		$number = bcdiv($number, $factor, $decimalPlaces);
+	} else {
+		$number = bcmul($number, $factor, $decimalPlaces);
 	}
 	return $number;
 }
@@ -899,7 +962,7 @@ function posix_kill_ex($pid, $sig): bool {
  * /srv/dev-disk-by-label-xx yy => /srv/dev-disk-by-label-xx\x20yy
  * /srv/dev-disk-by-label-xx yy => /srv/dev-disk-by-label-xx\040yy
  * @param string $var The variable that will be escaped.
- * @param boolean $octal If TRUE, convert octal values, otherwise hexadecimal.
+ * @param bool $octal If TRUE, convert octal values, otherwise hexadecimal.
  *   Defaults to FALSE.
  * @return string|array The escaped string.
  */
@@ -915,7 +978,7 @@ function escape_blank($var, $octal = FALSE) {
  * /srv/dev-disk-by-label-xx yy => /srv/dev-disk-by-label-xx\x20yy
  * /srv/dev-disk-by-label-xx yy => /srv/dev-disk-by-label-xx\040yy
  * @param string $var The variable that will be escaped.
- * @param boolean $octal If TRUE, convert octal values, otherwise hexadecimal.
+ * @param bool $octal If TRUE, convert octal values, otherwise hexadecimal.
  *   Defaults to FALSE.
  * @return string|array The escaped string.
  */
@@ -942,7 +1005,7 @@ function escape_percent($var) {
  * /srv/dev-disk-by-label-xx\x20yy => /srv/dev-disk-by-label-xx yy
  * /srv/dev-disk-by-label-xx\040yy => /srv/dev-disk-by-label-xx yy
  * @param string $var The variable that will be unescaped.
- * @param boolean $octal If TRUE, convert octal values, otherwise hexadecimal.
+ * @param bool $octal If TRUE, convert octal values, otherwise hexadecimal.
  *   Defaults to FALSE.
  * @return string|array The unescaped string.
  */
@@ -958,7 +1021,7 @@ function unescape_blank($var, $octal = FALSE) {
  * /srv/dev-disk-by-label-xx\x20yy => /srv/dev-disk-by-label-xx yy
  * /srv/dev-disk-by-label-xx\040yy => /srv/dev-disk-by-label-xx yy
  * @param string $var The variable that will be unescaped.
- * @param boolean $octal If TRUE, convert octal values, otherwise hexadecimal.
+ * @param bool $octal If TRUE, convert octal values, otherwise hexadecimal.
  *   Defaults to FALSE.
  * @return string|array The unescaped string.
  */
@@ -979,6 +1042,28 @@ function explode_safe($delimiter, $string): array {
 		return [];
 	}
 	return explode($delimiter, $string);
+}
+
+/**
+ * Split a string into an array.
+ * @param string $string The string to parse.
+ * @param string $seperator The boundary string(s). Defaults to `,;`.
+ * @param bool $autoTrim Automatically strip whitespace and other
+ *   characters (check the `trim` function for more details) from the
+ *   beginning and end of the substrings. Defaults to TRUE.
+ * @return Returns an array of strings created by splitting the string
+ *   parameter on boundaries formed by the separator or FALSE on
+ *   failure.
+ */
+function explode_csv($string, $separator = ",;", $autoTrim = TRUE): ?array {
+    $parts = preg_split("/[".$separator."]+/", $string);
+    if (FALSE === $parts) {
+        return FALSE;
+    }
+    if ($autoTrim) {
+        $parts = array_map("trim", $parts);
+    }
+    return $parts;
 }
 
 /**
@@ -1022,4 +1107,49 @@ function is_locked($filename): bool {
 		}
 	}
 	return $locked;
+}
+
+class __Defer {
+    private $callback;
+
+    public function __construct(callable $callback) {
+        $this->callback = $callback;
+    }
+
+    public function __destruct() {
+        call_user_func($this->callback);
+    }
+}
+
+/**
+ * Schedule a function call to be executed when the surrounding function
+ * exits.
+ * Note, the function result MUST be assigned to a variable, otherwise
+ * the callback function is immediately executed. You may use $_ for that.
+ * @param callable $callback The function to be called.
+ * @return The instance of the wrapper class that is executing the
+ *   callback function when the variable that it is assigned to goes
+ *   out of scope.
+ */
+function defer(callable $callback) {
+    return new __Defer($callback);
+}
+
+/**
+ * Wait until the given condition is met or the timeout is reached.
+ * @param int $timeout The maximum time to wait in seconds.
+ * @param callable $callback The function to be called.
+ * @param string $message The optional message to be thrown if the
+ *   timeout is reached.
+ * @throws RuntimeException If the timeout is reached.
+ */
+function waitUntil($timeout, callable $callback, $message = NULL): void {
+	for ($i = 0; $i < $timeout; $i++) {
+		sleep(1);
+		if (TRUE === $callback()) {
+			return;
+		}
+	}
+	throw new \RuntimeException(is_null($message) ? sprintf(
+		"Timeout reached after %d seconds.", $timeout) : $message);
 }

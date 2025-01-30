@@ -3,7 +3,7 @@
  *
  * @license   http://www.gnu.org/licenses/gpl.html GPL Version 3
  * @author    Volker Theile <volker.theile@openmediavault.org>
- * @copyright Copyright (c) 2009-2022 Volker Theile
+ * @copyright Copyright (c) 2009-2025 Volker Theile
  *
  * OpenMediaVault is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,26 +15,22 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  */
-import { Component, ViewChild } from '@angular/core';
-import { marker as gettext } from '@biesbjerg/ngx-translate-extract-marker';
+import { Component } from '@angular/core';
+import { marker as gettext } from '@ngneat/transloco-keys-manager/marker';
 import * as _ from 'lodash';
 
-import { DatatablePageComponent } from '~/app/core/components/intuition/datatable-page/datatable-page.component';
 import { DatatablePageActionConfig } from '~/app/core/components/intuition/models/datatable-page-action-config.type';
 import { DatatablePageConfig } from '~/app/core/components/intuition/models/datatable-page-config.type';
+import { BaseDatatablePageComponent } from '~/app/pages/base-page-component';
 import { NotificationType } from '~/app/shared/enum/notification-type.enum';
 import { Datatable } from '~/app/shared/models/datatable.interface';
 import { NotificationService } from '~/app/shared/services/notification.service';
 import { RpcService } from '~/app/shared/services/rpc.service';
 
 @Component({
-  template:
-    '<omv-intuition-datatable-page #page [config]="this.config"></omv-intuition-datatable-page>'
+  template: '<omv-intuition-datatable-page [config]="this.config"></omv-intuition-datatable-page>'
 })
-export class FirewallRuleInetDatatablePageComponent {
-  @ViewChild('page', { static: true })
-  page: DatatablePageComponent;
-
+export class FirewallRuleInetDatatablePageComponent extends BaseDatatablePageComponent {
   public config: DatatablePageConfig = {
     stateId: '9cee722c-7c04-11ea-a3e8-37671db9f618',
     autoReload: false,
@@ -69,6 +65,7 @@ export class FirewallRuleInetDatatablePageComponent {
         cellTemplateName: 'chip',
         cellTemplateConfig: {
           map: {
+            /* eslint-disable @typescript-eslint/naming-convention */
             tcp: { value: 'TCP' },
             udp: { value: 'UDP' },
             icmp: { value: 'ICMP' },
@@ -78,6 +75,7 @@ export class FirewallRuleInetDatatablePageComponent {
             '!udp': { value: gettext('Not UDP') },
             '!icmp': { value: gettext('Not ICMP') },
             '!icmpv6': { value: gettext('Not ICMPv6') }
+            /* eslint-enable @typescript-eslint/naming-convention */
           }
         }
       },
@@ -89,11 +87,14 @@ export class FirewallRuleInetDatatablePageComponent {
         sortable: false
       },
       {
-        name: gettext('Comment'),
+        name: gettext('Tags'),
         prop: 'comment',
-        cellTemplateName: 'text',
+        cellTemplateName: 'chip',
+        cellTemplateConfig: {
+          separator: ','
+        },
         flexGrow: 1,
-        sortable: false
+        sortable: true
       }
     ],
     sorters: [
@@ -176,9 +177,12 @@ export class FirewallRuleInetDatatablePageComponent {
     ]
   };
 
-  private dirty = false;
-
-  constructor(private rpcService: RpcService, private notificationService: NotificationService) {}
+  constructor(
+    private rpcService: RpcService,
+    private notificationService: NotificationService
+  ) {
+    super();
+  }
 
   onSave(action: DatatablePageActionConfig, table: Datatable) {
     this.rpcService.request('Iptables', 'setRules', table.data).subscribe(() => {

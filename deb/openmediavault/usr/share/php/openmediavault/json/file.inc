@@ -4,7 +4,7 @@
  *
  * @license   http://www.gnu.org/licenses/gpl.html GPL Version 3
  * @author    Volker Theile <volker.theile@openmediavault.org>
- * @copyright Copyright (c) 2009-2022 Volker Theile
+ * @copyright Copyright (c) 2009-2025 Volker Theile
  *
  * OpenMediaVault is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -46,7 +46,7 @@ class File {
 	 */
 	function __destruct() {
 		// Always ensure the file is unlocked.
-		if (!is_null($this->fh)) {
+		if (is_resource($this->fh)) {
 			flock($this->fh, LOCK_UN);
 		}
 	}
@@ -74,11 +74,12 @@ class File {
 	 * @throw \OMV\Exception
 	 */
 	public function open($accessMode = "w+", $lockMode = LOCK_EX) {
-		if (FALSE === ($this->fh = fopen($this->filename, $accessMode))) {
+		if (FALSE === ($fh = fopen($this->filename, $accessMode))) {
 			throw new \OMV\Exception(
 			  "Failed to open file (filename=%s, mode=%s).",
 			  $this->filename, $accessMode);
 		}
+		$this->fh = $fh;
 		if (FALSE === flock($this->fh, $lockMode, $wouldBlock)) {
 			throw new \OMV\Exception(
 			  "Failed to lock file (filename=%s, mode=%d)%s.",
@@ -93,7 +94,7 @@ class File {
 	 * @return TRUE if the file is opened, otherwise FALSE.
 	 */
 	public function isOpen() {
-		return !is_null($this->fh);
+		return is_resource($this->fh);
 	}
 
 	/**
@@ -195,17 +196,23 @@ class File {
 		// Seek to the beginning of the file.
 		if (FALSE === rewind($this->fh)) {
 			throw new \OMV\Exception("Failed to rewind file '%s'.",
-			  $this->filename);
+				$this->filename);
 		}
 		// Get the information about the file.
 		if (FALSE === ($fstats = fstat($this->fh))) {
 			throw new \OMV\Exception("Failed to get file stats from '%s'.",
-			  $this->filename);
+				$this->filename);
+		}
+		// A JSON string can not be empty because this is not valid JSON,
+		// only `{}` or `[]` are a valid "empty".
+		if (0 == $fstats['size']) {
+			throw new \OMV\Exception("The file '%s' is erroneously empty.",
+				$this->filename);
 		}
 		// Get the whole file contents.
 		if (FALSE === ($contents = fread($this->fh, $fstats['size']))) {
 			throw new \OMV\Exception("Failed to read file '%s' (size=%d).",
-			  $this->filename, $fstats['size']);
+				$this->filename, $fstats['size']);
 		}
 		return $contents;
 	}
@@ -257,8 +264,9 @@ class File {
 	 * @return Returns TRUE on success or FALSE on failure.
 	 */
 	public function unlink() {
-		if ($this->isOpen())
+		if ($this->isOpen()) {
 			$this->close();
+		}
 		$result = @unlink($this->filename);
 		clearstatcache(TRUE, $this->filename);
 		return $result;

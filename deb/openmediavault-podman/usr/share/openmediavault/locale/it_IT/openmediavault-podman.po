@@ -1,0 +1,124 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the openmediavault-podman package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+# 
+# Translators:
+# Roberto Bellingeri <bellingeri@netguru.it>, 2025
+# 
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: openmediavault-podman\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2023-10-11 21:57+0200\n"
+"PO-Revision-Date: 2023-10-11 19:57+0000\n"
+"Last-Translator: Roberto Bellingeri <bellingeri@netguru.it>, 2025\n"
+"Language-Team: Italian (https://app.transifex.com/openmediavault/teams/14254/it/)\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Language: it\n"
+"Plural-Forms: nplurals=3; plural=n == 1 ? 0 : n != 0 && n % 1000000 == 0 ? 1 : 2;\n"
+
+msgid "Command"
+msgstr "Comando"
+
+msgid "Containers"
+msgstr "Container"
+
+msgid "Created"
+msgstr "Creato"
+
+msgid "Digest"
+msgstr ""
+
+msgid "Do you really want to restart this container?"
+msgstr "Vuoi davvero riavviare questo container?"
+
+msgid "Do you really want to restart this pod?"
+msgstr "Vuoi davvero riavviare questo pod?"
+
+msgid "Driver"
+msgstr "Driver"
+
+msgid "ID"
+msgstr "ID"
+
+msgid "Image"
+msgstr "Immagine"
+
+msgid "Images"
+msgstr "Immagini"
+
+msgid "Infra ID"
+msgstr ""
+
+msgid "Inspect"
+msgstr "Ispezionare"
+
+msgid "Logs"
+msgstr "Log"
+
+msgid "Mount Point"
+msgstr "Punto di montaggio"
+
+msgid "Mounts"
+msgstr ""
+
+msgid "Name"
+msgstr "Nome"
+
+msgid "Names"
+msgstr "Nomi"
+
+msgid "Networks"
+msgstr "Reti"
+
+msgid "Podman"
+msgstr "Podman"
+
+msgid "Pods"
+msgstr "Pod"
+
+msgid "Ports"
+msgstr "Porte"
+
+msgid "Pull latest"
+msgstr ""
+
+msgid "Pull latest image"
+msgstr ""
+
+msgid "Repository"
+msgstr "Repository"
+
+msgid "Restart"
+msgstr "Riavvia"
+
+msgid "Size"
+msgstr ""
+
+msgid "Started"
+msgstr "Avviato"
+
+msgid "State"
+msgstr "Stato"
+
+msgid "Statistics"
+msgstr "Statistiche"
+
+msgid "Status"
+msgstr "Stato"
+
+msgid "Tag"
+msgstr "Tag"
+
+msgid "Updated Podman settings."
+msgstr "Impostazioni Podman aggiornate."
+
+msgid "Used"
+msgstr "Usato"
+
+msgid "Volumes"
+msgstr "Volumi"

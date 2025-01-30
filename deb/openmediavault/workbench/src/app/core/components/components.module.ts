@@ -1,13 +1,11 @@
 /* eslint-disable max-len */
 import { CommonModule } from '@angular/common';
 import { NgModule } from '@angular/core';
-import { FlexLayoutModule } from '@angular/flex-layout';
 import { RouterModule } from '@angular/router';
-import { TranslateModule } from '@ngx-translate/core';
-import { BlockUIModule } from 'ng-block-ui';
+import { TranslocoModule } from '@ngneat/transloco';
 import { NgScrollbarModule } from 'ngx-scrollbar';
 
-import { ApplyConfigComponent } from '~/app/core/components/apply-config/apply-config.component';
+import { ApplyConfigPanelComponent } from '~/app/core/components/apply-config-panel/apply-config-panel.component';
 import { BreadcrumbComponent } from '~/app/core/components/breadcrumb/breadcrumb.component';
 import { DashboardModule } from '~/app/core/components/dashboard/dashboard.module';
 import { GreenRainComponent } from '~/app/core/components/green-rain/green-rain.component';
@@ -17,8 +15,9 @@ import { BlankLayoutComponent } from '~/app/core/components/layouts/blank-layout
 import { WorkbenchLayoutComponent } from '~/app/core/components/layouts/workbench-layout/workbench-layout.component';
 import { NavigationBarComponent } from '~/app/core/components/navigation-bar/navigation-bar.component';
 import { NavigationBarListItemComponent } from '~/app/core/components/navigation-bar/navigation-bar-list-item/navigation-bar-list-item.component';
-import { NotificationsComponent } from '~/app/core/components/notifications/notifications.component';
+import { NotificationBarComponent } from '~/app/core/components/notification-bar/notification-bar.component';
 import { TopBarComponent } from '~/app/core/components/top-bar/top-bar.component';
+import { WelcomePanelComponent } from '~/app/core/components/welcome-panel/welcome-panel.component';
 import { MaterialModule } from '~/app/material.module';
 import { SharedModule } from '~/app/shared/shared.module';
 
@@ -29,30 +28,29 @@ import { SharedModule } from '~/app/shared/shared.module';
     TopBarComponent,
     GuruMeditationComponent,
     BreadcrumbComponent,
-    NotificationsComponent,
+    NotificationBarComponent,
     BlankLayoutComponent,
     WorkbenchLayoutComponent,
-    ApplyConfigComponent,
-    GreenRainComponent
+    ApplyConfigPanelComponent,
+    GreenRainComponent,
+    WelcomePanelComponent
   ],
   exports: [
     BlankLayoutComponent,
     WorkbenchLayoutComponent,
     GuruMeditationComponent,
     IntuitionModule,
-    NotificationsComponent,
+    NotificationBarComponent,
     DashboardModule,
     GreenRainComponent
   ],
   imports: [
-    BlockUIModule.forRoot(),
     CommonModule,
     SharedModule,
     RouterModule,
     MaterialModule,
-    FlexLayoutModule,
     IntuitionModule,
-    TranslateModule.forChild(),
+    TranslocoModule,
     NgScrollbarModule,
     DashboardModule
   ]

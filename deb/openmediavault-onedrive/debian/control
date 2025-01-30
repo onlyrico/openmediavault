@@ -6,11 +6,11 @@ Priority: optional
 Maintainer: Volker Theile <volker.theile@openmediavault.org>
 Build-Depends: debhelper (>= 12), gettext
 Standards-Version: 3.9.6
-Homepage: http://www.openmediavault.org
+Homepage: https://www.openmediavault.org
 
 Package: openmediavault-onedrive
 Architecture: all
-Depends: openmediavault (>= 6.0.43), onedrive (>= 2.4.21), sudo
+Depends: openmediavault (>= 7.0), onedrive (>= 2.5.2), sudo
 Priority: optional
 Description: openmediavault OneDrive plugin
  OneDrive is the cloud storage system of Microsoft. This plugin

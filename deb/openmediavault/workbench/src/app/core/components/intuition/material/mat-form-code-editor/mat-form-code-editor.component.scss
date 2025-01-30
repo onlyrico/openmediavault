@@ -1,7 +1,7 @@
-@use 'src/scss/mixins';
+@use 'scss/mixins';
 
-mat-form-code-editor {
-  ::ng-deep & .cm-editor {
+.editor-container {
+  .cm-editor {
     @include mixins.omv-scrollbar;
 
     height: 300px;

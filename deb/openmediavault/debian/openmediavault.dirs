@@ -1,6 +1,6 @@
 etc/openmediavault
 etc/nginx/openmediavault-webgui.d
-/etc/salt/pki/master/minions
+etc/salt/pki/master/minions
 usr/share/openmediavault
 usr/share/php/openmediavault
 var/lib/openmediavault
@@ -8,6 +8,7 @@ var/lib/openmediavault/apt
 var/lib/openmediavault/cron.d
 var/lib/openmediavault/ssh/authorized_keys
 var/lib/openmediavault/ssh/keys
+var/lib/openmediavault/workbench/localstorage.d
 var/www/openmediavault
 var/cache/openmediavault
 var/cache/openmediavault/archives

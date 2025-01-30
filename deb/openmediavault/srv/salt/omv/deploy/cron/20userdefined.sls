@@ -2,7 +2,7 @@
 #
 # @license   http://www.gnu.org/licenses/gpl.html GPL Version 3
 # @author    Volker Theile <volker.theile@openmediavault.org>
-# @copyright Copyright (c) 2009-2022 Volker Theile
+# @copyright Copyright (c) 2009-2025 Volker Theile
 #
 # OpenMediaVault is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -27,6 +27,11 @@
   {'operator': 'stringEquals', 'arg0': 'type', 'arg1': 'userdefined'}) %}
 {% set scripts_dir = salt['pillar.get']('default:OMV_CRONSCRIPTS_DIR', '/var/lib/openmediavault/cron.d') %}
 {% set script_prefix = salt['pillar.get']('default:OMV_CRONTAB_USERDEFINED_PREFIX', 'userdefined-') %}
+
+cron_create_cron_scripts_dir:
+  file.directory:
+    - name: "{{ scripts_dir }}"
+    - makedirs: True
 
 remove_cron_userdefined_scripts:
   module.run:

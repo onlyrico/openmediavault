@@ -30,6 +30,12 @@
 			   "type": "string",
 			   "required": true
 			},
+			"routemetric": {
+			   "type": "integer",
+			   "minimum": 0,
+			   "maximum": 65535,
+			   "required": true
+			},
 			"method6": {
 			   "type": "string",
 			   "enum": [ "auto", "static", "manual", "dhcp" ],
@@ -49,14 +55,20 @@
 			   "type": "string",
 			   "required": true
 			},
+			"routemetric6": {
+			   "type": "integer",
+			   "minimum": 0,
+			   "maximum": 65535,
+			   "required": true
+			},
 			"dnsnameservers": {
 			   "type": "string",
-			   "pattern": "^((\\S+[,;])*\\S+)?$",
+			   "pattern": "^((\\S+[,;]\\s*)*\\S+)?$",
 			   "required": true
 			},
 			"dnssearch": {
 			   "type": "string",
-			   "pattern": "^((\\S+[,;])*\\S+)?$",
+			   "pattern": "^((\\S+[,;]\\s*)*\\S+)?$",
 			   "required": true
 			},
 			"mtu": {
@@ -71,6 +83,11 @@
 			},
 			"comment": {
 			   "type": "string",
+			   "required": true
+			},
+			"altmacaddress": {
+			   "type": "string",
+			   "pattern": "^([a-fA-F0-9]{2}(:[a-fA-F0-9]{2}){5})?$",
 			   "required": true
 			}
 		}
@@ -107,6 +124,12 @@
 			   "type": "string",
 			   "required": true
 			},
+			"routemetric": {
+			   "type": "integer",
+			   "minimum": 0,
+			   "maximum": 65535,
+			   "required": true
+			},
 			"method6": {
 			   "type": "string",
 			   "enum": [ "auto", "static", "manual", "dhcp" ],
@@ -126,14 +149,20 @@
 			   "type": "string",
 			   "required": true
 			},
+			"routemetric6": {
+			   "type": "integer",
+			   "minimum": 0,
+			   "maximum": 65535,
+			   "required": true
+			},
 			"dnsnameservers": {
 			   "type": "string",
-			   "pattern": "^((\\S+[,;])*\\S+)?$",
+			   "pattern": "^((\\S+[,;]\\s*)*\\S+)?$",
 			   "required": true
 			},
 			"dnssearch": {
 			   "type": "string",
-			   "pattern": "^((\\S+[,;])*\\S+)?$",
+			   "pattern": "^((\\S+[,;]\\s*)*\\S+)?$",
 			   "required": true
 			},
 			"mtu": {
@@ -216,6 +245,12 @@
 			   "type": "string",
 			   "required": true
 			},
+			"routemetric": {
+			   "type": "integer",
+			   "minimum": 0,
+			   "maximum": 65535,
+			   "required": true
+			},
 			"method6": {
 			   "type": "string",
 			   "enum": [ "auto", "static", "manual", "dhcp" ],
@@ -235,14 +270,20 @@
 			   "type": "string",
 			   "required": true
 			},
+			"routemetric6": {
+			   "type": "integer",
+			   "minimum": 0,
+			   "maximum": 65535,
+			   "required": true
+			},
 			"dnsnameservers": {
 			   "type": "string",
-			   "pattern": "^((\\S+[,;])*\\S+)?$",
+			   "pattern": "^((\\S+[,;]\\s*)*\\S+)?$",
 			   "required": true
 			},
 			"dnssearch": {
 			   "type": "string",
-			   "pattern": "^((\\S+[,;])*\\S+)?$",
+			   "pattern": "^((\\S+[,;]\\s*)*\\S+)?$",
 			   "required": true
 			},
 			"mtu": {
@@ -259,16 +300,21 @@
 			   "type": "string",
 			   "required": true
 		   },
+		   "altmacaddress": {
+			   "type": "string",
+			   "pattern": "^([a-fA-F0-9]{2}(:[a-fA-F0-9]{2}){5})?$",
+			   "required": true
+		   },
 		   "vlanid": {
-				"type": "integer",
-				"minimum": 1,
-				"maximum": 4095,
+			   "type": "integer",
+			   "minimum": 1,
+			   "maximum": 4095,
 			   "required": true
-			},
-			"vlanrawdevice": {
-				"type": "string",
+		   },
+		   "vlanrawdevice": {
+			   "type": "string",
 			   "required": true
-			}
+		   }
 		}
 	}
 },{
@@ -303,6 +349,12 @@
 			   "type": "string",
 			   "required": true
 			},
+			"routemetric": {
+			   "type": "integer",
+			   "minimum": 0,
+			   "maximum": 65535,
+			   "required": true
+			},
 			"method6": {
 			   "type": "string",
 			   "enum": [ "auto", "static", "manual", "dhcp" ],
@@ -322,14 +374,20 @@
 			   "type": "string",
 			   "required": true
 			},
+			"routemetric6": {
+			   "type": "integer",
+			   "minimum": 0,
+			   "maximum": 65535,
+			   "required": true
+			},
 			"dnsnameservers": {
 			   "type": "string",
-			   "pattern": "^((\\S+[,;])*\\S+)?$",
+			   "pattern": "^((\\S+[,;]\\s*)*\\S+)?$",
 			   "required": true
 			},
 			"dnssearch": {
 			   "type": "string",
-			   "pattern": "^((\\S+[,;])*\\S+)?$",
+			   "pattern": "^((\\S+[,;]\\s*)*\\S+)?$",
 			   "required": true
 			},
 			"mtu": {
@@ -345,13 +403,32 @@
 			"comment": {
 			   "type": "string",
 			   "required": true
-		   },
-		   "wpassid": {
+			},
+			"altmacaddress": {
+				"type": "string",
+				"pattern": "^([a-fA-F0-9]{2}(:[a-fA-F0-9]{2}){5})?$",
+				"required": true
+			},
+			"band": {
+				"type": "string",
+				"enum": [ "auto", "2.4GHz", "5GHz" ],
+				"required": true
+			},
+			"wpassid": {
 				"type": "string",
 				"required": true
 			},
 			"wpapsk": {
 				"type": "string",
+				"required": true
+			},
+			"keymanagement": {
+				"type": "string",
+				"enum": [ "psk", "sae" ],
+				"required": true
+			},
+			"hidden": {
+				"type": "boolean",
 				"required": true
 			}
 		}
@@ -389,6 +466,12 @@
 				"type": "string",
 				"required": true
 			},
+			"routemetric": {
+			   "type": "integer",
+			   "minimum": 0,
+			   "maximum": 65535,
+			   "required": true
+			},
 			"method6": {
 				"type": "string",
 				"enum": ["auto", "static", "manual", "dhcp"],
@@ -408,14 +491,20 @@
 				"type": "string",
 				"required": true
 			},
+			"routemetric6": {
+			   "type": "integer",
+			   "minimum": 0,
+			   "maximum": 65535,
+			   "required": true
+			},
 			"dnsnameservers": {
 				"type": "string",
-				"pattern": "^((\\S+[,;])*\\S+)?$",
+				"pattern": "^((\\S+[,;]\\s*)*\\S+)?$",
 				"required": true
 			},
 			"dnssearch": {
 				"type": "string",
-				"pattern": "^((\\S+[,;])*\\S+)?$",
+				"pattern": "^((\\S+[,;]\\s*)*\\S+)?$",
 				"required": true
 			},
 			"mtu": {

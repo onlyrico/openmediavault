@@ -4,7 +4,7 @@
  *
  * @license   http://www.gnu.org/licenses/gpl.html GPL Version 3
  * @author    Volker Theile <volker.theile@openmediavault.org>
- * @copyright Copyright (c) 2009-2022 Volker Theile
+ * @copyright Copyright (c) 2009-2025 Volker Theile
  *
  * OpenMediaVault is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -42,6 +42,7 @@ class OMVRpcServiceClamAV extends \OMV\Rpc\ServiceAbstract {
 		$this->registerMethod("getOnAccessPath");
 		$this->registerMethod("setOnAccessPath");
 		$this->registerMethod("deleteOnAccessPath");
+		$this->registerMethod("getStats");
 	}
 
 	/**
@@ -97,6 +98,7 @@ class OMVRpcServiceClamAV extends \OMV\Rpc\ServiceAbstract {
 			"clamd.scanarchive" => $params['scanarchive'],
 			"clamd.detectbrokenexecutables" => $params[
 			  'detectbrokenexecutables'],
+			"clamd.alertbrokenmedia" => $params['alertbrokenmedia'],
 			"clamd.algorithmicdetection" => $params['algorithmicdetection'],
 			"clamd.followdirectorysymlinks" => $params[
 			  'followdirectorysymlinks'],
@@ -285,14 +287,15 @@ class OMVRpcServiceClamAV extends \OMV\Rpc\ServiceAbstract {
 				\OMV\Environment::get("OMV_CRONSCRIPTS_DIR"),
 				sprintf("clamdscan-%s", $params['uuid']));
 			$cmd = new \OMV\System\Process("sudo", $cmdArgs);
-			$cmd->setEnv("SHELL", "/bin/sh");
+			$cmd->setEnv("SHELL", "/usr/bin/dash");
 			$cmd->setRedirect2to1();
 			$cmdLine = $cmd->getCommandLine();
 			// Execute the command.
 			$exitStatus = $this->exec($cmdLine, $output, $bgOutputFilename);
 			// Check the exit status.
-			if (0 !== $exitStatus)
+			if (0 !== $exitStatus) {
 				throw new \OMV\ExecException($cmdLine, $output, $exitStatus);
+			}
 			return $output;
 		});
 	}
@@ -399,5 +402,31 @@ class OMVRpcServiceClamAV extends \OMV\Rpc\ServiceAbstract {
 		$db->delete($object);
 		// Return the deleted configuration object.
 		return $object->getAssoc();
+	}
+
+	/**
+	 * Get statistics.
+	 * @param params The method parameters.
+	 * @param context The context of the caller.
+	 * @return A string containing the requested statistics.
+	 */
+	public function getStats($params, $context) {
+		$this->validateMethodContext($context, [
+			"role" => OMV_ROLE_ADMINISTRATOR
+		]);
+		$db = \OMV\Config\Database::getInstance();
+		$object = $db->get("conf.service.clamav");
+		if (FALSE === $object->get("enable")) {
+			$stats = gettext("Service disabled");
+		} else {
+			$cmdArgs = [];
+			$cmd = new \OMV\System\Process("clamconf", $cmdArgs);
+			$cmd->setRedirect2to1();
+			$cmd->execute($output);
+			array_shift($output);
+			array_shift($output);
+			$stats = implode("\n", $output);
+		}
+		return $stats;
 	}
 }

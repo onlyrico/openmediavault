@@ -3,7 +3,7 @@
  *
  * @license   http://www.gnu.org/licenses/gpl.html GPL Version 3
  * @author    Volker Theile <volker.theile@openmediavault.org>
- * @copyright Copyright (c) 2009-2022 Volker Theile
+ * @copyright Copyright (c) 2009-2025 Volker Theile
  *
  * OpenMediaVault is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,14 +15,15 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  */
-import { Component, OnDestroy } from '@angular/core';
-import { marker as gettext } from '@biesbjerg/ngx-translate-extract-marker';
+import { Component } from '@angular/core';
+import { marker as gettext } from '@ngneat/transloco-keys-manager/marker';
 import dayjs from 'dayjs';
 import * as _ from 'lodash';
 import { Subscription } from 'rxjs';
 
 import { DatatablePageConfig } from '~/app/core/components/intuition/models/datatable-page-config.type';
-import { format } from '~/app/functions.helper';
+import { Unsubscribe } from '~/app/decorators';
+import { format, notAvailable } from '~/app/functions.helper';
 import { BinaryUnitPipe } from '~/app/shared/pipes/binary-unit.pipe';
 import {
   SystemInformation,
@@ -32,7 +33,10 @@ import {
 @Component({
   template: '<omv-intuition-datatable-page [config]="this.config"></omv-intuition-datatable-page>'
 })
-export class SystemInformationDatatablePageComponent implements OnDestroy {
+export class SystemInformationDatatablePageComponent {
+  @Unsubscribe()
+  private subscriptions = new Subscription();
+
   public config: DatatablePageConfig = {
     limit: 0,
     autoReload: false,
@@ -59,7 +63,6 @@ export class SystemInformationDatatablePageComponent implements OnDestroy {
       fields: ['name', 'value']
     }
   };
-  private subscriptions = new Subscription();
 
   constructor(
     private binaryUnitPipe: BinaryUnitPipe,
@@ -80,21 +83,21 @@ export class SystemInformationDatatablePageComponent implements OnDestroy {
             name: gettext('Version'),
             value: {
               type: 'text',
-              value: _.get(res, 'version')
+              value: notAvailable(_.get(res, 'version'))
             }
           },
           cpuModelName: {
             name: gettext('Processor'),
             value: {
               type: 'text',
-              value: _.get(res, 'cpuModelName')
+              value: notAvailable(_.get(res, 'cpuModelName'))
             }
           },
           kernel: {
             name: gettext('Kernel'),
             value: {
               type: 'text',
-              value: _.get(res, 'kernel')
+              value: notAvailable(_.get(res, 'kernel'))
             }
           },
           time: {
@@ -148,9 +151,5 @@ export class SystemInformationDatatablePageComponent implements OnDestroy {
         this.config.store.data = data;
       })
     );
-  }
-
-  ngOnDestroy(): void {
-    this.subscriptions.unsubscribe();
   }
 }

@@ -4,7 +4,7 @@
 #
 # @license   http://www.gnu.org/licenses/gpl.html GPL Version 3
 # @author    Volker Theile <volker.theile@openmediavault.org>
-# @copyright Copyright (c) 2009-2022 Volker Theile
+# @copyright Copyright (c) 2009-2025 Volker Theile
 #
 # OpenMediaVault is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -65,7 +65,7 @@ class Schema(openmediavault.json.Schema):
                     ) from None
             elif "sshpubkey-openssh" == schema['format']:
                 if not re.match(
-                    r'^ssh-rsa AAAA[0-9A-Za-z+\/]+[=]{0,3}\s*'
+                    r'^(sk-ssh-ed25519@openssh\.com|ssh-(rsa|ed25519)) AAAA[0-9A-Za-z+\/]+[=]{0,3}\s*'
                     r'([^@]+@[^@]+|.+)*$',
                     value,
                 ):
@@ -88,6 +88,7 @@ class Schema(openmediavault.json.Schema):
                         % value,
                     ) from None
             elif "sshprivkey-rsa" == schema['format']:
+                # Deprecated: Use "sshprivkey-pem" instead.
                 if not re.match(
                     r'^-----BEGIN RSA PRIVATE KEY-----'
                     r'(\n|\r|\f)(.+)(\n|\r|\f)'
@@ -97,7 +98,31 @@ class Schema(openmediavault.json.Schema):
                 ):
                     raise openmediavault.json.SchemaValidationException(
                         name,
-                        "The value '%s' is no SSH private key (RSA)." % value,
+                        "The value '%s' is no SSH private key (PEM)." % value,
+                    ) from None
+            elif "sshprivkey-pem" == schema['format']:
+                if not re.match(
+                    r'^-----BEGIN (OPENSSH|RSA) PRIVATE KEY-----'
+                    r'(\n|\r|\f)(.+)(\n|\r|\f)'
+                    r'-----END (OPENSSH|RSA) PRIVATE KEY-----$',
+                    value,
+                    flags=re.DOTALL | re.MULTILINE,
+                ):
+                    raise openmediavault.json.SchemaValidationException(
+                        name,
+                        "The value '%s' is no SSH private key (PEM)." % value,
+                    ) from None
+            elif "pgppubkey" == schema['format']:
+                if not re.match(
+                    r'^-----BEGIN PGP PUBLIC KEY BLOCK-----'
+                    r'(\n|\r|\f)(.+)(\n|\r|\f)'
+                    r'-----END PGP PUBLIC KEY BLOCK-----$',
+                    value,
+                    flags=re.DOTALL | re.MULTILINE,
+                ):
+                    raise openmediavault.json.SchemaValidationException(
+                        name,
+                        "The value '%s' is no PGP public key." % value,
                     ) from None
             elif "sharename" == schema['format']:
                 # We are using the SMB/CIFS file/directory naming convention

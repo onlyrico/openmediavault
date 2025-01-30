@@ -1,10 +1,10 @@
-#!/bin/sh
+#!/usr/bin/env dash
 #
 # This file is part of OpenMediaVault.
 #
 # @license   http://www.gnu.org/licenses/gpl.html GPL Version 3
 # @author    Volker Theile <volker.theile@openmediavault.org>
-# @copyright Copyright (c) 2009-2022 Volker Theile
+# @copyright Copyright (c) 2009-2025 Volker Theile
 #
 # OpenMediaVault is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -18,19 +18,24 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with OpenMediaVault. If not, see <http://www.gnu.org/licenses/>.
-
+#
 # NOTE:
 # If the email notification service is disabled the mailq might become
 # full because various services still try to submit emails (e.g. cron).
 # Because of that the mailq will be flushed once a day if the notification
 # service is disabled.
+MAILTO=""
 
-set -e
+export LC_ALL=C.UTF-8
 
 . /etc/default/openmediavault
 . /usr/share/openmediavault/scripts/helper-functions
 
+set -e
+
+# Purge all outstanding messages if notifications are disabled.
 if [ "$(omv_config_get "//system/email/enable")" = "0" ]; then
-    postfix set-permissions || true
-    postsuper -d ALL
+  omv_syslog_info "Purging all messages in mail queue."
+  postfix set-permissions || true
+  postsuper -d ALL >/dev/null 2>&1
 fi

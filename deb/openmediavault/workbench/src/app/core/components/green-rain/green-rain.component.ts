@@ -2,7 +2,7 @@
 //
 // @license   http://www.gnu.org/licenses/gpl.html GPL Version 3
 // @author    Volker Theile <volker.theile@openmediavault.org>
-// @copyright Copyright (c) 2009-2022 Volker Theile
+// @copyright Copyright (c) 2009-2025 Volker Theile
 //
 // OpenMediaVault is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -13,7 +13,9 @@
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License for more details.
+/* eslint-disable @typescript-eslint/member-ordering */
 import {
+  ChangeDetectionStrategy,
   Component,
   ElementRef,
   HostListener,
@@ -38,7 +40,8 @@ type Column = {
 @Component({
   selector: 'omv-green-rain',
   templateUrl: './green-rain.component.html',
-  styleUrls: ['./green-rain.component.scss']
+  styleUrls: ['./green-rain.component.scss'],
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class GreenRainComponent implements OnInit, OnDestroy {
   @ViewChild('canvas', { static: true })
@@ -66,6 +69,7 @@ export class GreenRainComponent implements OnInit, OnDestroy {
   private fontFamily: string;
   private timerSubscription: Subscription;
   private initialDelayComplete = false;
+  private prefersReducedMotion = false;
 
   private get width(): number {
     const element = this.canvas.nativeElement as HTMLCanvasElement;
@@ -77,18 +81,29 @@ export class GreenRainComponent implements OnInit, OnDestroy {
     return element.height;
   }
 
-  constructor() {}
+  constructor() {
+    this.prefersReducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+  }
+
+  @HostListener('click', ['$event'])
+  onClick() {
+    if (!this.prefersReducedMotion && this.initialDelayComplete) {
+      this.restart(this.delay);
+    }
+  }
 
   @HostListener('window:resize', ['$event'])
   onResize() {
-    if (this.initialDelayComplete) {
-      this.stop();
-      this.init();
-      this.start(200);
+    if (!this.prefersReducedMotion && this.initialDelayComplete) {
+      this.restart(200);
     }
   }
 
   ngOnInit(): void {
+    if (this.prefersReducedMotion) {
+      return;
+    }
+
     const element = this.canvas.nativeElement as HTMLCanvasElement;
     const styles = window.getComputedStyle(element);
 
@@ -136,6 +151,12 @@ export class GreenRainComponent implements OnInit, OnDestroy {
     if (this.timerSubscription) {
       this.timerSubscription.unsubscribe();
     }
+  }
+
+  private restart(delay: number = 0) {
+    this.stop();
+    this.init();
+    this.start(delay);
   }
 
   private draw(): void {

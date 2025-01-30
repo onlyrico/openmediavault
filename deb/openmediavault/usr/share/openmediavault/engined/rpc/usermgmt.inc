@@ -4,7 +4,7 @@
  *
  * @license   http://www.gnu.org/licenses/gpl.html GPL Version 3
  * @author    Volker Theile <volker.theile@openmediavault.org>
- * @copyright Copyright (c) 2009-2022 Volker Theile
+ * @copyright Copyright (c) 2009-2025 Volker Theile
  *
  * OpenMediaVault is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -119,7 +119,7 @@ finish:
 	 * @return Returns an associative array with the user information
 	 *   or FALSE if the user does not exist.
 	 */
-	final private function getUserInfo($id) {
+	private function getUserInfo($id) {
 		$user = new \OMV\System\User($id);
 		if (!$user->exists())
 			return FALSE;
@@ -150,7 +150,7 @@ finish:
 	 *   last changed, minimum, maximum, warn, inactive, expire and
 	 *   reserved.
 	 */
-	final private function enumerateUsersByType($type) {
+	private function enumerateUsersByType($type) {
 		// Get list of user names.
 		$users = \OMV\System\User::getUsers();
 		// Iterate through all users to filter the requested ones.
@@ -235,7 +235,7 @@ finish:
 	 * @return Returns an associative array with the group information
 	 *   or FALSE if the group does not exist.
 	 */
-	final private function getGroupInfo($id) {
+	private function getGroupInfo($id) {
 		$group = new \OMV\System\Group($id);
 		if (!$group->exists())
 			return FALSE;
@@ -465,8 +465,8 @@ finish:
 	 *   \em password The plain password to use.
 	 *   \em email The users email address.
 	 *   \em comment Any text string. This field is optional.
-	 *   \em disallowusermod Set to FALSE to disallow the user to modify their
-	 *     account.
+	 *   \em disallowusermod Set to TRUE to disallow the user from modifying
+	 *     their account from within the web interface.
 	 *   \em sshpubkeys The users SSH public keys.
 	 * @param context The context of the caller.
 	 * @return The stored configuration object.
@@ -491,7 +491,8 @@ finish:
 			$pubKey = new \OMV\Ssh\PublicKey($sshPubKeyv);
 			$sshPubKeyv = $pubKey->toRfc4716();
 		}
-		$params['sshpubkeys'] = array_unique($params['sshpubkeys']);
+		$params['sshpubkeys'] = array_values(array_unique(
+			$params['sshpubkeys']));
 		// Try to get existing configuration object.
 		$filter = [
 			"operator" => "stringEquals",
@@ -1086,12 +1087,14 @@ finish:
 		}
 		// Update the non-system user.
 		$users = $this->enumerateUsersByType("normal");
+		$ld = \OMV\System\System::getLoginDefs();
 		foreach ($users as $userk => $userv) {
 			// Only process users that are in group 'users'.
 			$defaultGroup = \OMV\Environment::get(
 				"OMV_USERMGMT_DEFAULT_GROUP", "users");
-			if (!in_array($defaultGroup, $userv['groups']))
+			if (!in_array($defaultGroup, $userv['groups'])) {
 				continue;
+			}
 			$cmdArgs = [];
 			if (!empty($sfPath)) {
 				$homeDirPath = build_path(DIRECTORY_SEPARATOR, $sfPath,
@@ -1100,14 +1103,25 @@ finish:
 				// the new home directory if this does not exist.
 				// Note, the usermod command throws an error when calling
 				// with --move-home and the home directory already exists.
-				if (!file_exists($homeDirPath))
+				if (!file_exists($homeDirPath)) {
 					$cmdArgs[] = "--move-home";
+				}
 				$cmdArgs[] = "--home";
 				$cmdArgs[] = escapeshellarg($homeDirPath);
 			} else {
+				// Skip the user if they do not yet have a home directory.
+				if (empty($userv['dir'])) {
+					continue;
+				}
 				// Unset home directory.
+				// See https://unix.stackexchange.com/a/617552
+				//
+				// ToDo:
+				// Make use of an empty dir path again when the fix at
+				// https://github.com/shadow-maint/shadow/pull/1133 is
+				// available in Debian.
 				$cmdArgs[] = "--home";
-				$cmdArgs[] = escapeshellarg("");
+				$cmdArgs[] = array_value($ld, "NONEXISTENT", "/nonexistent");
 			}
 			$cmdArgs[] = escapeshellarg($userv['name']);
 			$cmd = new \OMV\System\Process("usermod", $cmdArgs);
@@ -1119,26 +1133,23 @@ finish:
 				  $userv['name']);
 				if (!file_exists($homeDirPath)) {
 					if (!mkdir($homeDirPath, 0700, TRUE)) {
-						$error = error_get_last();
 						throw new \OMV\Exception(
 						  "Failed to create home directory '%s': %s",
-						  $homeDirPath, $error['message']);
+						  $homeDirPath, last_error_msg());
 					}
 					if (!chown($homeDirPath, $userv['name'])) {
-						$error = error_get_last();
 						throw new \OMV\Exception(
 						  "Failed to change owner of the directory '%s' ".
 						  "to '%s': %s", $homeDirPath, $userv['name'],
-						  $error['message']);
+						  last_error_msg());
 					}
 					if (!chgrp($homeDirPath, \OMV\Environment::get(
 					  "OMV_USERMGMT_DEFAULT_GROUP"))) {
-						$error = error_get_last();
 						throw new \OMV\Exception(
 						  "Failed to change group of the directory '%s' ".
 						  "to '%s': %s", $homeDirPath,
 						  \OMV\Environment::get("OMV_USERMGMT_DEFAULT_GROUP"),
-						  $error['message']);
+						  last_error_msg());
 					}
 				}
 			}

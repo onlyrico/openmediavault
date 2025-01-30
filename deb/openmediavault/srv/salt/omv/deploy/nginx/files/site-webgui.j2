@@ -30,12 +30,14 @@ server {
     location / {
         try_files $uri $uri/ =404;
     }
-    location ~* \.json$ {
-        expires -1;
+    location ~* /index.html|\.json$ {
+        add_header Cache-Control "no-cache, must-revalidate";
+        add_header Pragma "no-cache";
+        expires 0;
     }
     location ~* \.php$ {
         fastcgi_split_path_info ^(.+\.php)(/.+)$;
-        fastcgi_pass unix:/run/php/php7.4-fpm-openmediavault-webgui.sock;
+        fastcgi_pass unix:/run/php/php8.2-fpm-openmediavault-webgui.sock;
         fastcgi_index index.php;
         fastcgi_read_timeout {{ fastcgi_read_timeout }};
         include fastcgi.conf;
@@ -48,7 +50,7 @@ server {
     listen {{ listen_ipv4_addr }}:{{ config.port }} {{ listen_params }};
     listen [{{ listen_ipv6_addr }}]:{{ config.port }} {{ listen_params }};
 {%- else %}
-    listen {{ config.port }} {{ listen_params }};
+    listen {{ listen_ipv4_addr }}:{{ config.port }} {{ listen_params }};
 {%- endif %}
 {%- if config.enablessl | to_bool and config.forcesslonly | to_bool %}
       if ($scheme = http) {
@@ -61,7 +63,7 @@ server {
     listen {{ listen_ipv4_addr }}:{{ config.sslport }} {{ listen_params }} {{ listen_http2_param }} ssl deferred;
     listen [{{ listen_ipv6_addr }}]:{{ config.sslport }} {{ listen_params }} {{ listen_http2_param }} ssl deferred;
 {%- else %}
-    listen {{ config.sslport }} {{ listen_params }} {{ listen_http2_param }} ssl deferred;
+    listen {{ listen_ipv4_addr }}:{{ config.sslport }} {{ listen_params }} {{ listen_http2_param }} ssl deferred;
 {%- endif %}
     ssl_certificate {{ ssl_cert_dir | path_join('certs', ssl_cert_prefix ~ config.sslcertificateref ~ '.crt') }};
     ssl_certificate_key {{ ssl_cert_dir | path_join('private', ssl_cert_prefix ~ config.sslcertificateref ~ '.key') }};

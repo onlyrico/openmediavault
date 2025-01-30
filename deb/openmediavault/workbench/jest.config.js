@@ -1,5 +1,5 @@
-require('jest-preset-angular/ngcc-jest-processor');
-
+// https://thymikee.github.io/jest-preset-angular/docs
+const esModules = ['@codemirror/legacy-modes', 'ansi-regex', 'rxjs', 'strip-ansi'];
 module.exports = {
   testTimeout: 10000,
   moduleNameMapper: {
@@ -8,6 +8,5 @@ module.exports = {
   preset: 'jest-preset-angular',
   setupFiles: ['jest-canvas-mock'],
   setupFilesAfterEnv: ['<rootDir>/src/setupJest.ts'],
-  testMatch: ['**/*.spec.ts'],
-  transformIgnorePatterns: ['/node_modules/(?!ansi-regex|strip-ansi|@codemirror/legacy-modes)']
+  transformIgnorePatterns: ['node_modules/(?!.*\\.mjs$|'.concat(esModules.join('|'), ')')]
 };

@@ -4,7 +4,7 @@
  *
  * @license   http://www.gnu.org/licenses/gpl.html GPL Version 3
  * @author    Volker Theile <volker.theile@openmediavault.org>
- * @copyright Copyright (c) 2009-2022 Volker Theile
+ * @copyright Copyright (c) 2009-2025 Volker Theile
  *
  * OpenMediaVault is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -142,6 +142,8 @@ class Manager implements \IteratorAggregate {
 				return FALSE;
 			if (empty($slaves))
 				continue;
+			// Remove slave devices. No need to re-index the array
+			// because it is sorted afterwards.
 			$result = array_diff($result, $slaves);
 		}
 		// Sort the devices using a "natural order" algorithm.
@@ -167,8 +169,10 @@ class Manager implements \IteratorAggregate {
 				return FALSE;
 			if (empty($slaves))
 				continue;
-			$result = array_unique(array_merge($result, $slaves));
+			$result = array_merge($result, $slaves);
 		}
+		// Remove duplicate values.
+		$result = array_unique($result);
 		// Sort the devices using a "natural order" algorithm.
 		if (!sort($result, SORT_NATURAL))
 			return FALSE;
@@ -205,7 +209,8 @@ class Manager implements \IteratorAggregate {
 	}
 
 	/**
-	 * Get the object of the class implementing the given filesystem.
+	 * Get the object of the class that is implementing the given network
+	 * interface.
 	 * @param deviceName Specifies the device name, e.g.
 	 *   <ul>
 	 *   \li eth0
@@ -213,12 +218,27 @@ class Manager implements \IteratorAggregate {
 	 *   \li eth2.1
 	 *   \li bond0
 	 *   </ul>
-	 * @return The object of the class implementing the given network
-	 *   interface, otherwise NULL.
+	 * @return object The object of the class that is implementing the given
+	 *   network interface, otherwise NULL.
 	 */
 	final public function getImpl($deviceName) {
 		if (NULL == ($backend = $this->getBackend($deviceName)))
 			return NULL;
 		return $backend->getImpl($deviceName);
+	}
+
+	/**
+	 * @see Manager::getImpl()
+	 * @return object The object of the class that is implementing the given
+	 *   network interface.
+	 * @throw \OMV\AssertException
+	 */
+	final public function assertGetImpl($deviceName) {
+		$result = self::getImpl($id);
+		if (is_null($result) || !$result->exists()) {
+			throw new \OMV\AssertException("Device '%s' does not exist.",
+				$deviceName);
+		}
+		return $result;
 	}
 }

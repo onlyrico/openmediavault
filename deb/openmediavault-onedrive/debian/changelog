@@ -1,3 +1,84 @@
+openmediavault-onedrive (7.1.4-3) stable; urgency=low
+
+  * Several improvements.
+  * Remove package owned onedrive systemd unit file.
+
+ -- Volker Theile <volker.theile@openmediavault.org>  Sun, 01 Dec 2024 10:07:47 +0100
+
+openmediavault-onedrive (7.1.3-1) stable; urgency=low
+
+  * View log messages under `Diagnostics | System Logs | Logs`.
+
+ -- Volker Theile <volker.theile@openmediavault.org>  Tue, 19 Nov 2024 09:25:02 +0100
+
+openmediavault-onedrive (7.1.2-1) stable; urgency=low
+
+  * Adapt `Monitor interval` options to the values supported by
+    onedrive client 2.5.2. Note, the minimum value is 5 minutes.
+
+ -- Volker Theile <volker.theile@openmediavault.org>  Wed, 13 Nov 2024 19:16:59 +0100
+
+openmediavault-onedrive (7.1.1-1) stable; urgency=low
+
+  * Update locale files.
+  * Adapt plugin to onedrive client 2.5.2.
+
+ -- Volker Theile <volker.theile@openmediavault.org>  Sun, 27 Oct 2024 20:54:43 +0100
+
+openmediavault-onedrive (7.1.0-2) stable; urgency=low
+
+  * Update locale files.
+  * Add `Cleanup local files` and `Extra options` configuration
+    settings to the UI.
+
+ -- Volker Theile <volker.theile@openmediavault.org>  Tue, 01 Oct 2024 00:46:26 +0200
+
+openmediavault-onedrive (7.0-3) unstable; urgency=low
+
+  * Adapt to openmediavault 7 (Sandworm).
+
+ -- Volker Theile <volker.theile@openmediavault.org>  Thu, 27 Jul 2023 17:08:38 +0200
+
+openmediavault-onedrive (6.2.12-2) stable; urgency=low
+
+  * Display a hint in the UI to use the omv-onedrive command as a
+    wrapper for the official OneDrive Linux client.
+
+ -- Volker Theile <volker.theile@openmediavault.org>  Sun, 27 Aug 2023 13:23:14 +0200
+
+openmediavault-onedrive (6.2.11-1) stable; urgency=low
+
+  * Make sure the onedrive systemd unit is started only after the
+    file systems of the shared folder is mounted.
+
+ -- Volker Theile <volker.theile@openmediavault.org>  Sat, 29 Jul 2023 13:20:56 +0200
+
+openmediavault-onedrive (6.2.10-1) stable; urgency=low
+
+  * Update locale files.
+  * Update package dependency.
+
+ -- Volker Theile <volker.theile@openmediavault.org>  Wed, 26 Jul 2023 19:52:23 +0200
+
+openmediavault-onedrive (6.2.9-2) stable; urgency=low
+
+  * Update locales.
+  * Add option to specify the user that is used to run the onedrive
+    service. All synchronized files and directories will be owned
+    by this user. Defaults to `onedrive`.
+  * Add `omv-onedrive` helper script to perform CLI commands. The
+    script will point the onedrive app to the correct configuration
+    directory and run the command using the configured user.
+
+ -- Volker Theile <volker.theile@openmediavault.org>  Sat, 01 Jul 2023 21:19:08 +0200
+
+openmediavault-onedrive (6.2.8-1) stable; urgency=low
+
+  * Add the `OMV_ONEDRIVE_ENABLELOGGING` and `OMV_ONEDRIVE_VERBOSE`
+    environment variables.
+
+ -- Volker Theile <volker.theile@openmediavault.org>  Fri, 27 Jan 2023 18:39:54 +0100
+
 openmediavault-onedrive (6.2.7-1) stable; urgency=low
 
   * Improve omv-onedrive-auth script.

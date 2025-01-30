@@ -4,7 +4,7 @@
  *
  * @license   http://www.gnu.org/licenses/gpl.html GPL Version 3
  * @author    Volker Theile <volker.theile@openmediavault.org>
- * @copyright Copyright (c) 2009-2022 Volker Theile
+ * @copyright Copyright (c) 2009-2025 Volker Theile
  *
  * OpenMediaVault is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -49,6 +49,17 @@ class ShareMgmt extends \OMV\Rpc\ServiceAbstract {
 		$this->registerMethod("getFileACL");
 		$this->registerMethod("setFileACL");
 		$this->registerMethod("getPath");
+		$this->registerMethod("enumerateSnapshots");
+		$this->registerMethod("enumerateAllSnapshots");
+		$this->registerMethod("createSnapshot");
+		$this->registerMethod("createScheduledSnapshotTask");
+		$this->registerMethod("enumerateScheduledSnapshotTasks");
+		$this->registerMethod("enumerateAllScheduledSnapshotTasks");
+		$this->registerMethod("deleteSnapshot");
+		$this->registerMethod("restoreSnapshot");
+		$this->registerMethod("fromSnapshot");
+		$this->registerMethod("getSnapshotLifecycle");
+		$this->registerMethod("setSnapshotLifecycle");
 	}
 
 	/**
@@ -132,7 +143,7 @@ class ShareMgmt extends \OMV\Rpc\ServiceAbstract {
 		foreach ($objects as $objectk => $objectv) {
 			$objectDict = new \OMV\Dictionary($objectv->getAssoc());
 			// Set the default values.
-			$objectDict->set("_used", false);
+			$objectDict->set("_used", FALSE);
 			$objectDict->set("device", "");
 			$objectDict->copy("name", "description");
 			$objectDict->set("mntent", [
@@ -142,6 +153,7 @@ class ShareMgmt extends \OMV\Rpc\ServiceAbstract {
 				"type" => "",
 				"posixacl" => FALSE
 			]);
+			$objectDict->set("snapshots", FALSE);
 			// Get the mount point configuration object to append additional
 			// information to the returned objects, e.g. the devicefile or
 			// a modified description.
@@ -190,9 +202,21 @@ class ShareMgmt extends \OMV\Rpc\ServiceAbstract {
 						$objectDict->get("device"),
 						$objectDict->get("reldirpath")));
 				}
+				// Are snapshots supported?
+				$sfAbsPath = build_path(DIRECTORY_SEPARATOR,
+					$meObject->get("dir"), $objectv->get("reldirpath"));
+				if (("btrfs" == $meObject->get("type")) && !is_null($fs)) {
+					// Try to get the subvolume information.
+					$sfInfo = $fs->getSubvolumeInfo($sfAbsPath);
+					// Block the creation of snapshots if this is not a
+					// subvolume or if it is a snapshot itself.
+					$snapshotsSupported = !(!$sfInfo || is_uuid(
+						$sfInfo['parent_uuid']));
+					$objectDict->set("snapshots", $snapshotsSupported);
+				}
 			}
-			// Is the shared folder referenced by any object? Shared folder
-			// references are named 'sharedfolderref'.
+			// Is the shared folder referenced by any object? Shared
+			// folder references are named 'sharedfolderref'.
 			$objectDict->set("_used", $db->isReferenced($objectv));
 			// Append the configuration object to the result list.
 			$result[] = $objectDict->getData();
@@ -221,10 +245,10 @@ class ShareMgmt extends \OMV\Rpc\ServiceAbstract {
 		$this->validateMethodParams($params, "rpc.common.getlist");
 		// Enumerate all shared folders.
 		$objects = $this->callMethod("enumerateSharedFolders", NULL,
-		  $context);
+			$context);
 		// Filter the result.
 		return $this->applyFilter($objects, $params['start'],
-		  $params['limit'], $params['sortfield'], $params['sortdir']);
+			$params['limit'], $params['sortfield'], $params['sortdir']);
 	}
 
 	/**
@@ -261,10 +285,10 @@ class ShareMgmt extends \OMV\Rpc\ServiceAbstract {
 	 *   \em name The name of the shared folder.
 	 *   \em reldirpath The relative directory path.
 	 *   \em comment The comment.
-	 *   \em mntentref The UUID of the mount point configuration object wherein
-	 *   the shared folder is located.
+	 *   \em mntentref The UUID of the mount point configuration object
+	 *     wherein the shared folder is located.
 	 *   \em mode The file mode of the shared folder directory. This field
-	 *   is optional. Defaults to 775.
+	 *     is optional. Defaults to 775.
 	 * @param context The context of the caller.
 	 * @return The stored configuration object.
 	 */
@@ -280,16 +304,16 @@ class ShareMgmt extends \OMV\Rpc\ServiceAbstract {
 		// path MUST be below the given mount point.
 		if (1 == preg_match("/\.\./", $params['reldirpath'])) {
 			throw new \InvalidArgumentException(sprintf(
-			  "The field '%s' contains forbidden two-dot symbols.",
-			  "reldirpath"));
+				"The field '%s' contains forbidden two-dot symbols.",
+				"reldirpath"));
 		}
 		// Prepare the configuration object. Use the name of the shared
 		// folder as the relative directory name of the share.
 		$object = new \OMV\Config\ConfigObject("conf.system.sharedfolder");
 		$object->setAssoc($params, TRUE, TRUE);
 		$object->set("reldirpath", build_path(DIRECTORY_SEPARATOR,
-		  ...explode(DIRECTORY_SEPARATOR, $params['reldirpath'])).
-		  DIRECTORY_SEPARATOR);
+			...explode(DIRECTORY_SEPARATOR, $params['reldirpath'])).
+			DIRECTORY_SEPARATOR);
 		// Set the configuration object.
 		$db = \OMV\Config\Database::getInstance();
 		// Check uniqueness:
@@ -324,61 +348,78 @@ class ShareMgmt extends \OMV\Rpc\ServiceAbstract {
 			$oldObject = $db->get("conf.system.sharedfolder",
 				$object->getIdentifier());
 			// Copy the privileges.
-			if (FALSE === $oldObject->isEmpty("privileges"))
+			if (FALSE === $oldObject->isEmpty("privileges")) {
 				$object->set("privileges", $oldObject->get("privileges"));
+			}
 		}
 		$db->set($object);
 		// Append the file mode field to the notification object if set.
 		// Defaults to 775.
 		$object->add("mode", "string", "775");
-		if (array_key_exists("mode", $params))
+		if (array_key_exists("mode", $params)) {
 			$object->set("mode", $params['mode']);
+		}
 		// Get the mount point configuration object to build the absolute
 		// shared folder path.
 		$meObject = $db->get("conf.system.filesystem.mountpoint",
-		  $object->get("mntentref"));
+			$object->get("mntentref"));
 		// Build the absolute shared folder path.
 		$pathName = build_path(DIRECTORY_SEPARATOR, $meObject->get("dir"),
-		  $object->get("reldirpath"));
+			$object->get("reldirpath"));
 		// Create the shared folder directory if necessary.
 		if (FALSE === file_exists($pathName)) {
-			// Create the directory. Note, the function seems to have a bug
-			// when using the mask parameter. E.g. octdec("777") does not
-			// create the correct permissions as expected, thus change the
-			// mode using chmod.
-			if (FALSE === mkdir($pathName, 0700, TRUE)) {
-				$error = error_get_last();
-				throw new \OMV\Exception(
-				  "Failed to create the directory '%s': %s",
-				  $pathName, $error['message']);
+			// Create the directory.
+			switch ($meObject->get("type")) {
+			case "btrfs":
+				$parentDir = dirname($pathName);
+				// Ensure the whole path exists, otherwise the Btrfs
+				// subvolume can't be created.
+				if (FALSE === is_dir($parentDir)) {
+					if (FALSE === mkdir($parentDir, 0700, TRUE)) {
+						throw new \OMV\Exception(
+							"Failed to create the directory '%s': %s",
+							$parentDir, last_error_msg());
+					}
+				}
+				// Create the Btrfs subvolume.
+				\OMV\System\Filesystem\Btrfs::createSubvolume($pathName);
+				break;
+			default:
+				// Note, the `mkdir` function seems to have a bug when
+				// using the mask parameter, e.g. `octdec("777")` does
+				// not create the correct permissions as expected, thus
+				// change the mode using chmod.
+				if (FALSE === mkdir($pathName, 0700, TRUE)) {
+					throw new \OMV\Exception(
+						"Failed to create the directory '%s': %s",
+						$pathName, last_error_msg());
+				}
+				break;
 			}
-			// Change the directory mode.
+			// Adapt the directory mode.
 			if (FALSE === chmod($pathName, octdec($object->get("mode")))) {
-				$error = error_get_last();
 				throw new \OMV\Exception(
-				  "Failed to set file mode to '%s' for '%s': %s",
-				  $object->get("mode"), $pathName, $error['message']);
+					"Failed to set file mode to '%s' for '%s': %s",
+					$object->get("mode"), $pathName, last_error_msg());
 			}
 		}
-		// Change group owner of directory to configured default group,
-		// e.g. 'users'.
+		// Change group owner of directory to the configured default
+		// users group, e.g. 'users'.
 		$defaultGroup = \OMV\Environment::get("OMV_USERMGMT_DEFAULT_GROUP",
 			"users");
 		if (FALSE === chgrp($pathName, $defaultGroup)) {
-			$error = error_get_last();
 			throw new \OMV\Exception(
-			  "Failed to set file group to '%s' for '%s': %s",
-			  $defaultGroup, $pathName, $error['message']);
+				"Failed to set file group to '%s' for '%s': %s",
+				$defaultGroup, $pathName, last_error_msg());
 		}
 		// Set the setgid bit. Setting this permission means that all files
 		// created in the folder will inherit the group of the folder rather
 		// than the primary group of the user who creates the file.
 		$mode = fileperms($pathName) | 02000;
 		if (FALSE === chmod($pathName, $mode)) {
-			$error = error_get_last();
 			throw new \OMV\Exception(
-			  "Failed to set file mode to '%o' for '%s': %s",
-			  $mode, $pathName, $error['message']);
+				"Failed to set file mode to '%o' for '%s': %s",
+				$mode, $pathName, last_error_msg());
 		}
 		// Walk through the directory path to make sure group 'users' can
 		// access all subdirectories.
@@ -1032,10 +1073,8 @@ class ShareMgmt extends \OMV\Rpc\ServiceAbstract {
 				// Execute command to set the file owner/group.
 				$cmd = new \OMV\System\Process("chown", $cmdArgs);
 				$cmd->setRedirect2to1();
-				if (0 !== $this->exec($cmd->getCommandLine(), $output,
-				  $bgOutputFilename)) {
-					throw new \OMV\ExecException($cmd->getCommandLine(),
-					  $output);
+				if (0 !== $this->exec($cmd, $output, $bgOutputFilename)) {
+					throw new \OMV\ExecException($cmd, $output);
 				}
 			}
 			////////////////////////////////////////////////////////////////////
@@ -1091,10 +1130,9 @@ class ShareMgmt extends \OMV\Rpc\ServiceAbstract {
 			// Execute command to set the file access control lists.
 			$cmd = new \OMV\System\Process("setfacl", $cmdArgs);
 			$cmd->setRedirect2to1();
-			if (0 !== ($exitStatus = $this->exec($cmd->getCommandLine(),
-					$output, $bgOutputFilename))) {
-				throw new \OMV\ExecException($cmd->getCommandLine(), $output,
-					$exitStatus);
+			if (0 !== ($exitStatus = $this->exec($cmd, $output,
+					$bgOutputFilename))) {
+				throw new \OMV\ExecException($cmd, $output, $exitStatus);
 			}
 			return $output;
 		});
@@ -1120,9 +1158,450 @@ class ShareMgmt extends \OMV\Rpc\ServiceAbstract {
 		// Get the mount point configuration object to build the absolute
 		// shared folder path.
 		$meObject = $db->get("conf.system.filesystem.mountpoint",
-		  $sfObject->get("mntentref"));
+			$sfObject->get("mntentref"));
 		// Return the absolute shared folder path.
 		return build_path(DIRECTORY_SEPARATOR, $meObject->get("dir"),
-		  $sfObject->get("reldirpath"));
+			$sfObject->get("reldirpath"));
+	}
+
+	/**
+	 * Enumerate the snapshots of the specified shared folder.
+	 * @param params An array containing the following fields:
+	 *   \em uuid The UUID of the shared folder configuration object.
+	 * @param context The context of the caller.
+	 * @return An array containing the snapshot information.
+	 */
+	public function enumerateSnapshots($params, $context) {
+		// Validate the RPC caller context.
+		$this->validateMethodContext($context, [
+			"role" => OMV_ROLE_ADMINISTRATOR
+		]);
+		// Validate the parameters of the RPC service method.
+		$this->validateMethodParams($params, "rpc.common.objectuuid");
+		// Get the shared folder and mount point configuration objects.
+		$db = \OMV\Config\Database::getInstance();
+		$sfObject = $db->get("conf.system.sharedfolder", $params['uuid']);
+		$meObject = $db->get("conf.system.filesystem.mountpoint",
+			$sfObject->get("mntentref"));
+		// Get the list of snapshots of this shared folder.
+		if ("btrfs" !== $meObject->get("type")) {
+			return [];
+		}
+		$fs = \OMV\System\Filesystem\Filesystem::getImplByMountPoint(
+			$meObject->get("dir"));
+		$sfAbsPath = build_path(DIRECTORY_SEPARATOR, $meObject->get("dir"),
+			$sfObject->get("reldirpath"));
+		if (FALSE === $fs->isSubvolume($sfAbsPath)) {
+			return [];
+		}
+		$result = [];
+		$svInfo = $fs->getSubvolumeInfo($sfAbsPath);
+		// The snapshots of the subvolumes are stored in the root pool of
+		// the mounted file system.
+		$allSnapshots = $fs->listSnapshots($meObject->get("dir"));
+		$result = array_filter_ex($allSnapshots, "parent_uuid",
+			$svInfo['uuid']);
+		// Check if the snapshot is referenced by a shared folder.
+		$db = \OMV\Config\Database::getInstance();
+		foreach ($result as $snapshotk => &$snapshotv) {
+			$snapshotv['mntentref'] = $meObject->getIdentifier();
+			$snapshotv['sharedfolderref'] = $sfObject->getIdentifier();
+			$snapshotv['otimets'] = strpdate($snapshotv['otime'],
+				"Y-m-d H:i:s");
+			$snapshotv['abspath'] = build_path(DIRECTORY_SEPARATOR,
+				$meObject->get("dir"), $snapshotv['path']);
+			$snapshotv['_used'] = $db->exists(
+				"conf.system.sharedfolder", [
+					"operator" => "stringEquals",
+					"arg0" => "reldirpath",
+					"arg1" => build_path(DIRECTORY_SEPARATOR,
+						$snapshotv['path'], DIRECTORY_SEPARATOR)
+				]);
+		}
+		return $result;
+	}
+
+	/**
+	 * Enumerate the snapshots of all existing shared folders.
+	 * @param params Not used.
+	 * @param context The context of the caller.
+	 * @return An array containing the information of all snapshots.
+	 */
+	public function enumerateAllSnapshots($params, $context) {
+		// Validate the RPC caller context.
+		$this->validateMethodContext($context, [
+			"role" => OMV_ROLE_ADMINISTRATOR
+		]);
+		$db = \OMV\Config\Database::getInstance();
+		$objects = $db->get("conf.system.sharedfolder");
+		$result = [];
+		foreach ($objects as $objectk => $objectv) {
+			$result = array_merge($result, $this->callMethod(
+				"enumerateSnapshots", [
+					"uuid" => $objectv->getIdentifier()
+				], $context));
+		}
+		return $result;
+	}
+
+	/**
+	 * Create a snapshot of the specified shared folder.
+	 * @param params An array containing the following fields:
+	 *   \em uuid The UUID of the shared folder configuration object.
+	 * @param context The context of the caller.
+	 * @return void
+	 * @throw \OMV\Exception
+	 */
+	public function createSnapshot($params, $context) {
+		// Validate the RPC caller context.
+		$this->validateMethodContext($context, [
+			"role" => OMV_ROLE_ADMINISTRATOR
+		]);
+		// Validate the parameters of the RPC service method.
+		$this->validateMethodParams($params, "rpc.common.objectuuid");
+		// Get the shared folder and mount point configuration objects.
+		$db = \OMV\Config\Database::getInstance();
+		$sfObject = $db->get("conf.system.sharedfolder", $params['uuid']);
+		$meObject = $db->get("conf.system.filesystem.mountpoint",
+			$sfObject->get("mntentref"));
+		// Does the shared folder support snapshots?
+		if ("btrfs" !== $meObject->get("type")) {
+			throw new \OMV\Exception(
+				"The shared folder '%s' does not support snapshots.",
+				$sfObject->get("name"));
+		}
+		$fs = \OMV\System\Filesystem\Filesystem::getImplByMountPoint(
+			$meObject->get("dir"));
+		$sfAbsPath = build_path(DIRECTORY_SEPARATOR, $meObject->get("dir"),
+			$sfObject->get("reldirpath"));
+		if (FALSE === $fs->isSubvolume($sfAbsPath)) {
+			throw new \OMV\Exception(
+				"The shared folder '%s' does not support snapshots.",
+				$sfObject->get("name"));
+		}
+		// Build the target of the snapshot. This includes the name of
+		// the shared folder + the current time in ISO 8601 basic format
+		// (without time zone designator).
+		// Make sure the `.snapshots` directory/subvolume exists.
+		$snapshotName = sprintf("%s_%s", $sfObject->get("name"),
+			date('Ymd\THis'));
+		$snapshotsDir = build_path(DIRECTORY_SEPARATOR,
+			$meObject->get("dir"), ".snapshots");
+		$snapshotPath = build_path(DIRECTORY_SEPARATOR, $snapshotsDir,
+			$snapshotName);
+		if (FALSE === is_dir($snapshotsDir)) {
+			$fs->createSubvolume($snapshotsDir);
+		}
+		// Make sure that the `.snapshots` directory is accessible by
+		// the configured default users group, e.g. 'users'.
+		$defaultGroup = \OMV\Environment::get(
+			"OMV_USERMGMT_DEFAULT_GROUP", "users");
+		if (FALSE === chgrp($snapshotsDir, $defaultGroup)) {
+			throw new \OMV\Exception(
+				"Failed to set file group to '%s' for '%s': %s",
+				$defaultGroup, $snapshotsDir, last_error_msg());
+		}
+		$fs->createSnapshot($sfAbsPath, $snapshotPath);
+		return [
+			"sharedfolder" => $sfObject->get("name"),
+			"sharedfolderref" => $sfObject->getIdentifier(),
+			"name" => $snapshotName,
+			"path" => build_path(DIRECTORY_SEPARATOR, ".snapshots",
+				$snapshotName),
+			"abspath" => $snapshotPath
+		];
+	}
+
+	/**
+	 * Create a scheduled task that will do a snapshot of the specified
+	 * shared folder.
+	 * @param params An array containing the following fields:
+	 *   \em uuid The UUID of the shared folder configuration object.
+	 *   \em execution The time when the snapshot should be created
+	 *     periodically, e.g. `hourly`, `daily`, `weekly`, `monthly`
+	 *     or `yearly`.
+	 * @param context The context of the caller.
+	 * @return void
+	 * @throw \OMV\Exception
+	 */
+	public function createScheduledSnapshotTask($params, $context) {
+		// Validate the RPC caller context.
+		$this->validateMethodContext($context, [
+			"role" => OMV_ROLE_ADMINISTRATOR
+		]);
+		// Validate the parameters of the RPC service method.
+		$this->validateMethodParams($params, "rpc.sharemgmt.createscheduledsnapshot");
+		// Get the shared folder and mount point configuration objects.
+		$db = \OMV\Config\Database::getInstance();
+		$sfObject = $db->get("conf.system.sharedfolder", $params['uuid']);
+		$meObject = $db->get("conf.system.filesystem.mountpoint",
+			$sfObject->get("mntentref"));
+		// Does the shared folder support snapshots?
+		if ("btrfs" !== $meObject->get("type")) {
+			throw new \OMV\Exception(
+				"The shared folder '%s' does not support snapshots.",
+				$sfObject->get("name"));
+		}
+		$fs = \OMV\System\Filesystem\Filesystem::getImplByMountPoint(
+			$meObject->get("dir"));
+		$sfAbsPath = build_path(DIRECTORY_SEPARATOR, $meObject->get("dir"),
+			$sfObject->get("reldirpath"));
+		if (FALSE === $fs->isSubvolume($sfAbsPath)) {
+			throw new \OMV\Exception(
+				"The shared folder '%s' does not support snapshots.",
+				$sfObject->get("name"));
+		}
+		$snapshotsDir = build_path(DIRECTORY_SEPARATOR,
+			$meObject->get("dir"), ".snapshots");
+		$snapshotPath = build_path(DIRECTORY_SEPARATOR,
+			$snapshotsDir,
+			sprintf("%s@%s_$(date +%%Y%%m%%dT%%H%%M%%S)",
+				$sfObject->get("name"), $params['execution']));
+		// Make sure that the `.snapshots` directory exists.
+		if (FALSE === is_dir($snapshotsDir)) {
+			$fs->createSubvolume($snapshotsDir);
+		}
+		// Create the scheduled job.
+		$object = new \OMV\Config\ConfigObject("conf.system.cron.job");
+		$object->setNew();
+		$object->setAssoc([
+			"type" => "userdefined",
+			"enable" => TRUE,
+			"execution" => $params['execution'],
+			"command" => sprintf("btrfs subvolume snapshot %s %s",
+				$sfAbsPath, $snapshotPath),
+			"username" => "root",
+			"sendemail" => TRUE,
+			"comment" => sprintf("Snapshot,%s,%s",
+				ucfirst($params['execution']), $sfObject->get("name"))
+		]);
+		$object->validate();
+		$db = \OMV\Config\Database::getInstance();
+		$db->set($object);
+		// Return the configuration object.
+		return $object->getAssoc();
+	}
+
+	/**
+	 * Enumerate the cron jobs taking the snapshots of the specified
+	 * shared folder.
+	 * @param params An array containing the following fields:
+	 *   \em uuid The UUID of the shared folder configuration object.
+	 * @param context The context of the caller.
+	 * @return An array containing the cron job configurations of the
+	 *   specified shared folder. Check the `Cron::getList` RPC for
+	 *   more information.
+	 */
+	public function enumerateScheduledSnapshotTasks($params, $context) {
+		// Validate the RPC caller context.
+		$this->validateMethodContext($context, [
+			"role" => OMV_ROLE_ADMINISTRATOR
+		]);
+		// Validate the parameters of the RPC service method.
+		$this->validateMethodParams($params, "rpc.common.objectuuid");
+		// Get the shared folder and mount point configuration objects.
+		$db = \OMV\Config\Database::getInstance();
+		$sfObject = $db->get("conf.system.sharedfolder", $params['uuid']);
+		$meObject = $db->get("conf.system.filesystem.mountpoint",
+			$sfObject->get("mntentref"));
+		// Build the path to search for.
+		$sfAbsPath = build_path(DIRECTORY_SEPARATOR, $meObject->get("dir"),
+			$sfObject->get("reldirpath"));
+		// Find the scheduled task configuration objects.
+		$db = \OMV\Config\Database::getInstance();
+		$objects = $db->getByFilter("conf.system.cron.job", [
+			"operator" => "stringContains",
+			"arg0" => "command",
+			"arg1" => $sfAbsPath
+		]);
+		// Convert the response into an associative array.
+		return array_map(function($object) {
+			return $object->getAssoc();
+		}, $objects);
+	}
+
+	/**
+	 * Enumerate the cron jobs taking the snapshots of all existing
+	 * shared folders.
+	 * @param params Not used.
+	 * @param context The context of the caller.
+	 * @return An array containing the cron job configurations of all
+	 *   existing shared folder. Check the `Cron::getList` RPC for
+	 *   more information.
+	 */
+	public function enumerateAllScheduledSnapshotTasks($params, $context) {
+		// Validate the RPC caller context.
+		$this->validateMethodContext($context, [
+			"role" => OMV_ROLE_ADMINISTRATOR
+		]);
+		$db = \OMV\Config\Database::getInstance();
+		$objects = $db->get("conf.system.sharedfolder");
+		$result = [];
+		foreach ($objects as $objectk => $objectv) {
+			$result = array_merge($result, $this->callMethod(
+				"enumerateScheduledSnapshotTasks", [
+					"uuid" => $objectv->getIdentifier()
+				], $context));
+		}
+		return $result;
+	}
+
+	/**
+	 * Delete a snapshots of a shared folder.
+	 * @param params An array containing the following fields:
+	 *   \em uuid The UUID of the shared folder configuration object.
+	 *   \em id The ID of the subvolume to delete, e.g. 397.
+	 * @param context The context of the caller.
+	 * @return void
+	 * @throw \OMV\Exception
+	 */
+	public function deleteSnapshot($params, $context) {
+		// Validate the RPC caller context.
+		$this->validateMethodContext($context, [
+			"role" => OMV_ROLE_ADMINISTRATOR
+		]);
+		// Validate the parameters of the RPC service method.
+		$this->validateMethodParams($params, "rpc.sharemgmt.deletesnapshot");
+		// Get the shared folder and mount point configuration objects.
+		$db = \OMV\Config\Database::getInstance();
+		$sfObject = $db->get("conf.system.sharedfolder",
+			$params['uuid']);
+		$meObject = $db->get("conf.system.filesystem.mountpoint",
+			$sfObject->get("mntentref"));
+		$fs = \OMV\System\Filesystem\Filesystem::getImplByMountPoint(
+			$meObject->get("dir"));
+		$sfAbsPath = build_path(DIRECTORY_SEPARATOR, $meObject->get("dir"),
+			$sfObject->get("reldirpath"));
+		if (FALSE === $fs->isSubvolume($sfAbsPath)) {
+			throw new \OMV\Exception(
+				"The shared folder '%s' does not support snapshots.",
+				$sfObject->get("name"));
+		}
+		$fs->deleteSnapshot($sfAbsPath, $params['id']);
+	}
+
+	/**
+	 * Restore a snapshots of a shared folder.
+	 * @param params An array containing the following fields:
+	 *   \em uuid The UUID of the shared folder configuration object.
+	 *   \em id The ID of the subvolume to restore.
+	 * @param context The context of the caller.
+	 * @return void
+	 * @throw \OMV\Exception
+	 */
+	public function restoreSnapshot($params, $context) {
+		// Validate the RPC caller context.
+		$this->validateMethodContext($context, [
+			"role" => OMV_ROLE_ADMINISTRATOR
+		]);
+		// Validate the parameters of the RPC service method.
+		$this->validateMethodParams($params, "rpc.sharemgmt.restoresnapshot");
+		// Get the shared folder and mount point configuration objects.
+		$db = \OMV\Config\Database::getInstance();
+		$sfObject = $db->get("conf.system.sharedfolder",
+			$params['uuid']);
+		$meObject = $db->get("conf.system.filesystem.mountpoint",
+			$sfObject->get("mntentref"));
+		$fs = \OMV\System\Filesystem\Filesystem::getImplByMountPoint(
+			$meObject->get("dir"));
+		$sfAbsPath = build_path(DIRECTORY_SEPARATOR, $meObject->get("dir"),
+			$sfObject->get("reldirpath"));
+		if (FALSE === $fs->isSubvolume($sfAbsPath)) {
+			throw new \OMV\Exception(
+				"The shared folder '%s' does not support snapshots.",
+				$sfObject->get("name"));
+		}
+		// Get the list of snapshots.
+		$snapshots = array_filter_ex($fs->listSnapshots($sfAbsPath),
+			"id", $params['id']);
+		if (is_null($snapshots) || empty($snapshots)) {
+			throw new \OMV\Exception(
+				"The snapshot '%s' from '%s' does not exist.",
+				$params['id'], $sfObject->get("name"));
+		}
+		// Delete current subvolume.
+		$fs->deleteSubvolume($sfAbsPath);
+		// Restore the snapshot.
+		$sourcePath = build_path(DIRECTORY_SEPARATOR, $meObject->get("dir"),
+			$snapshots[0]['path']);
+		$fs->createSnapshot($sourcePath, $sfAbsPath);
+	}
+
+	/**
+	 * Create a shared folder from a snapshots.
+	 * @param params An array containing the following fields:
+	 *   \em uuid The UUID of the shared folder configuration object.
+	 *   \em id The ID of the subvolume.
+	 * @param context The context of the caller.
+	 * @return The stored configuration object.
+	 * @throw \OMV\Exception
+	 */
+	public function fromSnapshot($params, $context) {
+		// Validate the RPC caller context.
+		$this->validateMethodContext($context, [
+			"role" => OMV_ROLE_ADMINISTRATOR
+		]);
+		// Validate the parameters of the RPC service method.
+		$this->validateMethodParams($params, "rpc.sharemgmt.fromsnapshot");
+		// Get the shared folder and mount point configuration objects.
+		$db = \OMV\Config\Database::getInstance();
+		$sfObject = $db->get("conf.system.sharedfolder",
+			$params['uuid']);
+		$meObject = $db->get("conf.system.filesystem.mountpoint",
+			$sfObject->get("mntentref"));
+		$fs = \OMV\System\Filesystem\Filesystem::getImplByMountPoint(
+			$meObject->get("dir"));
+		$sfAbsPath = build_path(DIRECTORY_SEPARATOR, $meObject->get("dir"),
+			$sfObject->get("reldirpath"));
+		// Get the list of snapshots.
+		$snapshots = array_filter_ex($fs->listSnapshots($sfAbsPath),
+			"id", $params['id']);
+		if (is_null($snapshots) || empty($snapshots)) {
+			throw new \OMV\Exception(
+				"The snapshot '%s' from '%s' does not exist.",
+				$params['id'], $sfObject->get("name"));
+		}
+		// Get the `mode` settings from the origin shared folder.
+		if (FALSE === ($stat = stat($sfAbsPath))) {
+			throw new \OMV\Exception(
+				"Failed to get file stats from '%s'.", $sfAbsPath);
+		}
+		// Create a new shared folder object.
+		return $this->callMethod("set", [
+			"uuid" => \OMV\Environment::get("OMV_CONFIGOBJECT_NEW_UUID"),
+			"name" => $snapshots[0]['name'],
+			"reldirpath" => $snapshots[0]['path'],
+			"mntentref" => $meObject->get("uuid"),
+			"mode" => decoct($stat['mode'] & 000777),
+			"privileges" => $sfObject->isEmpty("privileges") ?
+				[] : $sfObject->get("privileges"),
+			"comment" => sprintf("Snapshot,%s,%s", $sfObject->get("name"),
+				$snapshots[0]['otime'])
+		], $context);
+	}
+
+	/**
+	 * Get the snapshot lifecycle configuration.
+	 * @param params The method parameters.
+	 * @param context The context of the caller.
+	 * @return The configuration object.
+	 */
+	public function getSnapshotLifecycle($params, $context) {
+		return \OMV\Rpc\Rpc::call("Config", "get", [
+			"id" => "conf.system.sharedfolder.snapshot.lifecycle"
+		], $context);
+	}
+
+	/**
+	 * Set the snapshot lifecycle configuration.
+	 * @param params The method parameters.
+	 * @param context The context of the caller.
+	 * @return The stored configuration object.
+	 */
+	public function setSnapshotLifecycle($params, $context) {
+		return \OMV\Rpc\Rpc::call("Config", "set", [
+			"id" => "conf.system.sharedfolder.snapshot.lifecycle",
+			"data" => $params
+		], $context);
 	}
 }

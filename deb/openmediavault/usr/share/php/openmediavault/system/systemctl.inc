@@ -4,7 +4,7 @@
  *
  * @license   http://www.gnu.org/licenses/gpl.html GPL Version 3
  * @author    Volker Theile <volker.theile@openmediavault.org>
- * @copyright Copyright (c) 2009-2022 Volker Theile
+ * @copyright Copyright (c) 2009-2025 Volker Theile
  *
  * OpenMediaVault is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,6 +20,8 @@
  * along with OpenMediaVault. If not, see <http://www.gnu.org/licenses/>.
  */
 namespace OMV\System;
+
+require_once("openmediavault/functions.inc");
 
 /**
  * @ingroup api
@@ -161,7 +163,7 @@ class SystemCtl {
 	 * Checks whether the specified unit file is masked.
 	 * @return TRUE if the unit is masked, otherwise FALSE.
 	 */
-	public function isMasked() {
+	public function isMasked(): bool {
 		$exitStatus = $this->exec("is-enabled", NULL, TRUE, $output);
 		if (0 == $exitStatus)
 			return FALSE;
@@ -186,7 +188,7 @@ class SystemCtl {
 	 * Check whether the specified unit is active (i.e. running).
 	 * @return TRUE if the unit is active, otherwise FALSE.
 	 */
-	public function isActive() {
+	public function isActive(): bool {
 		return (0 == $this->exec("is-active", NULL, TRUE));
 	}
 
@@ -197,17 +199,11 @@ class SystemCtl {
 	 * @return void
 	 * @throw \OMV\Exception
 	 */
-	public function waitUntilActive($timeout) {
-		for ($i = 0; $i < $timeout; $i++) {
-			sleep(1);
-			// Check whether the device file exists.
-			if (TRUE === $this->isActive())
-				return;
-		}
-		// Finally throw an exception if the device file does not exist.
-		throw new \OMV\Exception(
-		  "The unit '%s' is not active after a waiting period of %d seconds.",
-		  $this->getName(), $timeout);
+	public function waitUntilActive($timeout): void {
+		$message = sprintf(
+			"The unit '%s' is not active after a waiting period of %d seconds.",
+			$this->getName(), $timeout);
+		waitUntil($timeout, [$this, "isActive"], $message);
 	}
 
 	/**

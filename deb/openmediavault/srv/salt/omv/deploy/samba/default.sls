@@ -2,7 +2,7 @@
 #
 # @license   http://www.gnu.org/licenses/gpl.html GPL Version 3
 # @author    Volker Theile <volker.theile@openmediavault.org>
-# @copyright Copyright (c) 2009-2022 Volker Theile
+# @copyright Copyright (c) 2009-2025 Volker Theile
 #
 # OpenMediaVault is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -24,7 +24,6 @@
 {% set config = salt['omv_conf.get']('conf.service.smb') %}
 {% set dirpath = '/srv/salt' | path_join(tpldir) %}
 {% set wsdd_enable = salt['pillar.get']('default:OMV_WSDD_ENABLED', 1) %}
-{% set nmbd_enable = salt['pillar.get']('default:OMV_SAMBA_NMBD_ENABLE', 'no') %}
 
 include:
 {% for file in salt['file.readdir'](dirpath) | sort %}
@@ -49,13 +48,27 @@ start_samba_service:
     - enable: True
     - require:
       - cmd: test_samba_service_config
+    - watch:
+      - file: configure_samba_global
+      - file: configure_samba_shares
 
-{% if nmbd_enable | to_bool %}
+{% if config.netbios | to_bool %}
+
+unmask_samba_service_nmbd:
+  service.unmasked:
+    - name: nmbd
 
 start_samba_service_nmbd:
   service.running:
     - name: nmbd
     - enable: True
+
+{% else %}
+
+stop_samba_service_nmbd:
+  service.dead:
+    - name: nmbd
+    - enable: False
 
 {% endif %}
 
@@ -69,9 +82,6 @@ start_wsdd_service:
 {% endif %}
 
 {% else %}
-
-start_samba_service:
-  test.nop
 
 stop_samba_service_smbd:
   service.dead:

@@ -2,7 +2,7 @@
 #
 # @license   http://www.gnu.org/licenses/gpl.html GPL Version 3
 # @author    Volker Theile <volker.theile@openmediavault.org>
-# @copyright Copyright (c) 2009-2022 Volker Theile
+# @copyright Copyright (c) 2009-2025 Volker Theile
 #
 # OpenMediaVault is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -24,11 +24,6 @@
 {% set script_prefix = salt['pillar.get']('default:OMV_RSYNC_CRONSCRIPT_PREFIX', 'rsync-') %}
 {% set jobs = salt['omv_conf.get']('conf.service.rsync.job') %}
 
-prereq_rsync_certificates:
-  salt.state:
-    - tgt: '*'
-    - sls: omv.deploy.certificates
-
 configure_rsync_cron:
   file.managed:
     - name: "/etc/cron.d/openmediavault-rsync"
@@ -40,6 +35,11 @@ configure_rsync_cron:
     - user: root
     - group: root
     - mode: 644
+
+rsync_create_cron_scripts_dir:
+  file.directory:
+    - name: "{{ scripts_dir }}"
+    - makedirs: True
 
 remove_rsync_cron_scripts:
   module.run:

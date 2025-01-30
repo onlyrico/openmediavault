@@ -4,7 +4,7 @@
  *
  * @license   http://www.gnu.org/licenses/gpl.html GPL Version 3
  * @author    Volker Theile <volker.theile@openmediavault.org>
- * @copyright Copyright (c) 2009-2022 Volker Theile
+ * @copyright Copyright (c) 2009-2025 Volker Theile
  *
  * OpenMediaVault is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -31,13 +31,17 @@ class ExecException extends BaseException {
 	private $exitStatus = NULL;
 
 	/**
-	 * @param string $cmdLine The command line string.
+	 * @param string $cmdLine The command line string or a
+	 *   \OMV\System\Process instance.
 	 * @param array $output The output of the executed command.
 	 * @param int $exitStatus The return status of the executed command.
 	 */
 	public function __construct($cmdLine, array $output = array(),
-	  $exitStatus = NULL) {
-		$this->cmdLine = $cmdLine;
+			$exitStatus = NULL) {
+	  	if ($cmdLine instanceof \OMV\System\Process) {
+			$cmdLine->obfuscateEnvs();
+	  	}
+		$this->cmdLine = strval($cmdLine);
 		$this->output = $output;
 		$this->exitStatus = $exitStatus;
 		$args = [];

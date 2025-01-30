@@ -4,7 +4,7 @@
 #
 # @license   http://www.gnu.org/licenses/gpl.html GPL Version 3
 # @author    Volker Theile <volker.theile@openmediavault.org>
-# @copyright Copyright (c) 2009-2022 Volker Theile
+# @copyright Copyright (c) 2009-2025 Volker Theile
 #
 # OpenMediaVault is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -21,8 +21,8 @@
 
 set -e
 
-BASE_IMAGE=${BASE_IMAGE:-"docker.io/library/debian:bullseye"}
-IMAGE_NAME=${IMAGE_NAME:-"omv-pkgbuildenv"}
+BASE_IMAGE=${BASE_IMAGE:-"docker.io/library/debian:bookworm"}
+IMAGE_NAME=${IMAGE_NAME:-"omv7-pkgbuildenv"}
 
 usage() {
 	cat <<EOF
@@ -58,7 +58,7 @@ check_deps() {
 create() {
 	ctr=$(buildah from ${BASE_IMAGE})
 	buildah run ${ctr} /bin/sh -c 'apt -y update'
-	buildah run ${ctr} /bin/sh -c 'apt -y install zsh bash-completion fakeroot debhelper gettext doxygen make npm nano debian-keyring devscripts quilt build-essential'
+	buildah run ${ctr} /bin/sh -c 'apt -y install zsh bash-completion sudo fakeroot debhelper gettext doxygen make npm nano debian-keyring devscripts quilt build-essential'
 	buildah run ${ctr} /bin/sh -c '
 cat <<EOF >> ~/.inputrc
 "\C-[OA": history-search-backward
@@ -87,19 +87,6 @@ start() {
 }
 
 install() {
-	. /etc/os-release
-
-	case ${ID} in
-	debian)
-		dirname=Debian_${VERSION_ID}
-		;;
-	ubuntu)
-		dirname=xUbuntu_${VERSION_ID}
-		;;
-	esac
-
-	sudo echo "deb https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/${dirname}/ /" | sudo tee /etc/apt/sources.list.d/opensuse_devel_kubic_libcontainers_stable.list
-	sudo curl -L https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/${dirname}/Release.key | gpg --dearmor | sudo tee /etc/apt/trusted.gpg.d/opensuse_devel_kubic_libcontainers_stable.gpg > /dev/null
 	sudo apt-get -y update
 	sudo apt-get -y install buildah podman
 }

@@ -4,7 +4,7 @@
  *
  * @license   http://www.gnu.org/licenses/gpl.html GPL Version 3
  * @author    Volker Theile <volker.theile@openmediavault.org>
- * @copyright Copyright (c) 2009-2022 Volker Theile
+ * @copyright Copyright (c) 2009-2025 Volker Theile
  *
  * OpenMediaVault is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -194,12 +194,12 @@ class Schema {
 	 * @param path The path of the property to remove.
 	 */
 	public function removeProperty($path) {
-		// PHP doesn't allow to delete the array entry by unseting the
+		// PHP doesn't allow to delete the array entry by unsetting the
 		// reference. So we need to get the parent property to delete
 		// the specified property.
 		$parts = explode(".", $path);
 		$propName = array_pop($parts);
-		$path = implode($parts);
+		$path = implode(".", $parts);
 		// Get the parent property schema.
 		$parentPropSchema = &$this->_getSchemaByPath($path, $this->schema);
 		// Unset the specified property.
@@ -391,7 +391,7 @@ class Schema {
 	}
 
 	protected function validateObject($value, $schema, $name) {
-		if (!is_object($value)) {
+		if (!empty($value) && !is_object($value)) {
 			throw new SchemaValidationException(
 				"%s: The value %s is not an object.",
 				$name, json_encode_safe($value));
@@ -519,7 +519,8 @@ class Schema {
 			break;
 		case "host-name":
 		case "hostname":
-			if (!preg_match('/^[a-zA-Z]([-a-zA-Z0-9]{0,61}[a-zA-Z0-9])'.
+			// See https://datatracker.ietf.org/doc/html/rfc1123#section-2
+			if (!preg_match('/^[a-zA-Z0-9]([-a-zA-Z0-9]{0,61}[a-zA-Z0-9])'.
 			  '{0,1}$/u', $value)) {
 				throw new SchemaValidationException(
 				  "%s: The value '%s' is not a valid hostname.",
@@ -612,7 +613,10 @@ class Schema {
 			  "%s: No 'properties' attribute defined.",
 			  $name);
 		}
-		$valueProps = get_object_vars($value);
+		// Note, this is a workaround to process empty objects
+		// correctly that are submitted as arrays because of
+		// historical reasons.
+		$valueProps = !empty($value) ? get_object_vars($value) : [];
 		foreach ($schema['properties'] as $propk => $propv) {
 			// Build the new path. Strip empty parts.
 			$parts = [ $name, $propk ];

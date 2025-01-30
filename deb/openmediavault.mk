@@ -4,7 +4,7 @@
 #
 # @license   http://www.gnu.org/licenses/gpl.html GPL Version 3
 # @author    Volker Theile <volker.theile@openmediavault.org>
-# @copyright Copyright (c) 2009-2022 Volker Theile
+# @copyright Copyright (c) 2009-2025 Volker Theile
 #
 # OpenMediaVault is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -34,16 +34,16 @@ override_dh_builddeb:
 	dh_builddeb -- -Zxz
 
 omv_tx_status:
-	tx --root="$(CURDIR)/../" status \
-		--resource=$(OMV_TRANSIFEX_PROJECT_SLUG).$(OMV_PACKAGE)
+	cd "$(CURDIR)/../"; tx status \
+		$(OMV_TRANSIFEX_PROJECT_SLUG).$(OMV_PACKAGE)
 
 omv_tx_pull_po:
-	tx --root="$(CURDIR)/../" pull --all --force \
-		--resource=$(OMV_TRANSIFEX_PROJECT_SLUG).$(OMV_PACKAGE)
+	cd "$(CURDIR)/../"; tx pull --all --force \
+		$(OMV_TRANSIFEX_PROJECT_SLUG).$(OMV_PACKAGE)
 
 omv_tx_push_pot:
-	tx --root="$(CURDIR)/../" push --source \
-		--resource=$(OMV_TRANSIFEX_PROJECT_SLUG).$(OMV_PACKAGE)
+	cd "$(CURDIR)/../"; tx push --source \
+		$(OMV_TRANSIFEX_PROJECT_SLUG).$(OMV_PACKAGE)
 
 omv_build_pot:
 	dh_testdir
@@ -53,7 +53,7 @@ omv_build_pot:
 	cat /dev/null > $(OMV_POT_DIR)/$(OMV_POT_FILE)
 	# Extract strings from Angular project.
 	if [ -e "$(CURDIR)/workbench/package.json" ]; then \
-		cd $(CURDIR)/workbench && npm install --only=dev && \
+		cd $(CURDIR)/workbench && npm ci && \
 			npm run i18n:extract && \
 			mv src/assets/i18n/openmediavault-workbench.pot $(OMV_POT_DIR)/$(OMV_POT_FILE); \
 	fi

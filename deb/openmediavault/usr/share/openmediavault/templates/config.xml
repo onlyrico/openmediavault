@@ -13,6 +13,12 @@
 				<proposed>0</proposed>
 				<partner>0</partner>
 			</distribution>
+			<updates>
+				<!--
+				<unattendedupgrade>0|1</unattendedupgrade>
+				-->
+				<unattendedupgrade>1</unattendedupgrade>
+			</updates>
 		</apt>
 		<powermanagement>
 			<!--
@@ -96,18 +102,13 @@
 					<enable>1</enable>
 				</notification>
 				<notification>
-					<uuid>9be77408-d896-4bf5-9a4f-1adcc16381ec</uuid>
-					<id>mdadm</id>
-					<enable>1</enable>
-				</notification>
-				<notification>
 					<uuid>bd784490-a15c-47a9-9930-9f5897804654</uuid>
 					<id>smartmontools</id>
 					<enable>1</enable>
 				</notification>
 				<notification>
-					<uuid>394cd565-e463-4094-a6ab-12e80270e9b4</uuid>
-					<id>cronapt</id>
+					<uuid>5334afb5-b66d-4719-a3ce-6a6a2d574816</uuid>
+					<id>apt</id>
 					<enable>1</enable>
 				</notification>
 			</notifications>
@@ -143,16 +144,20 @@
 					<address>xxx.xxx.xxx.xxx</address>
 					<netmask>xxx.xxx.xxx.xxx</netmask>
 					<gateway>xxx.xxx.xxx.xxx</gateway>
+					<routemetric>0-65535</routemetric>
 					<method6>auto|dhcp|static|manual</method6>
 					<address6>xxxx:xxxx:...:xxxx</address6>
 					<netmask6>0-128</netmask6>
 					<gateway6>xxxx:xxxx:...:xxxx</gateway6>
+					<routemetric6>0-65535</routemetric6>
 					<dnsnameservers>xxx yyy zzz</dnsnameservers>
 					<dnssearch></dnssearch>
 					<mtu>0...n</mtu>
 					<wol>0|1</wol>
 					<comment>xxx</comment>
 					# Optional arguments by type:
+					# - bridge | ethernet | wifi | vlan
+					<altmacaddress>|xx:xx:xx:xx:xx:xx</altmacaddress>
 					# - bond
 					<slaves>(((eth|venet|wlan)\d+|(en|veth|wl)\S+),)*((eth|venet|wlan)\d+|(en|veth|wl)\S+)</slaves>
 					<bondprimary>(eth|wlan)\d+</bondprimary>
@@ -160,12 +165,17 @@
 					<bondmiimon>0</bondmiimon>
 					<bonddowndelay>0</bonddowndelay>
 					<bondupdelay>0</bondupdelay>
+					<bondupdelay>0</bondupdelay>
+					<bondtransmithashpolicy>layer2|layer2+3|layer3+4|encap2+3|encap3+4</bondtransmithashpolicy>
 					# - vlan
 					<vlanid>1-4095</vlanid>
 					<vlanrawdevice>xxx</vlanrawdevice>
 					# - wifi
+					<band>auto|2.4GHz|5GHz</band>
 					<wpassid>xxx</wpassid>
 					<wpapsk>xxx</wpapsk>
+					<keymanagement>psk|sae</keymanagement>
+					<hidden>0|1</hidden>
 					# - bridge
 					<slaves>(((eth|venet|wlan)\d+|(en|veth|wl)\S+),)*((eth|venet|wlan)\d+|(en|veth|wl)\S+)</slaves>
 				</interface>
@@ -351,6 +361,16 @@
 			</sharedfolder>
 			-->
 		</shares>
+		<sharedfoldersnapshotlifecycle>
+			<enable>1</enable>
+			<retentionperiod>1800</retentionperiod>
+			<limitcustom>10</limitcustom>
+			<limithourly>24</limithourly>
+			<limitdaily>7</limitdaily>
+			<limitweekly>4</limitweekly>
+			<limitmonthly>12</limitmonthly>
+			<limityearly>1</limityearly>
+		</sharedfoldersnapshotlifecycle>
 	</system>
 	<!-- Web control panel configuration - Do not add any configuration here -->
 	<webadmin>
@@ -375,6 +395,7 @@
 		</ssh>
 		<nfs>
 			<enable>0</enable>
+			<versions>3,4,4.1,4.2</versions>
 			<shares>
 				<!--
 				<share>
@@ -389,64 +410,6 @@
 				-->
 			</shares>
 		</nfs>
-		<ftp>
-			<enable>0</enable>
-			<port>21</port>
-			<maxclients>5</maxclients>
-			<maxconnectionsperhost>2</maxconnectionsperhost>
-			<maxloginattempts>1</maxloginattempts>
-			<timeoutidle>1200</timeoutidle>
-			<displaylogin></displaylogin>
-			<allowforeignaddress>0</allowforeignaddress>
-			<allowrestart>0</allowrestart>
-			<identlookups>0</identlookups>
-			<usereversedns>0</usereversedns>
-			<rootlogin>0</rootlogin>
-			<masqueradeaddress></masqueradeaddress>
-			<dynmasqrefresh>0</dynmasqrefresh>
-			<usepassiveports>0</usepassiveports>
-			<minpassiveports>49152</minpassiveports>
-			<maxpassiveports>65534</maxpassiveports>
-			<limittransferrate>0</limittransferrate>
-			<maxuptransferrate>0</maxuptransferrate>
-			<maxdowntransferrate>0</maxdowntransferrate>
-			<anonymous>0</anonymous>
-			<requirevalidshell>1</requirevalidshell>
-			<transferlog>0</transferlog>
-			<homesenable>0</homesenable>
-			<extraoptions></extraoptions>
-			<shares>
-				<!--
-				<share>
-					<uuid>xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx</uuid>
-					<sharedfolderref>xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx</sharedfolderref>
-					<extraoptions></extraoptions>
-					<comment>xxx</comment>
-				</share>
-				-->
-			</shares>
-			<modules>
-				<mod_ban>
-					<!--
-					<rule>
-						<uuid>xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx</uuid>
-						<event>AnonRejectPasswords|ClientConnectRate|MaxClientsPerClass|MaxClientsPerHost|MaxClientsPerUser|MaxConnectionsPerHost|MaxHostsPerUser|MaxLoginAttempts|TimeoutIdle|TimeoutNoTransfer</event>
-						<occurrence>xxx</occurrence>
-						<timeinterval>hh:mm:ss</timeinterval>
-						<expire>hh:mm:ss</expire>
-					</rule>
-					-->
-				</mod_ban>
-				<mod_tls>
-					<enable>0</enable>
-					<required>0</required>
-					<sslcertificateref></sslcertificateref>
-					<nosessionreuserequired>0</nosessionreuserequired>
-					<useimplicitssl>0</useimplicitssl>
-					<extraoptions></extraoptions>
-				</mod_tls>
-			</modules>
-		</ftp>
 		<smart>
 			<!--
 			<powermode>never|sleep|standby|idle</powermode>
@@ -486,6 +449,10 @@
 			</scheduledtests>
 		</smart>
 		<smb>
+			<!--
+			<enable>0|1</enable>
+			<minprotocol>SMB1|SMB2|SMB3</minprotocol>
+			-->
 			<enable>0</enable>
 			<workgroup>WORKGROUP</workgroup>
 			<serverstring>%h server</serverstring>
@@ -498,6 +465,13 @@
 			<homesenable>0</homesenable>
 			<homesbrowseable>1</homesbrowseable>
 			<homesrecyclebin>0</homesrecyclebin>
+			<homesinheritacls>0</homesinheritacls>
+			<homesinheritpermissions>0</homesinheritpermissions>
+			<homesfollowsymlinks>0|1</homesfollowsymlinks>
+			<homeswidelinks>0|1</homeswidelinks>
+			<homesextraoptions></homesextraoptions>
+			<netbios>0</netbios>
+			<minprotocol>SMB2</minprotocol>
 			<extraoptions></extraoptions>
 			<shares>
 				<!--
@@ -520,6 +494,9 @@
 					<hostsallow></hostsallow>
 					<hostsdeny></hostsdeny>
 					<audit>0|1</audit>
+					<transportencryption>0|1</transportencryption>
+					<followsymlinks>0|1</followsymlinks>
+					<widelinks>0|1</widelinks>
 					<extraoptions></extraoptions>
 				</share>
 				-->

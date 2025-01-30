@@ -2,7 +2,7 @@
 #
 # @license   http://www.gnu.org/licenses/gpl.html GPL Version 3
 # @author    Volker Theile <volker.theile@openmediavault.org>
-# @copyright Copyright (c) 2009-2022 Volker Theile
+# @copyright Copyright (c) 2009-2025 Volker Theile
 #
 # OpenMediaVault is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -76,6 +76,9 @@ configure_clamd_apparmor_local_profile:
         # complex privileges, because of that we use the unconfined
         # execute mode.
         /usr/bin/dash muxr,
+
+        # Allow user clamav to access log files at /var/log/clamav
+        capability chown,
 
 # https://help.ubuntu.com/community/AppArmor#Reload_one_profile
 reload_clamd_apparmor_profile:

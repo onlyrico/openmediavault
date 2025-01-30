@@ -4,7 +4,7 @@
  *
  * @license   http://www.gnu.org/licenses/gpl.html GPL Version 3
  * @author    Volker Theile <volker.theile@openmediavault.org>
- * @copyright Copyright (c) 2009-2022 Volker Theile
+ * @copyright Copyright (c) 2009-2025 Volker Theile
  *
  * OpenMediaVault is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -31,53 +31,18 @@ class StorageDeviceSD extends StorageDevice implements SmartInterface {
 	use SmartTrait;
 
 	/**
-	 * Get the current power mode status.
-	 * @return string The current power mode status which can be
-	 *   <ul>
-	 *   \li unknown
-	 *   \li active/idle
-	 *   \li standby
-	 *   \li sleeping
-	 *   </ul>
-	 * @throw \OMV\ExecException
-	 */
-	public function getPowerModeState() {
-		$result = "unknown";
-		// Get the current power mode status.
-		$cmdArgs = [];
-		$cmdArgs[] = "-C";
-		$cmdArgs[] = escapeshellarg($this->getDeviceFile());
-		$cmd = new \OMV\System\Process("hdparm", $cmdArgs);
-		$cmd->setRedirect2to1();
-		$cmd->execute($output);
-		// Parse command output:
-		// /dev/sda:
-		//  drive state is:  active/idle
-		//
-		// /dev/sdb:
-		//  drive state is:  standby
-		foreach ($output as $outputk => $outputv) {
-			$regex = "/^\s+drive state is:\s+(\S+)$/i";
-			if (1 == preg_match($regex, $outputv, $matches)) {
-				$result = $matches[1];
-				break;
-			}
-		}
-		return $result;
-	}
-
-	/**
 	 * See \OMV\System\Storage\SmartInterface interface definition.
 	 */
 	public function getSmartDeviceType() {
 		if (TRUE === $this->isUsb()) {
+			// Identify by ID_MODEL_ID or `/sys/block/<XXX>/device/model`.
 			$modelMap = [
-				"TR-004 DISK00" => "jmb39x-q,0",
+				"TR-004 DISK00" => "jmb39x-q,0", // QNAP TR-004
 				"TR-004 DISK01" => "jmb39x-q,1",
 				"TR-004 DISK02" => "jmb39x-q,2",
 				"TR-004 DISK03" => "jmb39x-q,3"
 			];
-			return array_value($modelMap, $this->getModel(), "sat");
+			return array_value($modelMap, $this->getModel(), "");
 		}
 		return "";
 	}
@@ -138,5 +103,50 @@ class StorageDeviceSD extends StorageDevice implements SmartInterface {
 			return trim(file_get_contents($procNamePath));
 		}
 		return "";
+	}
+
+	private function isSAS(): bool {
+		// drwxr-xr-x 8 root root    0 Jul  1 17:15 .
+		// drwxr-xr-x 4 root root    0 Jul  1 17:15 ..
+		// -r--r--r-- 1 root root 4.0K Jul  4 08:49 access_state
+		// -r--r--r-- 1 root root 4.0K Jul  4 08:49 blacklist
+		// drwxr-xr-x 3 root root    0 Jul  1 17:15 block
+		// drwxr-xr-x 3 root root    0 Jul  1 17:15 bsg
+		// --w------- 1 root root 4.0K Jul  4 08:49 delete
+		// -r--r--r-- 1 root root 4.0K Jul  4 08:49 device_blocked
+		// -r--r--r-- 1 root root 4.0K Jul  4 08:49 device_busy
+		// -rw-r--r-- 1 root root 4.0K Jul  4 08:49 dh_state
+		// lrwxrwxrwx 1 root root    0 Jul  4 08:49 driver -> ../../../../../../../../../..                                                                                                  /bus/scsi/drivers/sd
+		// ...
+		// -r--r--r-- 1 root root 4.0K Jul  4 08:49 modalias
+		// -r--r--r-- 1 root root 4.0K Jul  4 08:49 model
+		// ...
+		// --w------- 1 root root 4.0K Jul  4 08:49 rescan
+		// -r--r--r-- 1 root root 4.0K Jul  4 08:49 rev
+		// -r--r--r-- 1 root root 4.0K Jul  4 08:49 sas_address
+		// -r--r--r-- 1 root root 4.0K Jul  4 08:49 sas_device_handle
+		// -rw-r--r-- 1 root root 4.0K Jul  4 08:49 sas_ncq_prio_enable
+		// -r--r--r-- 1 root root 4.0K Jul  4 08:49 sas_ncq_prio_supported
+		// drwxr-xr-x 3 root root    0 Jul  1 17:15 scsi_device
+		// drwxr-xr-x 3 root root    0 Jul  1 17:15 scsi_disk
+		// drwxr-xr-x 3 root root    0 Jul  1 17:15 scsi_generic
+		// -r--r--r-- 1 root root 4.0K Jul  4 08:49 scsi_level
+		$filename = sprintf("/sys/block/%s/device/sas_address",
+			$this->getDeviceName());
+		if (file_exists($filename)) {
+			return TRUE;
+		}
+		// E: ID_PATH=pci-0000:00:10.0-sas-exp0x5001438035ab31bd-phy18-lun-0
+		if (TRUE === $this->hasUdevProperty("ID_PATH")) {
+			$property = $this->getUdevProperty("ID_PATH");
+			if (1 == preg_match('/^.+-sas-.+$/i', $property)) {
+				return TRUE;
+			}
+		}
+		return FALSE;
+	}
+
+	public function isHotPluggable(): bool {
+		return $this->isSAS() || parent::isHotPluggable();
 	}
 }

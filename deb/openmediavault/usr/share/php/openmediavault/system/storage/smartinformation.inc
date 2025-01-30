@@ -4,7 +4,7 @@
  *
  * @license   http://www.gnu.org/licenses/gpl.html GPL Version 3
  * @author    Volker Theile <volker.theile@openmediavault.org>
- * @copyright Copyright (c) 2009-2022 Volker Theile
+ * @copyright Copyright (c) 2009-2025 Volker Theile
  *
  * OpenMediaVault is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -28,8 +28,10 @@ namespace OMV\System\Storage;
  */
 class SmartInformation {
 	protected $sd = NULL;
+	protected $noCheck = NULL;
 	private $cmdOutput = NULL;
 	private $dataCached = FALSE;
+	private $dataCachedKind = NULL;
 	private $attrDesc = [
 		1 => "Frequency of errors while reading raw data from the disk",
 		2 => "Average efficiency of the disk",
@@ -95,6 +97,9 @@ class SmartInformation {
 	const SMART_ASSESSMENT_BAD_SECTOR_MANY = "BAD_SECTOR_MANY";
 	const SMART_ASSESSMENT_BAD_STATUS = "BAD_STATUS";
 
+	const SMART_INFO_KIND_DEFAULT = "default";
+	const SMART_INFO_KIND_ALL = "all";
+
 	/**
 	 * Constructor
 	 * @param sd The storage device object. Defaults to NULL.
@@ -107,23 +112,51 @@ class SmartInformation {
 	/**
 	 * Get S.M.A.R.T. information.
 	 * @private
+	 * @oaram string $kind The kind of SMART information. If set to
+	 *   `all`, SMART and non-SMART information are requested.
+	 *   Defaults to NULL (=> `default`) which requests only SMART
+	 *   information.
 	 * @return void
 	 * @throw \OMV\ExecException
 	 */
-	private function getData() {
-		if ($this->dataCached !== FALSE)
-			return;
+	private function getData($kind = NULL) {
+		if (is_null($kind)) {
+			$kind = self::SMART_INFO_KIND_DEFAULT;
+		}
+
+		if (FALSE !== $this->isCached()) {
+			if ($kind === $this->dataCachedKind) {
+				return;
+			}
+			if (self::SMART_INFO_KIND_ALL === $this->dataCachedKind &&
+					self::SMART_INFO_KIND_DEFAULT === $kind) {
+				return;
+			}
+		}
 
 		// Deny the parallel execution of the smartctl command for
 		// this device. This is necessary to prevent an increasing
 		// of the ATA error count of the device.
 		$mutex = new \OMV\Mutex(__CLASS__.__METHOD__.$this->sd->getDeviceFile());
 
-		// Get all available S.M.A.R.T. information.
+		// Get the SMART + non-SMART information?
 		$cmdArgs = [];
-		$cmdArgs[] = "--xall";
-		if (!empty($this->sd->getSmartDeviceType()))
+		if (self::SMART_INFO_KIND_ALL === $kind) {
+			$cmdArgs[] = "--xall";
+		} else {
+			$cmdArgs[] = "--attributes";
+			$cmdArgs[] = "--format=brief";
+			$cmdArgs[] = "--info";
+			$cmdArgs[] = "--health";
+			$cmdArgs[] = "--log=selftest";
+		}
+		if (!is_null($this->noCheck)) {
+			$cmdArgs[] = sprintf("--nocheck=%s", escapeshellarg(
+				$this->noCheck));
+		}
+		if (!empty($this->sd->getSmartDeviceType())) {
 			$cmdArgs[] = sprintf("--device=%s", $this->sd->getSmartDeviceType());
+		}
 		$cmdArgs[] = $this->sd->getDeviceFile();
 		$cmd = new \OMV\System\Process("smartctl", $cmdArgs);
 		$cmd->setRedirect2to1();
@@ -134,13 +167,22 @@ class SmartInformation {
 		// Bit 1: Device open failed, or device did not return an
 		//        IDENTIFY DEVICE structure
 		if (($exitStatus !== 0) && (($exitStatus & 0) || ($exitStatus & 1))) {
-			throw new \OMV\ExecException($cmd->getCommandLine(), $output,
-				$exitStatus);
+			throw new \OMV\ExecException($cmd, $output, $exitStatus);
 		}
 		$this->cmdOutput = $output;
 
 		// Set flag to mark information has been successfully read.
 		$this->dataCached = TRUE;
+		$this->dataCachedKind = $kind;
+	}
+
+	/**
+	 * Check if the SMART information is cached.
+	 * @return boolean Returns TRUE if the SMART information is cached,
+	 *   otherwise FALSE.
+	 */
+	public function isCached() {
+		return $this->dataCached;
 	}
 
 	/**
@@ -149,7 +191,18 @@ class SmartInformation {
 	 */
 	public function refresh() {
 		$this->dataCached = FALSE;
-		$this->getData();
+		$this->getData($this->dataCachedKind);
+	}
+
+	/**
+	 * Set the `smartctl` `--noCheck` option.
+	 * @see https://www.smartmontools.org/browser/trunk/smartmontools/smartctl.8.in#n
+	 * @param string $noCheck The `--nocheck` option, e.g. `never`, `sleep`,
+	 *   `standby`, `standby,0` or `idle`. Defaults to NULL.
+	 * @return void
+	 */
+	public function setNoCheck($noCheck = NULL) {
+		$this->noCheck = $noCheck;
 	}
 
 	/**
@@ -157,7 +210,7 @@ class SmartInformation {
 	 * @return string The command output.
 	 */
 	public function getExtendedInformation() {
-		$this->getData();
+		$this->getData(self::SMART_INFO_KIND_ALL);
 		return implode("\n", $this->cmdOutput);
 	}
 
@@ -179,8 +232,10 @@ class SmartInformation {
 			//   4 Start_Stop_Count        -O--CK   100   100   000    -    795
 			//   5 Reallocated_Sector_Ct   PO--CK   252   252   010    -    0
 			//   7 Seek_Error_Rate         -OSR-K   252   252   051    -    0
+			//  12 Power_Cycle_Count       ------+  100   100   000    -    25
 			// 187 Reported_Uncorrect      -O--CK   100   100   ---    -    0
-			$regex = '/^\s*(\d+)\s+(\S+)\s+([POSRCK-]+)\s+(\d+)\s+(\d+)\s+'.
+			// 194 Temperature_Celsius     ------+  036   036   000    -    36 (Min/Max 19/45)
+			$regex = '/^\s*(\d+)\s+(\S+)\s+([POSRCK-]+[+]?)\s+(\d+)\s+(\d+)\s+'.
 				'(\d+|---)\s+(\S+)\s+(.+)$/i';
 			if (1 == preg_match($regex, $cmdOutputv, $matches)) {
 				$id = intval($matches[1]);
@@ -249,13 +304,15 @@ class SmartInformation {
 
 	/**
 	 * Get a specific attribute by ID.
-	 * @return object|boolean An object with the requested attribute data,
-	 *   otherwise FALSE.
+	 * @param int $id The attribute ID.
+	 * @param any $default An optional default value. Defaults to FALSE.
+	 * @return object|any An object with the requested attribute data,
+	 *   otherwise the specified default value.
 	 */
-	public function getAttribute($id) {
+	public function getAttribute($id, $default = FALSE) {
 		if (FALSE === ($attributes = $this->getAttributes()))
-			return FALSE;
-		$result = FALSE;
+			return $default;
+		$result = $default;
 		foreach ($attributes as $attrk => $attrv) {
 			if ($attrv['id'] == $id) {
 				$result = $attrv;
@@ -325,6 +382,7 @@ class SmartInformation {
 		// Local Time is:    Tue Mar 11 10:18:42 2014 CET
 		// SMART support is: Available - device has SMART capability.
 		// SMART support is: Enabled
+		// Power mode is:    ACTIVE
 		//
 		// === START OF READ SMART DATA SECTION ===
 		// ...
@@ -333,21 +391,25 @@ class SmartInformation {
 			$cmdOutputv = trim($cmdOutputv);
 			// Abort parsing, we are not interested in the information
 			// shown below this line.
-			if ($cmdOutputv == "=== START OF READ SMART DATA SECTION ===")
+			if (in_array($cmdOutputv, [ "=== START OF READ SMART DATA SECTION ===",
+					"=== START OF SMART DATA SECTION ===" ])) {
 				break;
+			}
 			// Ignore everything that is not below this line.
 			if ($cmdOutputv == "=== START OF INFORMATION SECTION ===") {
 				$sectionFound = TRUE;
 				continue;
 			}
 			// Have we found the information section?
-			if (FALSE === $sectionFound)
+			if (FALSE === $sectionFound) {
 				continue;
+			}
 			// Parse the information section line:
 			// Device Model:     WDC WD2502ABYS-02B7A0
 			$regex = '/^([^:]+):\s+(.+)$/i';
-			if (1 !== preg_match($regex, $cmdOutputv, $matches))
+			if (1 !== preg_match($regex, $cmdOutputv, $matches)) {
 				continue;
+			}
 			// Convert the attribute name, e.g. 'Device Model' to
 			// 'devicemodel'.
 			$attrKey = mb_strtolower(str_replace(" ", "", $matches[1]));
@@ -357,21 +419,23 @@ class SmartInformation {
 		// Map various keys if the user has installed an unsupported
 		// smartmontools version.
 		//
-		// smartctl 7.1 2019-12-30 r5022 ...
+		// smartctl 7.3 2022-02-28 r5338 ...
 		// ...
 		// === START OF INFORMATION SECTION ===
 		// Model Number:     WDC WD2502ABYS-02B7A0
 		// Serial Number:    WD-WCAV1B245569
 		// Firmware Version: 02.03B03
 		// ...
+		// === START OF SMART DATA SECTION ===
 		$attrKeyMap = [
 			'modelnumber' => 'devicemodel'
 		];
-		foreach($attrKeyMap as $attrKeyk => $attrKeyv) {
-			// Copy new attributes only if the origin attribute does
-			// not exist.
+		foreach ($attrKeyMap as $attrKeyk => $attrKeyv) {
+			// Copy new attributes only if the origin attribute is empty.
 			if (array_key_exists($attrKeyk, $result) &&
-					!array_key_exists($attrKeyv, $result)) {
+				array_key_exists($attrKeyv, $result) &&
+				empty($result[$attrKeyv])
+			) {
 				$result[$attrKeyv] = $result[$attrKeyk];
 			}
 		}
@@ -472,6 +536,56 @@ class SmartInformation {
 	}
 
 	/**
+	 * Get the count of power on/off cycles.
+	 * @return int Returns the count of power on/off cycles, otherwise -1.
+	 */
+	public function getPowerCycleCount() {
+		// Try to get the `Power_Cycle_Count` attribute.
+		if (FALSE !== ($attrData = $this->getAttribute(12))) {
+			return $attrData['rawvalue'];
+		}
+		// If the SMART attributes are not present then it may be a
+		// NVMe device. In that case the command output looks like:
+		//
+		// === START OF SMART DATA SECTION ===
+		// ...
+		// Critical Warning:                   0x00
+		// Temperature:                        39 Celsius
+		// Available Spare:                    100%
+		// ...
+		// Power Cycles:                       196
+		// Power On Hours:                     616
+		// ...
+		$info = $this->getInformation();
+		return array_value($info, "powercycles", -1);
+	}
+
+	/**
+	 * Get the count of hours in power-on state.
+	 * @return int Returns the count of power on/off cycles, otherwise -1.
+	 */
+	public function getPowerOnHours() {
+		// Try to get the `Power_On_Hours` attribute.
+		if (FALSE !== ($attrData = $this->getAttribute(9))) {
+			return $attrData['rawvalue'];
+		}
+		// If the SMART attributes are not present then it may be a
+		// NVMe device. In that case the command output looks like:
+		//
+		// === START OF SMART DATA SECTION ===
+		// ...
+		// Critical Warning:                   0x00
+		// Temperature:                        39 Celsius
+		// Available Spare:                    100%
+		// ...
+		// Power Cycles:                       196
+		// Power On Hours:                     616
+		// ...
+		$info = $this->getInformation();
+		return array_value($info, "poweronhours", -1);
+	}
+
+	/**
 	 * Get the overall assessment for the device.
 	 * @return string Returns the following strings:
 	 *    <ul>
@@ -553,5 +667,42 @@ class SmartInformation {
 			return self::SMART_ASSESSMENT_BAD_SECTOR;
 		// There's really nothing to complain about, so give it a pass.
 		return self::SMART_ASSESSMENT_GOOD;
+	}
+
+	/**
+	 * Get the power mode of the device.
+	 * @return string Returns the power mode, e.g. `ACTIVE`, `STANDBY`,
+	 *   `IDLE`, `ACTIVE or IDLE`, `UNKNOWN` or `ERROR`.
+	 * @see https://www.smartmontools.org/browser/trunk/smartmontools/smartctl.8.in#n
+	 */
+	public function getPowerMode(): string {
+		try {
+			$info = $this->getInformation();
+			// smartctl 7.3 2022-02-28 r5338 [x86_64-linux-6.1.0-0.deb11.21-amd64] (local build)
+			// Copyright (C) 2002-22, Bruce Allen, Christian Franke, www.smartmontools.org
+			//
+			// === START OF INFORMATION SECTION ===
+			// Model Family:     Western Digital Caviar Green (AF)
+			// ...
+			// SMART support is: Available - device has SMART capability.
+			// SMART support is: Enabled
+			// Power mode is:    ACTIVE or IDLE
+			if (array_key_exists("powermodeis", $info)) {
+				return $info['powermodeis'];
+			}
+		} catch (\Exception $e) {
+			syslog(LOG_ERR, sprintf("Failed to fetch SMART information: %s",
+				$e->getMessage()));
+			return "ERROR";
+		}
+		// smartctl 7.3 2022-02-28 r5338 [x86_64-linux-6.1.0-0.deb11.21-amd64] (local build)
+		// Copyright (C) 2002-22, Bruce Allen, Christian Franke, www.smartmontools.org
+		//
+		// Device is in STANDBY mode, exit(2)
+		$regex = '/^Device is in (\S+) mode, exit\((\d+)\)$/i';
+		if (1 == preg_match($regex, end($this->cmdOutput), $matches)) {
+			return $matches[1];
+		}
+		return "UNKNOWN";
 	}
 }

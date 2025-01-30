@@ -4,7 +4,7 @@
  *
  * @license   http://www.gnu.org/licenses/gpl.html GPL Version 3
  * @author    Volker Theile <volker.theile@openmediavault.org>
- * @copyright Copyright (c) 2009-2022 Volker Theile
+ * @copyright Copyright (c) 2009-2025 Volker Theile
  *
  * OpenMediaVault is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -47,6 +47,7 @@ class System extends \OMV\Rpc\ServiceAbstract {
 		$this->registerMethod("getTimeZoneList");
 		$this->registerMethod("getInformation");
 		$this->registerMethod("getDiagnosticReport");
+		$this->registerMethod("getCpuStats");
 	}
 
 	/**
@@ -77,7 +78,8 @@ class System extends \OMV\Rpc\ServiceAbstract {
 			"role" => OMV_ROLE_ADMINISTRATOR
 		]);
 		// Get task overview.
-		$cmd = new \OMV\System\Process("top", "-b", "-n 1");
+		$cmd = new \OMV\System\Process("top", "--batch",
+			"--iterations=1", "--width=512");
 		$cmd->setRedirect2to1();
 		$cmd->execute($output);
 		return implode("\n", $output);
@@ -94,18 +96,32 @@ class System extends \OMV\Rpc\ServiceAbstract {
 		$this->validateMethodContext($context, [
 			"role" => OMV_ROLE_ADMINISTRATOR
 		]);
-		// Prepare result list.
+		// Prepare the result list.
 		$result = [
-			"/bin/false",
+			"/usr/bin/false",
 			"/usr/sbin/nologin"
 		];
 		// Get list of available shells.
 		$shells = file("/etc/shells");
 		foreach ($shells as $shellk => $shellv) {
 			$shellv = trim($shellv);
-			if (is_executable($shellv))
+			if (is_executable($shellv)) {
 				$result[] = $shellv;
+			}
 		}
+		// Filter duplicates. Remove `/bin/xxx` if `/usr/bin/xxx` exists.
+		foreach ($result as $shellk => $shellv) {
+			foreach (['bin', 'sbin'] as $origin) {
+				if (str_starts_with($shellv, sprintf("/%s/", $origin))) {
+					$shellPath = sprintf("/usr/%s/%s", $origin,
+						basename($shellv));
+					if (in_array($shellPath, $result)) {
+						unset($result[$shellk]);
+					}
+				}
+			}
+		}
+		sort($result, SORT_NATURAL);
 		return $result;
 	}
 
@@ -344,7 +360,7 @@ class System extends \OMV\Rpc\ServiceAbstract {
 		]);
 		// According to http://php.net/manual/en/timezones.others.php
 		// some of the time zones that the Debian installer supports are
-		// deprectated. To prevent errors we support them to (ALL_WITH_BC).
+		// deprecated. To prevent errors we support them to (ALL_WITH_BC).
 		$timezoneIdentifiers = \DateTimeZone::listIdentifiers(
 			\DateTimeZone::ALL_WITH_BC);
 		sort($timezoneIdentifiers, SORT_NATURAL);
@@ -383,7 +399,9 @@ class System extends \OMV\Rpc\ServiceAbstract {
 				"version" => sprintf("%s (%s)", $prd->getVersion(),
 					$prd->getVersionName()),
 				"cpuModelName" => $cpuStats['modelname'],
-				"cpuUsage" => $cpuStats['usage'],
+				"cpuUtilization" => $cpuStats['utilization'],
+				"cpuCores" => $cpuStats['cores'],
+				"cpuMhz" => $cpuStats['mhz'],
 				"memTotal" => $memStats['mem']['total'],
 				"memFree" => $memStats['mem']['free'],
 				"memUsed" => $memStats['mem']['used'],
@@ -396,7 +414,9 @@ class System extends \OMV\Rpc\ServiceAbstract {
 				"configDirty" => !empty($dirtyModules),
 				"dirtyModules" => $dirtyModules,
 				"rebootRequired" => file_exists("/run/reboot-required"),
-				"pkgUpdatesAvailable" => !empty($pkgUpgradeList)
+				"availablePkgUpdates" => count($pkgUpgradeList),
+				"displayWelcomeMessage" => file_exists(
+					"/var/lib/openmediavault/display_welcome_message")
 			]);
 		}
 		return $result;
@@ -418,5 +438,20 @@ class System extends \OMV\Rpc\ServiceAbstract {
 		$cmd->setRedirect2to1();
 		$cmd->execute($output);
 		return implode("\n", $output);
+	}
+
+	/**
+	 * Get CPU statistics.
+	 * @param params The method parameters.
+	 * @param context The context of the caller.
+	 * @return An object containing the CPU statistics.
+	 */
+	public function getCpuStats($params, $context) {
+		// Validate the RPC caller context.
+		$this->validateMethodContext($context, [
+			"role" => OMV_ROLE_ADMINISTRATOR
+		]);
+		$result = \OMV\System\System::getCpuStats();
+		return $result;
 	}
 }

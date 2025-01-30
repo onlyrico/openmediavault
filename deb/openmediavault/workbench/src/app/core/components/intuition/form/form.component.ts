@@ -3,7 +3,7 @@
  *
  * @license   http://www.gnu.org/licenses/gpl.html GPL Version 3
  * @author    Volker Theile <volker.theile@openmediavault.org>
- * @copyright Copyright (c) 2009-2022 Volker Theile
+ * @copyright Copyright (c) 2009-2025 Volker Theile
  *
  * OpenMediaVault is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,20 +16,30 @@
  * GNU General Public License for more details.
  */
 import { AfterViewInit, Component, Input, OnInit } from '@angular/core';
-import { FormBuilder, FormControl, FormGroup, ValidatorFn, Validators } from '@angular/forms';
-import { marker as gettext } from '@biesbjerg/ngx-translate-extract-marker';
+import {
+  AbstractControl,
+  FormBuilder,
+  FormControl,
+  FormGroup,
+  ValidatorFn,
+  Validators
+} from '@angular/forms';
+import { marker as gettext } from '@ngneat/transloco-keys-manager/marker';
 import * as _ from 'lodash';
+import { Subscription } from 'rxjs';
 
 import {
   flattenFormFieldConfig,
   setupConfObjUuidFields
 } from '~/app/core/components/intuition/functions.helper';
+import { FormFieldName } from '~/app/core/components/intuition/models/form.type';
 import {
   FormFieldConfig,
   FormFieldConstraintValidator,
   FormFieldModifier
 } from '~/app/core/components/intuition/models/form-field-config.type';
-import { format } from '~/app/functions.helper';
+import { Unsubscribe } from '~/app/decorators';
+import { format, formatDeep } from '~/app/functions.helper';
 import { CustomValidators } from '~/app/shared/forms/custom-validators';
 import { ConstraintService } from '~/app/shared/services/constraint.service';
 
@@ -50,6 +60,9 @@ export class FormComponent implements AfterViewInit, OnInit {
   @Input()
   context = {};
 
+  @Unsubscribe()
+  private subscriptions: Subscription = new Subscription();
+
   public formGroup: FormGroup;
 
   constructor(private formBuilder: FormBuilder) {}
@@ -57,6 +70,7 @@ export class FormComponent implements AfterViewInit, OnInit {
   ngOnInit(): void {
     this.sanitizeConfig();
     this.createForm();
+    this.initializeModifiers();
   }
 
   ngAfterViewInit(): void {
@@ -64,24 +78,33 @@ export class FormComponent implements AfterViewInit, OnInit {
     // must be updated. This will trigger the evaluation of the constraint
     // which finally sets the correct (configured) state of the form field
     // after form initialization.
-    const allFields: Array<FormFieldConfig> = flattenFormFieldConfig(this.config);
-    const fieldsToUpdate: Array<string> = [];
+    const allFields: FormFieldConfig[] = flattenFormFieldConfig(this.config);
+    const fieldNamesToUpdate: FormFieldName[] = [];
     _.forEach(allFields, (field: FormFieldConfig) => {
-      _.forEach(field?.modifiers, (modifier) => {
-        if (['visible', 'hidden'].includes(modifier.type)) {
-          // Determine the fields involved in the constraint.
-          const props = ConstraintService.getProps(modifier.constraint);
-          fieldsToUpdate.push(...props);
+      _.forEach(
+        _.filter(field?.modifiers, (modifier: FormFieldModifier) =>
+          ['visible', 'hidden'].includes(modifier.type)
+        ),
+        (modifier: FormFieldModifier) => {
+          // Determine the list of form fields that are involved in this
+          // constraint.
+          const fieldNames = ConstraintService.getProps(modifier.constraint);
+          fieldNamesToUpdate.push(...fieldNames);
         }
-      });
+      );
     });
-    _.forEach(_.uniq(fieldsToUpdate), (path) => {
-      const control = this.formGroup.get(path);
-      control.updateValueAndValidity({ onlySelf: true, emitEvent: true });
+    _.forEach(_.uniq(fieldNamesToUpdate), (name: FormFieldName) => {
+      const control: AbstractControl = this.formGroup.get(name);
+      control?.updateValueAndValidity({ onlySelf: true, emitEvent: true });
     });
+    // Trigger the modifiers to apply and display the current state.
+    // This is necessary because there are situations where a form
+    // does not trigger any `valueChanges` event during the whole
+    // initialization.
+    this.applyModifiers();
   }
 
-  protected sanitizeConfig() {
+  protected sanitizeConfig(): void {
     // Create unique form identifier.
     this.id = _.defaultTo(this.id, `omv-intuition-form-${++nextUniqueId}`);
     // Sanitize the configuration of individual form fields.
@@ -107,6 +130,7 @@ export class FormComponent implements AfterViewInit, OnInit {
             columns: [],
             actions: [],
             sorters: [],
+            sortType: 'single',
             valueType: 'object'
           });
           break;
@@ -155,8 +179,19 @@ export class FormComponent implements AfterViewInit, OnInit {
           break;
         case 'textInput':
           _.defaultsDeep(field, {
-            autocapitalize: 'none'
+            autocapitalize: 'none',
+            valueField: 'value',
+            textField: 'text',
+            suggestions: false,
+            store: {
+              data: []
+            }
           });
+          if (_.isArray(field.store.data) && _.isUndefined(field.store.fields)) {
+            _.merge(field.store, {
+              fields: _.uniq([field.valueField, field.textField])
+            });
+          }
           break;
         case 'textarea':
           _.defaultsDeep(field, {
@@ -173,7 +208,13 @@ export class FormComponent implements AfterViewInit, OnInit {
           break;
         case 'codeEditor':
           _.defaultsDeep(field, {
+            language: 'none',
             lineNumbers: true
+          });
+          break;
+        case 'tagInput':
+          _.defaultsDeep(field, {
+            separator: ','
           });
           break;
       }
@@ -182,25 +223,12 @@ export class FormComponent implements AfterViewInit, OnInit {
     setupConfObjUuidFields(this.config);
   }
 
-  private createForm() {
+  private createForm(): void {
     const controlsConfig = {};
     const allFields: Array<FormFieldConfig> = flattenFormFieldConfig(this.config);
     _.forEach(allFields, (field: FormFieldConfig) => {
       const validators: Array<ValidatorFn> = [];
       // Build the validator configuration.
-      if (_.isArray(field.modifiers)) {
-        _.forEach(field.modifiers, (modifier: FormFieldModifier) => {
-          validators.push(
-            CustomValidators.modifyIf(
-              modifier.type,
-              modifier.typeConfig,
-              _.defaultTo(modifier.opposite, true),
-              modifier.constraint,
-              this.context
-            )
-          );
-        });
-      }
       if (_.isPlainObject(field.validators)) {
         if (_.isBoolean(field.validators.required) && field.validators.required) {
           validators.push(Validators.required);
@@ -267,5 +295,138 @@ export class FormComponent implements AfterViewInit, OnInit {
       );
     });
     this.formGroup = this.formBuilder.group(controlsConfig);
+  }
+
+  private initializeModifiers(): void {
+    const allFields: FormFieldConfig[] = flattenFormFieldConfig(this.config);
+    _.forEach(
+      _.filter(allFields, (field) => !_.isEmpty(field.modifiers)),
+      (field: FormFieldConfig) => {
+        const control: AbstractControl = this.formGroup.get(field.name);
+        _.forEach(field.modifiers, (modifier: FormFieldModifier) => {
+          // Determine the list of form field names that this modifier
+          // depends on.
+          let deps: FormFieldName[] = [];
+          if (_.isPlainObject(modifier.constraint) && _.isArray(modifier.deps)) {
+            throw new Error('Both "constraint" and "deps" are mutually exclusive.');
+          }
+          if (_.isPlainObject(modifier.constraint)) {
+            deps = ConstraintService.getProps(modifier.constraint);
+          }
+          if (_.isArray(modifier.deps)) {
+            deps = _.cloneDeep(modifier.deps);
+          }
+          // Make sure, the field itself is not included in that list.
+          _.pull(deps, field.name);
+          // Subscribe to the `valueChanges` event for all involved fields.
+          // If a field which is part of the constraint changes its value,
+          // then the modifier is processed and applied.
+          _.forEach(deps, (fieldName: string) => {
+            this.subscriptions.add(
+              this.formGroup.get(fieldName)?.valueChanges.subscribe(() => {
+                this.doModifier(control, modifier);
+              })
+            );
+          });
+        });
+      }
+    );
+  }
+
+  private applyModifiers(): void {
+    const allFields: FormFieldConfig[] = flattenFormFieldConfig(this.config);
+    _.forEach(
+      _.filter(allFields, (field) => !_.isEmpty(field.modifiers)),
+      (field: FormFieldConfig) => {
+        const control: AbstractControl = this.formGroup.get(field.name);
+        _.forEach(field.modifiers, (modifier: FormFieldModifier) => {
+          this.doModifier(control, modifier);
+        });
+      }
+    );
+  }
+
+  private doModifier(control: AbstractControl, modifier: FormFieldModifier): void {
+    const opposite = _.defaultTo(modifier.opposite, true);
+    const nativeElement: HTMLElement = _.get(control, 'nativeElement');
+    const formFieldElement = nativeElement && nativeElement.closest('.mat-form-field');
+    // Note, use `getRawValue` here to get the latest values including
+    // those of disabled form fields as well. `values` is outdated at
+    // that moment because the event we are handling has not bubbled up
+    // to the form yet.
+    const values = _.merge({}, this.context, this.formGroup.getRawValue());
+    // If there is a constraint specified, then test it, otherwise assume
+    // the condition of the modifier is fulfilled. This is the case when
+    // the `deps` property is specified.
+    const fulfilled = _.isPlainObject(modifier.constraint)
+      ? ConstraintService.test(modifier.constraint, values)
+      : true;
+    switch (modifier.type) {
+      case 'disabled':
+        if (fulfilled) {
+          control.disable();
+        }
+        if (!fulfilled && opposite) {
+          control.enable();
+        }
+        break;
+      case 'enabled':
+        if (fulfilled) {
+          control.enable();
+        }
+        if (!fulfilled && opposite) {
+          control.disable();
+        }
+        break;
+      case 'checked':
+        if (fulfilled) {
+          control.setValue(true);
+        }
+        if (!fulfilled && opposite) {
+          control.setValue(false);
+        }
+        break;
+      case 'unchecked':
+        if (fulfilled) {
+          control.setValue(false);
+        }
+        if (!fulfilled && opposite) {
+          control.setValue(true);
+        }
+        break;
+      case 'focused':
+        if (fulfilled) {
+          setTimeout(() => {
+            nativeElement.focus();
+          });
+        }
+        break;
+      case 'visible':
+        if (!_.isUndefined(formFieldElement)) {
+          if (fulfilled) {
+            (formFieldElement as HTMLElement).parentElement.classList.remove('omv-display-none');
+          }
+          if (!fulfilled && opposite) {
+            (formFieldElement as HTMLElement).parentElement.classList.add('omv-display-none');
+          }
+        }
+        break;
+      case 'hidden':
+        if (!_.isUndefined(formFieldElement)) {
+          if (fulfilled) {
+            (formFieldElement as HTMLElement).parentElement.classList.add('omv-display-none');
+          }
+          if (!fulfilled && opposite) {
+            (formFieldElement as HTMLElement).parentElement.classList.remove('omv-display-none');
+          }
+        }
+        break;
+      case 'value':
+        if (fulfilled) {
+          const value = formatDeep(modifier.typeConfig, values);
+          control.setValue(value);
+        }
+        break;
+    }
   }
 }

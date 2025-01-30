@@ -4,7 +4,7 @@
  *
  * @license   http://www.gnu.org/licenses/gpl.html GPL Version 3
  * @author    Volker Theile <volker.theile@openmediavault.org>
- * @copyright Copyright (c) 2009-2022 Volker Theile
+ * @copyright Copyright (c) 2009-2025 Volker Theile
  *
  * OpenMediaVault is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -247,10 +247,9 @@ class Smb extends \OMV\Rpc\ServiceAbstract {
 			$cmd = new \OMV\System\Process("sudo", $cmdArgs);
 			$cmd->setEnv("SHELL", "/bin/sh");
 			$cmd->setRedirect2to1();
-			if (0 !== ($exitStatus = $this->exec($cmd->getCommandLine(),
-				$output, $bgOutputFilename))) {
-				throw new \OMV\ExecException($cmd->getCommandLine(), $output,
-					$exitStatus);
+			if (0 !== ($exitStatus = $this->exec($cmd, $output,
+					$bgOutputFilename))) {
+				throw new \OMV\ExecException($cmd, $output, $exitStatus);
 			}
 			return $output;
 		});
@@ -267,18 +266,18 @@ class Smb extends \OMV\Rpc\ServiceAbstract {
 		$this->validateMethodContext($context, [
 			"role" => OMV_ROLE_ADMINISTRATOR
 		]);
-		// Is service enabled?
+		// Raise an exception if the module is marked as dirty,
+		// otherwise the 'smbstatus' command will return incorrect
+		// information because the SMB service has not been deployed
+		// until now.
+		if ($this->isModuleDirty("samba")) {
+			throw new \OMV\Config\ConfigDirtyException();
+		}
 		$db = \OMV\Config\Database::getInstance();
 		$object = $db->get("conf.service.smb");
 		if (FALSE === $object->get("enable")) {
 			$stats = gettext("Service disabled");
 		} else {
-			// Raise an exception if the module is marked as dirty,
-			// otherwise the 'smbstatus' command will return incorrect
-			// information because the SMB service has not been deployed
-			// until now.
-			if ($this->isModuleDirty("samba"))
-				throw new \OMV\Config\ConfigDirtyException();
 			$cmdArgs = [];
 			$cmdArgs[] = "-s";
 			$cmd = new \OMV\System\Process("smbstatus", $cmdArgs);

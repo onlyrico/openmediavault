@@ -4,7 +4,7 @@
  *
  * @license   http://www.gnu.org/licenses/gpl.html GPL Version 3
  * @author    Volker Theile <volker.theile@openmediavault.org>
- * @copyright Copyright (c) 2009-2022 Volker Theile
+ * @copyright Copyright (c) 2009-2025 Volker Theile
  *
  * OpenMediaVault is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -78,6 +78,9 @@ class KeyValueFile {
 	 * @return Returns TRUE if the key exists, otherwise FALSE.
 	 */
 	final public function exists($key) {
+		if (FALSE === $this->keyCaseSensitiv) {
+			$key = mb_strtolower($key);
+		}
 		$dict = new \OMV\Dictionary($this->getAssoc());
 		return $dict->exists($key);
 	}
@@ -85,12 +88,16 @@ class KeyValueFile {
 	/**
 	 * Get the value of the given key.
 	 * @param string $key The name of the key.
+	 * @param mixed $default The default value if key does not exist.
+	 *   Defaults to NULL.
 	 * @return The value of the given key.
 	 */
-	final public function get($key) {
+	final public function get($key, $default = NULL) {
+		if (FALSE === $this->keyCaseSensitiv) {
+			$key = mb_strtolower($key);
+		}
 		$dict = new \OMV\Dictionary($this->getAssoc());
-		$dict->assertExists($key);
-		return $dict->get($key);
+		return $dict->get($key, $default);
 	}
 
 	/**
@@ -103,20 +110,23 @@ class KeyValueFile {
 		$rows = file($this->filename);
 		// Prepare regular expression.
 		$regex = sprintf('/^([^%s]+)[%s](.*)$/i', $this->keyValueDelimiter,
-		  $this->keyValueDelimiter);
+			$this->keyValueDelimiter);
 		// Process the rows.
 		foreach ($rows as $rowk => $rowv) {
 			// Skip comment lines.
-			if ($this->commentDelimiter == substr(ltrim($rowv), 0, 1))
+			if ($this->commentDelimiter == substr(ltrim($rowv), 0, 1)) {
 				continue;
+			}
 			// Extract key/value.
-			if (1 !== preg_match($regex, $rowv, $matches))
+			if (1 !== preg_match($regex, $rowv, $matches)) {
 				continue;
+			}
 			// Harmonize the key.
 			$key = trim($matches[1]);
 			$key = str_replace(" ", $this->keyNameDelimiter, $key);
-			if (FALSE === $this->keyCaseSensitiv)
+			if (FALSE === $this->keyCaseSensitiv) {
 				$key = mb_strtolower($key);
+			}
 			// Add key/value pair.
 			$map[$key] = trim($matches[2]);
 		}

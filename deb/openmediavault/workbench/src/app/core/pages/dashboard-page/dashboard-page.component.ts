@@ -3,7 +3,7 @@
  *
  * @license   http://www.gnu.org/licenses/gpl.html GPL Version 3
  * @author    Volker Theile <volker.theile@openmediavault.org>
- * @copyright Copyright (c) 2009-2022 Volker Theile
+ * @copyright Copyright (c) 2009-2025 Volker Theile
  *
  * OpenMediaVault is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,6 +16,7 @@
  * GNU General Public License for more details.
  */
 import { Component, OnInit } from '@angular/core';
+import { marker as gettext } from '@ngneat/transloco-keys-manager/marker';
 import * as _ from 'lodash';
 
 import { DashboardWidgetConfig } from '~/app/core/components/dashboard/models/dashboard-widget-config.model';
@@ -28,6 +29,10 @@ import { DashboardWidgetConfigService } from '~/app/core/services/dashboard-widg
 })
 export class DashboardPageComponent implements OnInit {
   public widgets: Array<DashboardWidgetConfig> = [];
+
+  public notConfiguredMessage: string = gettext(
+    "The dashboard has not yet been configured. To personalize it, please go to the <a href='#/dashboard/settings'>settings page</a>."
+  );
 
   constructor(private dashboardWidgetConfigService: DashboardWidgetConfigService) {}
 

@@ -3,5 +3,5 @@ type: navigation-item
 data:
   path: "services.nfs"
   text: _("NFS")
-  icon: "mdi:folder-network"
+  icon: nfs
   url: "/services/nfs"

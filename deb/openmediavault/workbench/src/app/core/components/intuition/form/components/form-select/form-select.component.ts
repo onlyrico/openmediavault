@@ -3,7 +3,7 @@
  *
  * @license   http://www.gnu.org/licenses/gpl.html GPL Version 3
  * @author    Volker Theile <volker.theile@openmediavault.org>
- * @copyright Copyright (c) 2009-2022 Volker Theile
+ * @copyright Copyright (c) 2009-2025 Volker Theile
  *
  * OpenMediaVault is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,8 +18,11 @@
 import { Component, OnInit } from '@angular/core';
 import { MatSelectChange } from '@angular/material/select';
 import * as _ from 'lodash';
+import { Subscription, throwError } from 'rxjs';
+import { catchError } from 'rxjs/operators';
 
 import { AbstractFormFieldComponent } from '~/app/core/components/intuition/form/components/abstract-form-field-component';
+import { Unsubscribe } from '~/app/decorators';
 import { DataStoreService } from '~/app/shared/services/data-store.service';
 
 @Component({
@@ -28,31 +31,52 @@ import { DataStoreService } from '~/app/shared/services/data-store.service';
   styleUrls: ['./form-select.component.scss']
 })
 export class FormSelectComponent extends AbstractFormFieldComponent implements OnInit {
+  @Unsubscribe()
+  private subscriptions = new Subscription();
+
+  public loading = false;
+
   constructor(private dataStoreService: DataStoreService) {
     super();
   }
 
-  ngOnInit(): void {
+  override ngOnInit(): void {
     super.ngOnInit();
-    this.dataStoreService.load(this.config.store).subscribe(() => {
-      if (this.config.hasEmptyOption) {
-        const item = {};
-        _.set(item, this.config.valueField, '');
-        _.set(item, this.config.textField, this.config.emptyOptionText);
-        this.config.store.data.unshift(item);
-      }
-    });
+    this.doLoadStore();
 
     const control = this.formGroup.get(this.config.name);
-    control.valueChanges.subscribe((value) => {
-      this.config.value = value;
-    });
+    this.subscriptions.add(
+      control.valueChanges.subscribe((value) => {
+        this.config.value = value;
+      })
+    );
   }
 
-  onSelectionChange(event: MatSelectChange) {
+  onSelectionChange(event: MatSelectChange): void {
     if (_.isFunction(this.config.selectionChange)) {
       const value = _.clone(event.value);
       this.config.selectionChange(value);
     }
+  }
+
+  private doLoadStore(): void {
+    this.loading = true;
+    this.dataStoreService
+      .load(this.config.store)
+      .pipe(
+        catchError((error) => {
+          this.loading = false;
+          return throwError(error);
+        })
+      )
+      .subscribe(() => {
+        this.loading = false;
+        if (this.config.hasEmptyOption) {
+          const item = {};
+          _.set(item, this.config.valueField, '');
+          _.set(item, this.config.textField, this.config.emptyOptionText);
+          this.config.store.data.unshift(item);
+        }
+      });
   }
 }

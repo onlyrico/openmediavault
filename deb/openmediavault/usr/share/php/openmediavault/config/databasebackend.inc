@@ -4,7 +4,7 @@
  *
  * @license   http://www.gnu.org/licenses/gpl.html GPL Version 3
  * @author    Volker Theile <volker.theile@openmediavault.org>
- * @copyright Copyright (c) 2009-2022 Volker Theile
+ * @copyright Copyright (c) 2009-2025 Volker Theile
  *
  * OpenMediaVault is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -54,7 +54,10 @@ class DatabaseBackend {
 		"sharedfolder", "privilege", "share",
 		// Miscellaneous
 		"job", "module", "sslcertificate", "sshcertificate",
-		"service", "device"
+		"service", "device",
+		// If none of the names already listed fits, then the following
+		// generally used name should be used.
+		"item"
 	];
 
 	/**
@@ -82,6 +85,16 @@ class DatabaseBackend {
 		$this->autoCommit = $autoCommit;
 		$this->versioning = $versioning;
 		$this->filename = $filename;
+	}
+
+	/**
+	 * Lock the database backend.
+	 * @param boolean $auto Automatically acquire the lock and release
+	 *   it on destruction. Defaults to TRUE.
+	 * @return The mutex object.
+	 */
+	public function lock($auto = TRUE): \OMV\Mutex {
+		return new \OMV\Mutex($this->filename, $auto);
 	}
 
 	/**
@@ -117,12 +130,12 @@ class DatabaseBackend {
 
 	/**
 	 * Save configuration file. This function is protected by mutual exclusion,
-	 * thus the function will be blocked until it can acces the protected
+	 * thus the function will be blocked until it can access the protected
 	 * section.
 	 * @return TRUE on success, otherwise FALSE.
 	 */
 	public function save() {
-		$mutex = new \OMV\Mutex($this->filename);
+		$mutex = $this->lock();
 		return $this->commit(TRUE);
 	}
 
@@ -194,7 +207,7 @@ class DatabaseBackend {
 	 * @return TRUE if successful, otherwise FALSE.
 	 */
 	public function set($xpath, $data) {
-		$mutex = new \OMV\Mutex($this->filename);
+		$mutex = $this->lock();
 		$this->reload();
 		$domxpath = new \DOMXPath($this->domdoc);
 		$nodeList = $domxpath->query($xpath);
@@ -217,7 +230,7 @@ class DatabaseBackend {
 	 * @return TRUE if successful, otherwise FALSE.
 	 */
 	public function replace($xpath, $data) {
-		$mutex = new \OMV\Mutex($this->filename);
+		$mutex = $this->lock();
 		$this->reload();
 		$domxpath = new \DOMXPath($this->domdoc);
 		$nodeList = $domxpath->query($xpath);
@@ -243,7 +256,7 @@ class DatabaseBackend {
 	 * @return TRUE if successful, otherwise FALSE.
 	 */
 	public function update($xpath, $data) {
-		$mutex = new \OMV\Mutex($this->filename);
+		$mutex = $this->lock();
 		// Get the configuration for the given XPath expression.
 		$currentData = $this->get($xpath);
 		if (is_null($currentData))
@@ -271,7 +284,7 @@ class DatabaseBackend {
 	 * @return Returns the deleted nodes, otherwise FALSE.
 	 */
 	public function delete($xpath) {
-		$mutex = new \OMV\Mutex($this->filename);
+		$mutex = $this->lock();
 		if (is_null($result = $this->get($xpath))) {
 			return FALSE;
 		}
@@ -361,7 +374,7 @@ class DatabaseBackend {
 	public function revert($filename) {
 		if (TRUE !== $this->versioning)
 			throw new DatabaseException("Versioning is not enabled.");
-		$mutex = new \OMV\Mutex($this->filename);
+		$mutex = $this->lock();
 		if (empty($filename)) {
 			// Determine the lowest revision number.
 			$revision = PHP_INT_MAX;
@@ -389,8 +402,7 @@ class DatabaseBackend {
 		// !!! Note, the file permissions of the target file will
 		// not be touched when using the copy operation.
 		if (!copy($filename, $this->filename)) {
-			$error = error_get_last();
-			throw new DatabaseException($error['message']);
+			throw new DatabaseException(last_error_msg());
 		}
 		// Unlink all revision files.
 		$this->unlinkRevisions();
@@ -417,7 +429,7 @@ class DatabaseBackend {
 	 * @param force Set to TRUE to force commit.
 	 * @return Returns TRUE on success, otherwise FALSE.
 	 */
-	final private function commit($force = FALSE) {
+	private function commit($force = FALSE) {
 		if (!((TRUE === $force) || (TRUE === $this->autoCommit)))
 			return TRUE;
 		// Create a revision of the XML document.
@@ -446,8 +458,7 @@ class DatabaseBackend {
 			// on failure to do not corrupt the original file. Note, the
 			// current changes can get lost.
 			if (!copy($this->filename, $filename)) {
-				$error = error_get_last();
-				throw new DatabaseException($error['message']);
+				throw new DatabaseException(last_error_msg());
 			}
 			// Update file permissions.
 			chmod($filename, 0600);
@@ -467,7 +478,7 @@ class DatabaseBackend {
 	 * @private
 	 * @return The error description if available, otherwise empty string.
 	 */
-	final private function getLibXmlError() {
+	private function getLibXmlError() {
 		$text = "";
 		$errLevels = [
 			LIBXML_ERR_WARNING => gettext("Warning"),
@@ -487,7 +498,7 @@ class DatabaseBackend {
 	/**
 	 * @private
 	 */
-	final private function reload() {
+	private function reload() {
 		if (TRUE === $this->forceReload) {
 			$this->domdoc = NULL;
 			return $this->load();
@@ -498,7 +509,7 @@ class DatabaseBackend {
 	/**
 	 * @private
 	 */
-	final private function deleteNode($node) {
+	private function deleteNode($node) {
 		$this->deleteChildren($node);
 		$parent = $node->parentNode;
 		$parent->removeChild($node);
@@ -507,7 +518,7 @@ class DatabaseBackend {
 	/**
 	 * @private
 	 */
-	final private function deleteChildren($node) {
+	private function deleteChildren($node) {
 		while (isset($node->firstChild)) {
 			$this->deleteChildren($node->firstChild);
 			$node->removeChild($node->firstChild);
@@ -518,7 +529,7 @@ class DatabaseBackend {
 	 * @private
 	 * Convert a PHP array to a DOMNode object.
 	 */
-	final private function nodeFromArray($mixed, \DOMNode $domNode) {
+	private function nodeFromArray($mixed, \DOMNode $domNode) {
 //		$this->debug(var_export(func_get_args(), TRUE));
 		// Is it an array/dictionary?
 		if (is_array($mixed)) {
@@ -552,7 +563,7 @@ class DatabaseBackend {
 	 * @private
 	 * Convert a DOMNode object to a PHP array.
 	 */
-	final private function nodeToArray(\DOMNode $domNode = null) {
+	private function nodeToArray(\DOMNode $domNode = null) {
 		$result = "";
 		if (is_null($domNode) && !$this->hasChildNodes()) {
 			return $result;

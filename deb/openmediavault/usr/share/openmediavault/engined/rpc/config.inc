@@ -4,7 +4,7 @@
  *
  * @license   http://www.gnu.org/licenses/gpl.html GPL Version 3
  * @author    Volker Theile <volker.theile@openmediavault.org>
- * @copyright Copyright (c) 2009-2022 Volker Theile
+ * @copyright Copyright (c) 2009-2025 Volker Theile
  *
  * OpenMediaVault is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -38,6 +38,7 @@ class Config extends \OMV\Rpc\ServiceAbstract {
 		$this->registerMethod("applyChangesBg");
 		$this->registerMethod("revertChanges");
 		$this->registerMethod("revertChangesBg");
+		$this->registerMethod("getlist");
 		$this->registerMethod("get");
 		$this->registerMethod("set");
 		$this->registerMethod("delete");
@@ -45,6 +46,9 @@ class Config extends \OMV\Rpc\ServiceAbstract {
 
 	/**
 	 * Check if the configuration has been modified.
+	 * @param params An array containing the following fields:
+	 *   \em modules The list of modules that should be checked. If empty,
+	 *   all modules will be checked.
 	 * @return TRUE if the configuration is modified and the changes have
 	 *   not been applied until now, otherwise FALSE.
 	 */
@@ -53,9 +57,14 @@ class Config extends \OMV\Rpc\ServiceAbstract {
 		$this->validateMethodContext($context, [
 			"role" => OMV_ROLE_ADMINISTRATOR
 		]);
+		$this->validateMethodParams($params, "rpc.config.isDirty");
 		$moduleMngr = \OMV\Engine\Module\Manager::getInstance();
-		$modules = $moduleMngr->getDirtyModules();
-		return !empty($modules);
+		$dirtyModules = $moduleMngr->getDirtyModules();
+		$checkModules = array_value($params, "modules", []);
+		if (!empty($checkModules)) {
+			return !empty(array_intersect($dirtyModules, $checkModules));
+		}
+		return !empty($dirtyModules);
 	}
 
 	/**
@@ -66,7 +75,7 @@ class Config extends \OMV\Rpc\ServiceAbstract {
 	 * \li org.openmediavault.module.service.<module>.applyconfig
 	 * </ul>
 	 * @param params An array containing the following fields:
-	 *   \em modules The list of modules that should be applied. If empty
+	 *   \em modules The list of modules that should be applied. If empty,
 	 *   all dirty modules will be processed.
 	 *   \em force Set to TRUE to update all modules, regardless if marked
 	 *   as dirty or not.
@@ -83,24 +92,30 @@ class Config extends \OMV\Rpc\ServiceAbstract {
 		$this->validateMethodParams($params, "rpc.config.applychanges");
 		$moduleMngr = \OMV\Engine\Module\Manager::getInstance();
 		$notifyDispatcher = \OMV\Engine\Notify\Dispatcher::getInstance();
+		// Lock the database to prevent writes during the deployment is
+		// in progress.
+		$db = \OMV\Config\Database::getInstance();
+		$mutex = $db->lock();
 		// Open the dirty modules file. Lock it to force all writers
 		// to wait until this RPC has been finished.
 		$jsonFile = new \OMV\Json\File(\OMV\Environment::get(
-		  "OMV_ENGINED_DIRTY_MODULES_FILE"));
+			"OMV_ENGINED_DIRTY_MODULES_FILE"));
 		$jsonFile->open("c+");
 		// Make sure we have a valid JSON file. Keep in mind that the file
 		// is empty if it was created by the \OMV\Json\File::open method.
-		if ($jsonFile->isEmpty())
+		if ($jsonFile->isEmpty()) {
 			$jsonFile->write([]);
+		}
 		// Read the file content.
 		$dirtyModules = $jsonFile->read();
 		// Remove non-existing modules from list. It may happen that the
-		// list contains entries from already deinstalled plugins.
+		// list contains entries from already uninstalled plugins.
 		$removeDirtyModules = [];
 		$modules = array_keys($moduleMngr->getModules());
 		foreach ($dirtyModules as $dirtyModulek => $dirtyModulev) {
-			if (!in_array($dirtyModulev, $modules))
+			if (!in_array($dirtyModulev, $modules)) {
 				$removeDirtyModules[] = $dirtyModulev;
+			}
 		}
 		if (!empty($removeDirtyModules)) {
 			// Remove module name from list of dirty modules. Note, the
@@ -111,8 +126,9 @@ class Config extends \OMV\Rpc\ServiceAbstract {
 		// Get list of modules to be processed. If the parameter 'modules'
 		// is empty, then process all registered modules.
 		$modules = $params['modules'];
-		if (empty($params['modules']))
+		if (empty($params['modules'])) {
 			$modules = array_keys($moduleMngr->getModules());
+		}
 		$processModules = [];
 		foreach ($modules as $modulek => $modulev) {
 			// Skip module if 'force' is disabled and module is not marked
@@ -159,8 +175,9 @@ class Config extends \OMV\Rpc\ServiceAbstract {
 		}
 		foreach ($tsort->sort() as $name) {
 			// Skip modules that are not marked as dirty.
-			if (!array_key_exists($name, $processModules))
+			if (!array_key_exists($name, $processModules)) {
 				continue;
+			}
 			$this->debug("Deploying configuration for module '%s'", $name);
 			$inst = $processModules[$name];
 			$uri = "org.openmediavault.module.service.%s.%s";
@@ -178,7 +195,6 @@ class Config extends \OMV\Rpc\ServiceAbstract {
 		$jsonFile->write($dirtyModules);
 		$jsonFile->close();
 		// Unlink all configuration revision files.
-		$db = \OMV\Config\Database::getInstance();
 		$db->unlinkRevisions();
 	}
 
@@ -233,6 +249,41 @@ class Config extends \OMV\Rpc\ServiceAbstract {
 	}
 
 	/**
+	 * Get list of configuration objects.
+	 * @param params An array containing the following fields:
+	 *   \em start The index where to start.
+	 *   \em limit The number of objects to process.
+	 *   \em sortfield The name of the column used to sort.
+	 *   \em sortdir The sort direction, ASC or DESC.
+	 * @param context The context of the caller.
+	 * @return An array containing the requested objects. The field \em total
+	 *   contains the total number of objects, \em data contains the object
+	 *   array.
+	 */
+	public function getlist($params, $context) {
+		// Validate the RPC caller context.
+		$this->validateMethodContext($context, [
+			"role" => OMV_ROLE_ADMINISTRATOR
+		]);
+		// Validate the parameters of the RPC service method.
+		$this->validateMethodParams($params, "rpc.config.getlist");
+		// Get the configuration objects.
+		$db = \OMV\Config\Database::getInstance();
+		$objects = $db->get(array_value($params, "id"));
+		$objectsAssoc = [];
+		foreach ($objects as $objectk => &$objectv) {
+			$objectsAssoc[] = $objectv->getAssoc();
+		}
+		// Filter the result.
+		return $this->applyFilter($objectsAssoc,
+			array_value($params, "start"),
+			array_value($params, "limit"),
+			array_value($params, "sortfield"),
+			array_value($params, "sortdir"),
+			array_value($params, "search"));
+	}
+
+	/**
 	 * Get a configuration object.
 	 * @param params An array containing the following fields:
 	 *   \em id The data model identifier, e.g. 'conf.service.ftp'.
@@ -266,8 +317,14 @@ class Config extends \OMV\Rpc\ServiceAbstract {
 		]);
 		$this->validateMethodParams($params, "rpc.config.set");
 		$db = \OMV\Config\Database::getInstance();
+		$id = array_value($params, "id");
 		$uuid = array_value($params['data'], "uuid");
-		$object = $db->get(array_value($params, "id"), $uuid);
+		if (\OMV\Uuid::isUuid4($uuid) && $uuid == \OMV\Environment::get(
+				"OMV_CONFIGOBJECT_NEW_UUID")) {
+			$object = new \OMV\Config\ConfigObject($id);
+		} else {
+			$object = $db->get($id, $uuid);
+		}
 		$object->setAssoc(array_value($params, "data"));
 		$db->set($object);
 		return $object->getAssoc();

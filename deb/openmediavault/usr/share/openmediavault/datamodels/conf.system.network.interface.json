@@ -35,6 +35,12 @@
 		"gateway": {
 			"type": "string"
 		},
+		"routemetric": {
+			"type": "integer",
+			"minimum": 0,
+			"maximum": 65535,
+			"default": 0
+		},
 		"method6": {
 			"type": "string",
 			"enum": [ "auto", "dhcp", "static", "manual" ],
@@ -51,6 +57,12 @@
 		},
 		"gateway6": {
 			"type": "string"
+		},
+		"routemetric6": {
+			"type": "integer",
+			"minimum": 0,
+			"maximum": 65535,
+			"default": 1
 		},
 		"dnsnameservers": {
 			"type": "string",
@@ -72,6 +84,11 @@
 		},
 		"comment": {
 			"type": "string"
+		},
+		"altmacaddress": {
+			"type": "string",
+			"pattern": "^([a-fA-F0-9]{2}(:[a-fA-F0-9]{2}){5})?$",
+			"default": ""
 		},
 		"slaves": {
 			"type": "string",
@@ -106,6 +123,11 @@
 			"minimum": 0,
 			"default": 0
 		},
+		"bondtransmithashpolicy": {
+			"type": "string",
+			"enum": [ "layer2", "layer2+3", "layer3+4", "encap2+3", "encap3+4" ],
+			"default": "layer2"
+		},
 		"vlanid": {
 			"type": "integer",
 			"minimum": 1,
@@ -115,11 +137,25 @@
 		"vlanrawdevice": {
 			"type": "string"
 		},
+		"band": {
+			"type": "string",
+			"enum": [ "auto", "2.4GHz", "5GHz" ],
+			"default": "auto"
+		},
 		"wpassid": {
 			"type": "string"
 		},
 		"wpapsk": {
 			"type": "string"
+		},
+		"keymanagement": {
+			"type": "string",
+			"enum": [ "psk", "sae" ],
+			"default": "psk"
+		},
+		"hidden": {
+			"type": "boolean",
+			"default": false
 		}
 	}
 }

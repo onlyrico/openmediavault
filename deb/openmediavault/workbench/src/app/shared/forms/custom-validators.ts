@@ -3,7 +3,7 @@
  *
  * @license   http://www.gnu.org/licenses/gpl.html GPL Version 3
  * @author    Volker Theile <volker.theile@openmediavault.org>
- * @copyright Copyright (c) 2009-2022 Volker Theile
+ * @copyright Copyright (c) 2009-2025 Volker Theile
  *
  * OpenMediaVault is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -23,8 +23,9 @@ import {
   ValidatorFn,
   Validators
 } from '@angular/forms';
-import { marker as gettext } from '@biesbjerg/ngx-translate-extract-marker';
+import { marker as gettext } from '@ngneat/transloco-keys-manager/marker';
 import * as _ from 'lodash';
+import { debounceTime } from 'rxjs/operators';
 import validator from 'validator';
 
 import { format, formatDeep, toBytes } from '~/app/functions.helper';
@@ -49,7 +50,8 @@ const regExp = {
   ipv4NetCidr:
     /^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\/(3[0-2]|[0-2]?[0-9])$/,
   ipv6NetCidr: /^(?:[a-f0-9]{1,4}:){7}[a-f0-9]{1,4}\/(12[0-8]|1[0-1][0-9]|[1-9][0-9]|[0-9])$/i,
-  hostName: /^[a-zA-Z]([-a-zA-Z0-9]{0,61}[a-zA-Z0-9]){0,1}$/,
+  // See https://datatracker.ietf.org/doc/html/rfc1123#section-2
+  hostName: /^[a-zA-Z0-9]([-a-zA-Z0-9]{0,61}[a-zA-Z0-9]){0,1}$/,
   // See http://shauninman.com/archive/2006/05/08/validating_domain_names
   domainName:
     /^[a-zA-Z0-9]([-a-zA-Z0-9]{0,61}[a-zA-Z0-9])?([.][a-zA-Z0-9]([-a-zA-Z0-9]{0,61}[a-zA-Z0-9])?)*$/,
@@ -62,21 +64,27 @@ const regExp = {
   // See https://tools.ietf.org/html/rfc4716#section-3.4
   sshPubKeyRfc4716:
     /^---- BEGIN SSH2 PUBLIC KEY ----(\n|\r|\f)((.+)?((\n|\r|\f).+)*)(\n|\r|\f)---- END SSH2 PUBLIC KEY ----[\n\r\f]*$/,
-  sshPubKeyOpenSsh: /^ssh-(rsa|dss|ed25519) AAAA[0-9A-Za-z+/]+[=]{0,3}\s*(.+)?$/,
+  sshPubKeyOpenSsh:
+    /^(sk-ssh-ed25519@openssh\.com|ssh-(rsa|ed25519)) AAAA[0-9A-Za-z+/]+[=]{0,3}\s*(.+)?$/,
+  pgpPubKey:
+    /^-----BEGIN PGP PUBLIC KEY BLOCK-----(\n|\r|\f)((.+)?((\n|\r|\f).+)*)(\n|\r|\f)-----END PGP PUBLIC KEY BLOCK-----[\n\r\f]*$/,
   netmask:
     /^(128|192|224|24[08]|25[245].0.0.0)|(255.(0|128|192|224|24[08]|25[245]).0.0)|(255.255.(0|128|192|224|24[08]|25[245]).0)|(255.255.255.(0|128|192|224|24[08]|252))$/,
   // See https://www.w3schools.com/Jsref/jsref_regexp_wordchar.asp
   wordChars: /^[\w]+$/,
-  binaryUnit: /^\d+(.\d+)?\s?(b|[kmgtpezy]ib)$/i
+  binaryUnit: /^\d+(.\d+)?\s?(b|[kmgtpezy]ib)$/i,
+  macAddress: /^[a-fA-F0-9]{2}(:[a-fA-F0-9]{2}){5}$/
 };
 
 const isEmptyInputValue = (value: any): boolean => _.isNull(value) || value.length === 0;
 
-const getControlName = (control: AbstractControl): string | null => {
+const getControlName = (control: AbstractControl): string | undefined => {
   if (!control || !control.parent) {
-    return null;
+    return undefined;
   }
-  return _.keys(control.parent.controls).find((key) => control === control.parent.controls[key]);
+  return _.keys(control.parent.controls).find(
+    (key) => control === _.get(control.parent.controls, key)
+  );
 };
 
 /**
@@ -119,9 +127,12 @@ export class CustomValidators {
       // Subscribe to value changes for all fields involved.
       if (!hasSubscribed) {
         props.forEach((path) => {
-          control.parent.get(path).valueChanges.subscribe(() => {
-            control.updateValueAndValidity({ emitEvent: false });
-          });
+          control.parent
+            .get(path)
+            .valueChanges.pipe(debounceTime(5))
+            .subscribe(() => {
+              control.updateValueAndValidity({ emitEvent: false });
+            });
         });
         hasSubscribed = true;
       }
@@ -170,9 +181,12 @@ export class CustomValidators {
       // Subscribe to value changes for all fields involved.
       if (!hasSubscribed) {
         props.forEach((path) => {
-          control.parent.get(path).valueChanges.subscribe(() => {
-            control.updateValueAndValidity({ emitEvent: false });
-          });
+          control.parent
+            .get(path)
+            .valueChanges.pipe(debounceTime(5))
+            .subscribe(() => {
+              control.updateValueAndValidity({ emitEvent: false });
+            });
         });
         hasSubscribed = true;
       }
@@ -258,6 +272,11 @@ export class CustomValidators {
         return CustomValidators.pattern(
           (value) => validator.isEmail(value),
           gettext('This field should be an email address.')
+        );
+      case 'macAddress':
+        return CustomValidators.pattern(
+          regExp.macAddress,
+          gettext('This field should be a MAC address, e.g. 00:80:41:ae:fd:7e.')
         );
       case 'ipv4':
         return CustomValidators.pattern(
@@ -371,6 +390,8 @@ export class CustomValidators {
           regExp.sshPubKeyOpenSsh,
           gettext('Invalid SSH public key (OpenSSH format).')
         );
+      case 'pgpPubKey':
+        return CustomValidators.pattern(regExp.pgpPubKey, gettext('Invalid PGP public key.'));
       case 'netmask':
         return CustomValidators.pattern(
           regExp.netmask,
@@ -391,133 +412,6 @@ export class CustomValidators {
     }
     throw new Error(`Unknown pattern ${name}!`);
     // return Validators.nullValidator;
-  }
-
-  /**
-   * !!! This is not a real validator but uses its infrastructure. !!!
-   * The control state is modified if the specified constraint succeeds.
-   *
-   * @param type The name of the modifier, e.g. `disabled` or `value`.
-   * @param typeConfig An optional configuration per modifier.
-   * @param opposite Apply the opposite type, e.g. `disabled` for
-   *   `enabled`, if the constraint is falsy. Defaults to `true`.
-   * @param constraint The constraint to process.
-   * @param context The form page context which contains the route
-   *   configuration and params.
-   * @return A validator function that returns `null`.
-   */
-  static modifyIf(
-    type: string,
-    typeConfig: any,
-    opposite: boolean,
-    constraint: Constraint,
-    context: Record<string, any>
-  ): ValidatorFn {
-    let hasSubscribed = false;
-    opposite = _.defaultTo(opposite, true);
-    // Determine the properties involved in the constraint.
-    const props = ConstraintService.getProps(constraint);
-    return (control: AbstractControl): ValidationErrors | null => {
-      if (!control.parent) {
-        return null;
-      }
-      // Ensure to not subscribe to value changes of the own control.
-      _.pull(props, getControlName(control));
-      // Subscribe to value changes for all fields involved.
-      if (!hasSubscribed) {
-        // If the value changes, then the constraint will be evaluated
-        // and the state of the form field will be updated.
-        props.forEach((path) => {
-          const pathControl = control.parent.get(path);
-          pathControl.valueChanges.subscribe(() => {
-            const nativeElement: HTMLElement = _.get(control, 'nativeElement');
-            const formFieldElement = nativeElement && nativeElement.closest('.mat-form-field');
-            const values = _.merge({}, context, getFormValues(control));
-            const fulfilled = ConstraintService.test(constraint, values);
-            switch (type) {
-              case 'disabled':
-                if (fulfilled) {
-                  control.disable();
-                }
-                if (!fulfilled && opposite) {
-                  control.enable();
-                }
-                break;
-              case 'enabled':
-                if (fulfilled) {
-                  control.enable();
-                }
-                if (!fulfilled && opposite) {
-                  control.disable();
-                }
-                break;
-              case 'checked':
-                if (fulfilled) {
-                  control.setValue(true);
-                }
-                if (!fulfilled && opposite) {
-                  control.setValue(false);
-                }
-                break;
-              case 'unchecked':
-                if (fulfilled) {
-                  control.setValue(false);
-                }
-                if (!fulfilled && opposite) {
-                  control.setValue(true);
-                }
-                break;
-              case 'focused':
-                if (fulfilled) {
-                  setTimeout(() => {
-                    nativeElement.focus();
-                  });
-                }
-                break;
-              case 'visible':
-                if (!_.isUndefined(formFieldElement)) {
-                  if (fulfilled) {
-                    (formFieldElement as HTMLElement).parentElement.style.display = 'flex';
-                  }
-                  if (!fulfilled && opposite) {
-                    (formFieldElement as HTMLElement).parentElement.style.display = 'none';
-                  }
-                }
-                break;
-              case 'hidden':
-                if (!_.isUndefined(formFieldElement)) {
-                  if (fulfilled) {
-                    (formFieldElement as HTMLElement).parentElement.style.display = 'none';
-                  }
-                  if (!fulfilled && opposite) {
-                    (formFieldElement as HTMLElement).parentElement.style.display = 'flex';
-                  }
-                }
-                break;
-              case 'value':
-                if (fulfilled) {
-                  const value = formatDeep(typeConfig, values);
-                  control.setValue(value);
-                }
-                break;
-            }
-          });
-        });
-        hasSubscribed = true;
-        // Finally, force all form fields that are used in the constraint
-        // to notify their 'valueChanges' subscribers, thus the constraint
-        // will be evaluated and the state of the form field will be set
-        // correct on initialization.
-        // Note, this MUST be done after the subscription has been done
-        // and the `hasSubscribed` has been updated, otherwise a deadly
-        // recursion will happen.
-        props.forEach((path) => {
-          const pathControl = control.parent.get(path);
-          pathControl.updateValueAndValidity({ onlySelf: true, emitEvent: true });
-        });
-      }
-      return null;
-    };
   }
 
   static minBinaryUnit(min: number): ValidatorFn {

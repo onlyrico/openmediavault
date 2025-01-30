@@ -5,7 +5,7 @@
  *
  * @license   http://www.gnu.org/licenses/gpl.html GPL Version 3
  * @author    Volker Theile <volker.theile@openmediavault.org>
- * @copyright Copyright (c) 2009-2022 Volker Theile
+ * @copyright Copyright (c) 2009-2025 Volker Theile
  *
  * OpenMediaVault is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -125,9 +125,45 @@ class test_openmediavault_functions extends \PHPUnit\Framework\TestCase {
 		$this->assertEmpty($d_filtered);
 	}
 
-	public function test_array_filter_ex_fail() {
+	public function test_array_filter_ex_fail_1() {
 		$d = array_filter_ex([1, 2, 3], "text", "b");
 		$this->assertNull($d);
+	}
+
+	public function test_array_filter_ex_fail_2() {
+		$d = array_filter_ex([1, 2, 3], "text", "b", TRUE);
+		$this->assertTrue($d);
+	}
+
+	public function test_array_search_ex_1() {
+		$d = [
+			['id' => 3, 'text' => 'c'],
+			['id' => 4, 'text' => 'a'],
+			['id' => 2, 'text' => 'b'],
+			['id' => 1, 'text' => 'a']
+		];
+		$d_searched = array_search_ex($d, "text", "a");
+		$this->assertEquals($d_searched, ['id' => 4, 'text' => 'a']);
+	}
+
+	public function test_array_search_ex_2() {
+		$d = array_search_ex([1, 2, 3], "foo", "bar", -2);
+		$this->assertEquals($d, -2);
+	}
+
+	public function test_array_search_ex_3() {
+		$d = array_search_ex([], "foo", "bar", TRUE);
+		$this->assertTrue($d);
+	}
+
+	public function test_array_search_ex_4() {
+		$d = [
+			['id' => 3, 'text' => 'c'],
+			['id' => 2, 'text' => 'b'],
+			['id' => 1, 'text' => 'a']
+		];
+		$d_searched = array_search_ex($d, "text", "d");
+		$this->assertFalse($d_searched);
 	}
 
 	public function test_boolvalEx() {
@@ -376,6 +412,18 @@ class test_openmediavault_functions extends \PHPUnit\Framework\TestCase {
 		]);
 	}
 
+	public function test_is_multi_array_1() {
+		$this->assertTrue(is_multi_array([["a" => 1], ["b" => 2]]));
+	}
+
+	public function test_is_multi_array_2() {
+		$this->assertTrue(is_multi_array([]));
+	}
+
+	public function test_is_multi_array_3() {
+		$this->assertFalse(is_multi_array([1, 2, 3]));
+	}
+
 	public function test_is_assoc_array_1() {
 		$this->assertTrue(is_assoc_array([
 			'foo' => 1, 'bar' => 'test', 'baz' => ['id' => 1]
@@ -398,6 +446,10 @@ class test_openmediavault_functions extends \PHPUnit\Framework\TestCase {
 		$this->assertFalse(is_assoc_array('foo'));
 	}
 
+	public function test_is_assoc_array_5() {
+		$this->assertTrue(is_assoc_array([]));
+	}
+
 	public function test_strpdate() {
 		$ts = strpdate('Oct 19 04:24:38', 'M j G:i:s');
 		$this->assertIsInt($ts);
@@ -412,5 +464,99 @@ class test_openmediavault_functions extends \PHPUnit\Framework\TestCase {
 	public function test_binary_format_2() {
 		$str = binary_format(449364, [ "fromPrefix" => "KiB" ]);
 		$this->assertEquals($str, "438.83 MiB");
+	}
+
+	public function test_binary_format_3() {
+		$str = binary_format(1.0654267673149E+14);
+		$this->assertEquals($str, "96.89 TiB");
+	}
+
+	public function test_binary_format_4() {
+		$str = binary_format(106502234262448);
+		$this->assertEquals($str, "96.86 TiB");
+	}
+
+	public function test_binary_format_5() {
+		$str = binary_format("2667600");
+		$this->assertEquals($str, "2.54 MiB");
+	}
+
+	public function test_binary_format_6() {
+		$str = binary_format("2667600", [ "decimalPlaces" => 0 ]);
+		$this->assertEquals($str, "2 MiB");
+	}
+
+	public function test_binary_convert_1() {
+		$str = binary_convert(106502234262448, "B", "TiB", 2);
+		$this->assertEquals($str, "96.86");
+	}
+
+	public function test_binary_convert_2() {
+		$str = binary_convert(1.0654267673149E+14, "B", "GiB");
+		$this->assertEquals($str, "99225");
+	}
+
+	public function test_binary_convert_3() {
+		$str = binary_convert("2", "MiB", "B");
+		$this->assertEquals($str, "2097152");
+	}
+
+	public function test_binary_convert_4() {
+		$str = binary_convert("1.5", "KiB", "B");
+		$this->assertEquals($str, "1536");
+	}
+
+	public function test_binary_convert_5() {
+		$str = binary_convert("1536", "B", "KiB", 1);
+		$this->assertEquals($str, "1.5");
+	}
+
+	public function test_binary_convert_6() {
+		$str = binary_convert(1.25, "TiB", "B");
+		$this->assertEquals($str, "1374389534720");
+	}
+
+	public function test_binary_convert_7() {
+		$str = binary_convert("1374389534720", "B", "TiB", 2);
+		$this->assertEquals($str, "1.25");
+	}
+
+	public function test_array_remove_value_1() {
+		$d = ["a", "b"];
+		$this->assertTrue(array_remove_value($d, "a"));
+		$this->assertEquals($d, [0 => "b"]);
+	}
+
+	public function test_array_remove_value_2() {
+		$d = ["a", "b"];
+		$this->assertFalse(array_remove_value($d, "c"));
+		$this->assertEquals($d, [0 => "a", 1 => "b"]);
+	}
+
+	public function test_array_remove_value_3() {
+		$d = ["a", "b", "c"];
+		$this->assertTrue(array_remove_value($d, "b"));
+		$this->assertEquals($d, [0 => "a", 1 => "c"]);
+	}
+
+	public function test_explode_csv_1() {
+		$str = " 8.8.8.8, 8.8.4.4  ";
+		$this->assertEquals(explode_csv($str), [
+		    0 => "8.8.8.8", 1 => "8.8.4.4"
+		]);
+	}
+
+	public function test_explode_csv_2() {
+		$str = " 8.8.8.8 |  8.8.4.4  ";
+		$this->assertEquals(explode_csv($str, "|", FALSE), [
+		    0 => " 8.8.8.8 ", 1 => "  8.8.4.4  "
+		]);
+	}
+
+	public function test_explode_csv_3() {
+		$str = " 8.8.8.8, 8.8.4.4,  ";
+		$this->assertEquals(explode_csv($str), [
+		    0 => "8.8.8.8", 1 => "8.8.4.4", 2 => ""
+		]);
 	}
 }

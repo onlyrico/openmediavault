@@ -1,10 +1,10 @@
-#!/bin/sh
+#!/usr/bin/env dash
 #
 # This file is part of OpenMediaVault.
 #
 # @license   http://www.gnu.org/licenses/gpl.html GPL Version 3
 # @author    Volker Theile <volker.theile@openmediavault.org>
-# @copyright Copyright (c) 2009-2022 Volker Theile
+# @copyright Copyright (c) 2009-2025 Volker Theile
 #
 # OpenMediaVault is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -69,6 +69,19 @@ case "$1" in
 		fi
 
 		########################################################################
+		# Append notification configuration.
+		# Note, we are not using the `omv-confdbadm create "conf.service.xxx"`
+		# mechanism here because data is added to an existing configuration.
+		########################################################################
+		if ! omv-confdbadm exists --filter "{\"operator\":\"stringEquals\",\"arg0\":\"id\",\"arg1\":\"nut\"}" \
+			  "conf.system.notification.notification"; then
+			echo "Append notification configuration ..."
+			omv-confdbadm read --defaults "conf.system.notification.notification" | \
+			  jq ".id = \"nut\"" | \
+			  omv-confdbadm update "conf.system.notification.notification" -
+		fi
+
+		########################################################################
 		# Action to be done depending on the previous version.
 		########################################################################
 		echo "Updating configuration ..."
@@ -90,6 +103,9 @@ case "$1" in
 			omv-mkconf nut
 			omv-mkconf monit
 			monit reload
+		fi
+		if dpkg --compare-versions "$2" lt-nl "6.0.5"; then
+			omv_module_set_dirty nut
 		fi
 	;;
 

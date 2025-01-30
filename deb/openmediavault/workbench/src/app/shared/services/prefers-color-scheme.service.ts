@@ -1,6 +1,8 @@
 import { Injectable } from '@angular/core';
 import { BehaviorSubject, Observable } from 'rxjs';
 
+import { UserLocalStorageService } from '~/app/shared/services/user-local-storage.service';
+
 export type PrefersColorScheme = 'light' | 'dark';
 
 @Injectable({
@@ -9,20 +11,20 @@ export type PrefersColorScheme = 'light' | 'dark';
 export class PrefersColorSchemeService {
   public readonly change$: Observable<PrefersColorScheme>;
 
-  get current(): PrefersColorScheme {
-    return this.prefersColorScheme.value;
-  }
-
   private prefersColorScheme: BehaviorSubject<PrefersColorScheme> = new BehaviorSubject('light');
 
-  constructor() {
+  constructor(private userLocalStorageService: UserLocalStorageService) {
     this.prefersColorScheme.next(this.get());
     this.change$ = this.prefersColorScheme.asObservable();
   }
 
+  get current(): PrefersColorScheme {
+    return this.prefersColorScheme.value;
+  }
+
   public get(): PrefersColorScheme {
     return (
-      (localStorage.getItem('prefers-color-scheme') as PrefersColorScheme) ||
+      (this.userLocalStorageService.get('prefers-color-scheme') as PrefersColorScheme) ||
       this.detectSystemTheme()
     );
   }
@@ -33,9 +35,20 @@ export class PrefersColorSchemeService {
    * @returns Returns the color scheme that has been set.
    */
   public set(value: PrefersColorScheme): PrefersColorScheme {
-    localStorage.setItem('prefers-color-scheme', value);
+    this.userLocalStorageService.set('prefers-color-scheme', value);
     this.prefersColorScheme.next(value);
     return this.current;
+  }
+
+  /**
+   * Synchronize the internal state with the browsers local storage
+   * or media query.
+   */
+  public sync(): void {
+    const value: PrefersColorScheme = this.get();
+    if (this.current !== value) {
+      this.prefersColorScheme.next(value);
+    }
   }
 
   /**

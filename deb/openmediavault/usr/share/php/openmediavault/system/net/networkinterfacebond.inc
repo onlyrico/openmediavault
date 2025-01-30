@@ -4,7 +4,7 @@
  *
  * @license   http://www.gnu.org/licenses/gpl.html GPL Version 3
  * @author    Volker Theile <volker.theile@openmediavault.org>
- * @copyright Copyright (c) 2009-2022 Volker Theile
+ * @copyright Copyright (c) 2009-2025 Volker Theile
  *
  * OpenMediaVault is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -38,14 +38,9 @@ class NetworkInterfaceBond extends NetworkInterface {
 	 * @return A list of device names used in the array, otherwise FALSE.
 	 */
 	public function getSlaves() {
-		$filename = sprintf("/sys/class/net/%s/bonding/slaves",
-			$this->getDeviceName());
-		if (!file_exists($filename))
-			return FALSE;
-		$content = file_get_contents($filename);
-		if (FALSE === $content)
-			return [];
-		return array_map("trim", explode_safe(" ", $content));
+		$result = $this->getSysFsProperty($this->getDeviceName(),
+			"bonding/slaves", "");
+		return array_map("trim", explode_safe(" ", $result));
 	}
 
 	/**

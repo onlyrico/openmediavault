@@ -3,7 +3,7 @@
  *
  * @license   http://www.gnu.org/licenses/gpl.html GPL Version 3
  * @author    Volker Theile <volker.theile@openmediavault.org>
- * @copyright Copyright (c) 2009-2022 Volker Theile
+ * @copyright Copyright (c) 2009-2025 Volker Theile
  *
  * OpenMediaVault is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,12 +15,20 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  */
-import { Component, Input, OnInit } from '@angular/core';
+import { Component, EventEmitter, HostBinding, Input, OnInit, Output } from '@angular/core';
+import { marker as gettext } from '@ngneat/transloco-keys-manager/marker';
 import * as _ from 'lodash';
 
-import { translate } from '~/app/i18n.helper';
+import { CoerceBoolean } from '~/app/decorators';
 import { Icon } from '~/app/shared/enum/icon.enum';
-import { UserStorageService } from '~/app/shared/services/user-storage.service';
+import { UserLocalStorageService } from '~/app/shared/services/user-local-storage.service';
+
+export type AlertPanelButtonConfig = {
+  icon: string;
+  class?: string;
+  tooltip?: string;
+  click?: (config: AlertPanelButtonConfig) => void;
+};
 
 @Component({
   selector: 'omv-alert-panel',
@@ -31,12 +39,15 @@ export class AlertPanelComponent implements OnInit {
   @Input()
   type: 'info' | 'success' | 'warning' | 'error' | 'tip';
 
+  @CoerceBoolean()
   @Input()
   hasTitle = true;
 
+  @CoerceBoolean()
   @Input()
   hasMargin = true;
 
+  @CoerceBoolean()
   @Input()
   dismissible = false;
 
@@ -45,17 +56,44 @@ export class AlertPanelComponent implements OnInit {
   @Input()
   stateId: string;
 
+  @Input()
+  buttons: AlertPanelButtonConfig[] = [];
+
+  @Input()
+  icon?: string;
+
+  @Input()
+  title?: string;
+
+  @Output()
+  closed = new EventEmitter();
+
   // Internal
-  public icon: string;
-  public title: string;
   public dismissed = false;
 
-  constructor(private userStorageService: UserStorageService) {}
+  constructor(private userLocalStorageService: UserLocalStorageService) {}
+
+  @HostBinding('class')
+  get class(): string {
+    const result: string[] = [];
+    if (this.dismissed) {
+      result.push('omv-display-none');
+    }
+    return result.join(' ');
+  }
 
   ngOnInit(): void {
-    if (this.dismissible && this.stateId) {
-      this.dismissed =
-        'dismiss' === this.userStorageService.get(`alertpanel_state_${this.stateId}`, '');
+    if (this.dismissible) {
+      this.buttons.push({
+        icon: Icon.close,
+        tooltip: gettext('Dismiss'),
+        click: this.close.bind(this)
+      });
+
+      if (this.stateId) {
+        this.dismissed =
+          'dismiss' === this.userLocalStorageService.get(`alertpanel_state_${this.stateId}`, '');
+      }
     }
     this.sanitizeConfig();
   }
@@ -63,32 +101,33 @@ export class AlertPanelComponent implements OnInit {
   close(): void {
     this.dismissed = true;
     if (this.stateId) {
-      this.userStorageService.set(`alertpanel_state_${this.stateId}`, 'dismiss');
+      this.userLocalStorageService.set(`alertpanel_state_${this.stateId}`, 'dismiss');
     }
+    this.closed.emit();
   }
 
   protected sanitizeConfig() {
     this.type = _.defaultTo(this.type, 'info');
     switch (this.type) {
       case 'info':
-        this.title = this.title || translate('Information');
-        this.icon = Icon.information;
+        this.title = this.title || gettext('Information');
+        this.icon = _.get(Icon, this.icon, Icon.information);
         break;
       case 'success':
-        this.title = this.title || translate('Success');
-        this.icon = Icon.success;
+        this.title = this.title || gettext('Success');
+        this.icon = _.get(Icon, this.icon, Icon.success);
         break;
       case 'warning':
-        this.title = this.title || translate('Warning');
-        this.icon = Icon.warning;
+        this.title = this.title || gettext('Warning');
+        this.icon = _.get(Icon, this.icon, Icon.warning);
         break;
       case 'error':
-        this.title = this.title || translate('Error');
-        this.icon = Icon.error;
+        this.title = this.title || gettext('Error');
+        this.icon = _.get(Icon, this.icon, Icon.error);
         break;
       case 'tip':
-        this.title = this.title || translate('Tip');
-        this.icon = Icon.tip;
+        this.title = this.title || gettext('Tip');
+        this.icon = _.get(Icon, this.icon, Icon.tip);
         break;
     }
   }

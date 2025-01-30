@@ -4,7 +4,7 @@
 #
 # @license   http://www.gnu.org/licenses/gpl.html GPL Version 3
 # @author    Volker Theile <volker.theile@openmediavault.org>
-# @copyright Copyright (c) 2009-2022 Volker Theile
+# @copyright Copyright (c) 2009-2025 Volker Theile
 #
 # OpenMediaVault is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -41,12 +41,15 @@ class Module(openmediavault.firstaid.IModule):
         path = openmediavault.getenv(
             "OMV_DPKGARCHIVE_DIR", "/var/cache/openmediavault/archives"
         )
+        # Remove existing Debian package files.
         for f in glob.glob("{}/*.deb".format(path)):
             os.remove(f)
-        openmediavault.procutils.check_call(
-            "cd {} && apt-ftparchive packages . > Packages".format(path),
-            shell=True,
-        )
+        # Rebuild the "Package" file.
+        with open(os.path.join(path, "Packages"), "w") as f:
+            openmediavault.procutils.check_call(
+                ["apt-ftparchive", "packages", path],
+                stdout=f
+            )
         openmediavault.procutils.check_call(["apt-get", "update"])
         return 0
 
