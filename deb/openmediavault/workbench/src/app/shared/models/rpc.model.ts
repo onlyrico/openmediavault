@@ -3,7 +3,7 @@
  *
  * @license   http://www.gnu.org/licenses/gpl.html GPL Version 3
  * @author    Volker Theile <volker.theile@openmediavault.org>
- * @copyright Copyright (c) 2009-2022 Volker Theile
+ * @copyright Copyright (c) 2009-2025 Volker Theile
  *
  * OpenMediaVault is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,7 +17,7 @@
  */
 import * as _ from 'lodash';
 
-import { formatDeep } from '~/app/functions.helper';
+import { format, formatDeep } from '~/app/functions.helper';
 
 export type RpcListResponse = {
   data: Array<any>;
@@ -28,6 +28,10 @@ export type RpcObjectResponse = Record<string, any>;
 
 // eslint-disable-next-line @typescript-eslint/naming-convention
 export const RpcObjectResponse = {
+  isType: (value: any): boolean => {
+    return _.isPlainObject(value);
+  },
+
   transform: (response: RpcObjectResponse, config: Record<string, string>): RpcObjectResponse => {
     const tmp = formatDeep(config, response);
     _.merge(response, tmp);
@@ -48,5 +52,9 @@ export const RpcObjectResponse = {
         break;
     }
     return response;
+  },
+
+  format: (str: string, response: RpcObjectResponse): string => {
+    return format(str, response);
   }
 };

@@ -2,7 +2,7 @@
 #
 # @license   http://www.gnu.org/licenses/gpl.html GPL Version 3
 # @author    Volker Theile <volker.theile@openmediavault.org>
-# @copyright Copyright (c) 2009-2022 Volker Theile
+# @copyright Copyright (c) 2009-2025 Volker Theile
 #
 # OpenMediaVault is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -21,13 +21,7 @@
 {% set tftp_zeroconf_enabled = salt['pillar.get']('default:OMV_TFTPDHPA_ZEROCONF_ENABLED', 1) %}
 {% set tftp_zeroconf_name = salt['pillar.get']('default:OMV_TFTPDHPA_ZEROCONF_NAME', '%h - TFTP') %}
 
-{% if not (tftp_config.enable | to_bool and tftp_zeroconf_enabled | to_bool) %}
-
-remove_avahi_service_tftpd-hpa:
-  file.absent:
-    - name: "/etc/avahi/services/tftp.service"
-
-{% else %}
+{% if (tftp_config.enable | to_bool) and (tftp_zeroconf_enabled | to_bool) %}
 
 configure_avahi_service_tftpd-hpa:
   file.managed:

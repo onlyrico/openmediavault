@@ -3,7 +3,7 @@
  *
  * @license   http://www.gnu.org/licenses/gpl.html GPL Version 3
  * @author    Volker Theile <volker.theile@openmediavault.org>
- * @copyright Copyright (c) 2009-2022 Volker Theile
+ * @copyright Copyright (c) 2009-2025 Volker Theile
  *
  * OpenMediaVault is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,12 +20,13 @@ import { BooleanInput, coerceBooleanProperty } from '@angular/cdk/coercion';
 import { Component, Input, OnChanges, OnDestroy, OnInit, Optional, Self } from '@angular/core';
 import { ControlValueAccessor, NgControl } from '@angular/forms';
 import { MatFormFieldControl } from '@angular/material/form-field';
-import { marker as gettext } from '@biesbjerg/ngx-translate-extract-marker';
+import { marker as gettext } from '@ngneat/transloco-keys-manager/marker';
 import * as _ from 'lodash';
 import { Subject } from 'rxjs';
 
 import { FormDialogComponent } from '~/app/core/components/intuition/form-dialog/form-dialog.component';
 import { FormFieldConfig } from '~/app/core/components/intuition/models/form-field-config.type';
+import { CoerceBoolean } from '~/app/decorators';
 import { formatDeep } from '~/app/functions.helper';
 import { DataTableCellChanged } from '~/app/shared/components/datatable/datatable.component';
 import { ModalDialogComponent } from '~/app/shared/components/modal-dialog/modal-dialog.component';
@@ -122,8 +123,8 @@ export class MatFormDatatableComponent
   get required(): boolean {
     return this._required;
   }
-  set required(required: boolean) {
-    this._required = coerceBooleanProperty(required);
+  set required(value: boolean) {
+    this._required = coerceBooleanProperty(value);
     this.stateChanges.next();
   }
 
@@ -171,15 +172,19 @@ export class MatFormDatatableComponent
   @Input()
   actions: MatFormDatatableAction[] = [];
 
+  @CoerceBoolean()
   @Input()
   hasActionBar? = true;
 
+  @CoerceBoolean()
   @Input()
   hasSearchField? = false;
 
+  @CoerceBoolean()
   @Input()
   hasHeader? = true;
 
+  @CoerceBoolean()
   @Input()
   hasFooter? = true;
 
@@ -188,6 +193,9 @@ export class MatFormDatatableComponent
 
   @Input()
   sorters?: Sorter[] = [];
+
+  @Input()
+  sortType?: 'single' | 'multi' = 'single';
 
   @Input()
   selectionType?: 'none' | 'single' | 'multi' = 'multi';
@@ -215,7 +223,7 @@ export class MatFormDatatableComponent
   // eslint-disable-next-line @typescript-eslint/naming-convention, no-underscore-dangle, id-blacklist, id-match
   private onChange = (_value: any) => {};
 
-  writeValue(value: any) {
+  writeValue(value: any): void {
     this.value = value;
   }
 
@@ -223,11 +231,11 @@ export class MatFormDatatableComponent
     this.disabled = isDisabled;
   }
 
-  registerOnChange(fn: (value: any) => void) {
+  registerOnChange(fn: (value: any) => void): void {
     this.onChange = fn;
   }
 
-  registerOnTouched(fn: any) {}
+  registerOnTouched(fn: any): void {}
 
   setDescribedByIds(ids: string[]): void {
     // Nothing to do here.
@@ -278,7 +286,7 @@ export class MatFormDatatableComponent
     switch (action.id) {
       case 'add':
       case 'edit':
-        const formDialogConfig = _.get(actionConfig, 'formDialogConfig');
+        const formDialogConfig: Record<string, any> = _.get(actionConfig, 'formDialogConfig');
         const data = {
           title: _.get(formDialogConfig, 'title'),
           fields: _.get(formDialogConfig, 'fields')

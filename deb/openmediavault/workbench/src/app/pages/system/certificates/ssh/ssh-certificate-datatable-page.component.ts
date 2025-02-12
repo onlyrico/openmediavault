@@ -3,7 +3,7 @@
  *
  * @license   http://www.gnu.org/licenses/gpl.html GPL Version 3
  * @author    Volker Theile <volker.theile@openmediavault.org>
- * @copyright Copyright (c) 2009-2022 Volker Theile
+ * @copyright Copyright (c) 2009-2025 Volker Theile
  *
  * OpenMediaVault is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,7 +16,7 @@
  * GNU General Public License for more details.
  */
 import { Component } from '@angular/core';
-import { marker as gettext } from '@biesbjerg/ngx-translate-extract-marker';
+import { marker as gettext } from '@ngneat/transloco-keys-manager/marker';
 
 import { DatatablePageConfig } from '~/app/core/components/intuition/models/datatable-page-config.type';
 
@@ -28,9 +28,12 @@ export class SshCertificateDatatablePageComponent {
     stateId: '85efa226-1c32-11ea-8f7a-67b9a1e57494',
     columns: [
       {
-        name: gettext('Comment'),
+        name: gettext('Tags'),
         prop: 'comment',
-        cellTemplateName: 'text',
+        cellTemplateName: 'chip',
+        cellTemplateConfig: {
+          separator: ','
+        },
         flexGrow: 1,
         sortable: true
       }
@@ -92,11 +95,14 @@ export class SshCertificateDatatablePageComponent {
           type: 'formDialog',
           formDialog: {
             title: gettext('Copy public SSH key'),
-            subTitle: gettext(
-              // eslint-disable-next-line max-len
-              'Installs the public SSH key on a remote system as an authorized key. Make sure password authentication is enabled on that remote system.'
-            ),
             fields: [
+              {
+                type: 'hint',
+                hintType: 'info',
+                text: gettext(
+                  'Installs the public SSH key on a remote system as an authorized key. Make sure password authentication is enabled on that remote system.'
+                )
+              },
               {
                 type: 'hidden',
                 name: 'uuid',

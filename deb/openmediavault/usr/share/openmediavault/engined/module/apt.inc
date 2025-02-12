@@ -4,7 +4,7 @@
  *
  * @license   http://www.gnu.org/licenses/gpl.html GPL Version 3
  * @author    Volker Theile <volker.theile@openmediavault.org>
- * @copyright Copyright (c) 2009-2022 Volker Theile
+ * @copyright Copyright (c) 2009-2025 Volker Theile
  *
  * OpenMediaVault is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -22,9 +22,23 @@
 namespace Engined\Module;
 
 class Apt extends \OMV\Engine\Module\ServiceAbstract
-		implements \OMV\Engine\Notify\IListener {
+		implements \OMV\Engine\Notify\IListener, \OMV\Engine\Module\INotification {
 	public function getName() {
 		return "apt";
+	}
+
+	public function getDescription() {
+		return gettext("Package management.");
+	}
+
+	public function getNotificationConfig() {
+		return [
+			[
+				"id" => "apt",
+				"type" => getText("System"),
+				"title" => gettext("Update management")
+			]
+		];
 	}
 
 	function bindListeners(\OMV\Engine\Notify\Dispatcher $dispatcher) {
@@ -34,7 +48,15 @@ class Apt extends \OMV\Engine\Module\ServiceAbstract
 			[$this, "setDirty"]);
 		$dispatcher->addListener(
 			OMV_NOTIFY_MODIFY,
+			"org.openmediavault.conf.system.apt.updates",
+			[$this, "setDirty"]);
+		$dispatcher->addListener(
+			OMV_NOTIFY_MODIFY,
 			"org.openmediavault.conf.system.network.proxy",
+			[$this, "setDirty"]);
+		$dispatcher->addListener(
+			OMV_NOTIFY_CREATE | OMV_NOTIFY_MODIFY,
+			"org.openmediavault.conf.system.notification.notification",
 			[$this, "setDirty"]);
 	}
 }

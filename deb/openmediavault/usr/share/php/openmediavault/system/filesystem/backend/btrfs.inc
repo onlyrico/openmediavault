@@ -4,7 +4,7 @@
  *
  * @license   http://www.gnu.org/licenses/gpl.html GPL Version 3
  * @author    Volker Theile <volker.theile@openmediavault.org>
- * @copyright Copyright (c) 2009-2022 Volker Theile
+ * @copyright Copyright (c) 2009-2025 Volker Theile
  *
  * OpenMediaVault is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -25,7 +25,8 @@ class Btrfs extends BackendAbstract {
 	public function __construct() {
 		$this->type = "btrfs";
 		$this->properties = self::PROP_MNTENT | self::PROP_POSIX_ACL |
-		  self::PROP_DISCARD | self::PROP_COMPRESS | self::PROP_AUTO_DEFRAG;
+			self::PROP_DISCARD | self::PROP_COMPRESS |
+			self::PROP_AUTO_DEFRAG | self::PROP_RESIZE;
 		$this->mkfsOptions = \OMV\Environment::get("OMV_MKFS_OPTIONS_BTRFS");
 		$this->mntOptions = explode(",", \OMV\Environment::get(
 		  "OMV_FSTAB_MNTOPS_BTRFS"));

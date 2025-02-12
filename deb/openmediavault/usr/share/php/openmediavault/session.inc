@@ -4,7 +4,7 @@
  *
  * @license   http://www.gnu.org/licenses/gpl.html GPL Version 3
  * @author    Volker Theile <volker.theile@openmediavault.org>
- * @copyright Copyright (c) 2009-2022 Volker Theile
+ * @copyright Copyright (c) 2009-2025 Volker Theile
  *
  * OpenMediaVault is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,6 +21,8 @@
  */
 namespace OMV;
 
+require_once("openmediavault/functions.inc");
+
 /**
  * @ingroup api
  */
@@ -31,8 +33,9 @@ class Session {
 	 */
 	public static function &getInstance() {
 		static $instance = NULL;
-		if (!isset($instance))
+		if (!isset($instance)) {
 			$instance = new Session();
+		}
 		return $instance;
 	}
 
@@ -40,20 +43,40 @@ class Session {
 	 * Start session.
 	 */
 	public function start() {
-		session_start();
+		$sessionId = array_value($_SERVER,
+			"HTTP_X_OPENMEDIAVAULT_SESSIONID", FALSE);
+		if (FALSE !== $sessionId) {
+			session_id($sessionId);
+		}
+		if (FALSE === session_start()) {
+			throw new HttpErrorException(500,
+				_("Failed to start session."));
+		}
 	}
 
 	/**
 	 * Write session data and end session.
 	 */
 	public function commit() {
-		session_commit();
+		if (FALSE === session_commit()) {
+			throw new HttpErrorException(500,
+				_("Failed to write session data."));
+		}
 	}
 
 	/**
 	 * Destroy session.
 	 */
 	public function destroy() {
+		// Destroy the session cookie.
+		$params = session_get_cookie_params();
+		if (is_assoc_array($params)) {
+			setcookie(session_name(), "", time() - (60 * 60 * 24),
+				$params["path"], $params["domain"],
+				$params["secure"], $params["httponly"]
+			);
+		}
+		// Destroy all data registered to this session.
 		session_destroy();
 	}
 
@@ -68,10 +91,12 @@ class Session {
 		$_SESSION['authenticated'] = TRUE;
 		$_SESSION['username'] = $username;
 		$_SESSION['role'] = $role;
-		if (array_key_exists("REMOTE_ADDR", $_SERVER))
+		if (array_key_exists("REMOTE_ADDR", $_SERVER)) {
 			$_SESSION['ipaddress'] = $_SERVER['REMOTE_ADDR'];
-		if (array_key_exists("HTTP_USER_AGENT", $_SERVER))
+		}
+		if (array_key_exists("HTTP_USER_AGENT", $_SERVER)) {
 			$_SESSION['useragent'] = $_SERVER['HTTP_USER_AGENT'];
+		}
 		$this->updateLastAccess();
 		return session_id();
 	}
@@ -81,19 +106,15 @@ class Session {
 	 * @return Returns the user role, otherwise FALSE.
 	 */
 	public function getRole() {
-		if (!isset($_SESSION['role']))
-			return FALSE;
-		return $_SESSION['role'];
+		return array_value($_SESSION, "role", FALSE);
 	}
 
 	/**
 	 * Is this session authenticated?
 	 * @return Returns TRUE if the session is authenticated, otherwise FALSE.
 	 */
-	public function isAuthenticated() {
-		if (!isset($_SESSION['authenticated']) || !$_SESSION['authenticated'])
-			return FALSE;
-		return TRUE;
+	public function isAuthenticated(): bool {
+		return array_value($_SESSION, "authenticated", FALSE);
 	}
 
 	/**
@@ -101,9 +122,7 @@ class Session {
 	 * @return Returns the current user name, otherwise FALSE.
 	 */
 	public function getUsername() {
-		if (!isset($_SESSION['username']))
-			return FALSE;
-		return $_SESSION['username'];
+		return array_value($_SESSION, "username", FALSE);
 	}
 
 	/**
@@ -117,9 +136,10 @@ class Session {
 	 * Check if the last access if not older than the defined timeout value.
 	 * @return TRUE if the session is timed out, otherwise FALSE.
 	 */
-	public function isTimeout() {
-		if (!isset($_SESSION['lastaccess']))
+	public function isTimeout(): bool {
+		if (!isset($_SESSION['lastaccess'])) {
 			return FALSE;
+		}
 		try {
 			// Get session timeout from the configuration.
 			$db = &\OMV\Config\Database::getInstance();
@@ -131,8 +151,9 @@ class Session {
 		}
 		// If the timeout value is set the 0 the session timeout
 		// validation is disabled.
-		if (0 == $timeout)
+		if (0 == $timeout) {
 			return FALSE;
+		}
 		return ((time() - $_SESSION['lastaccess']) > $timeout) ? TRUE : FALSE;
 	}
 
@@ -177,10 +198,12 @@ class Session {
 	 * destroyed and an exception is thrown.
 	 */
 	public function validateIpAddress() {
-		if (!array_key_exists("REMOTE_ADDR", $_SERVER))
+		if (!array_key_exists("REMOTE_ADDR", $_SERVER)) {
 			return;
-		if ($_SESSION['ipaddress'] == $_SERVER['REMOTE_ADDR'])
+		}
+		if ($_SESSION['ipaddress'] == $_SERVER['REMOTE_ADDR']) {
 			return;
+		}
 		$this->destroy();
 		throw new HttpErrorException(401, _("Invalid IP address."));
 	}
@@ -190,10 +213,12 @@ class Session {
 	 * is destroyed and an exception is thrown.
 	 */
 	public function validateUserAgent() {
-		if (!array_key_exists("HTTP_USER_AGENT", $_SERVER))
+		if (!array_key_exists("HTTP_USER_AGENT", $_SERVER)) {
 			return;
-		if ($_SESSION['useragent'] == $_SERVER['HTTP_USER_AGENT'])
+		}
+		if ($_SESSION['useragent'] == $_SERVER['HTTP_USER_AGENT']) {
 			return;
+		}
 		$this->destroy();
 		throw new HttpErrorException(401, _("Invalid User-Agent."));
 	}
@@ -211,10 +236,10 @@ class Session {
 	}
 
 	/**
-	 * Dump the current session informations.
+	 * Dump the current session information.
 	 */
 	public function dump() {
-		$this->debug(var_export([
+		syslog(LOG_DEBUG, var_export([
 			"id" => session_id(),
 			"data" => $_SESSION
 		], TRUE));

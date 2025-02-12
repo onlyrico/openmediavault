@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: openmediavault-onedrive\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2022-09-17 09:37+0200\n"
+"POT-Creation-Date: 2024-10-01 20:04+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -74,7 +74,13 @@ msgstr ""
 msgid "<ul><li>Full - Replicate changes from and to OneDrive.</li><li>Download only - Replicate the OneDrive online state locally, by only downloading changes from OneDrive. Do not upload local changes to OneDrive.</li><li>Upload only - Replicate the local state to OneDrive, by only uploading local changes to OneDrive. Do not download changes from OneDrive.</li></ul>"
 msgstr ""
 
-msgid "After enabling and deploying this service the first time please run the command <em>omv-onedrive-auth</em> in the CLI to authenticate the application in Microsoft OneDrive."
+msgid "After enabling and deploying this service the first time please run the command <em>omv-onedrive-auth</em> as <em>root</em> user in the CLI to authenticate the application in Microsoft OneDrive."
+msgstr ""
+
+msgid "Clean up local files"
+msgstr ""
+
+msgid "Clean up local files that have been removed online."
 msgstr ""
 
 msgid "Disabled"
@@ -87,6 +93,9 @@ msgid "Download only"
 msgstr ""
 
 msgid "Enabled"
+msgstr ""
+
+msgid "Extra options"
 msgstr ""
 
 msgid "Full"
@@ -122,7 +131,10 @@ msgstr ""
 msgid "Skip dotfiles"
 msgstr ""
 
-msgid "The location of the media files. Make sure the user <em>onedrive</em> or group <em>users</em> can access the files."
+msgid "The location to which the files are synchronised."
+msgstr ""
+
+msgid "The synchronised files and directories are owned by this user."
 msgstr ""
 
 msgid "The wait time between each sync operation."
@@ -135,4 +147,10 @@ msgid "Upload only"
 msgstr ""
 
 msgid "Upload/Download rate limit."
+msgstr ""
+
+msgid "Use the <em>omv-onedrive</em> command in the CLI to perform additional actions according to the documentation of the OneDrive Linux client."
+msgstr ""
+
+msgid "User"
 msgstr ""

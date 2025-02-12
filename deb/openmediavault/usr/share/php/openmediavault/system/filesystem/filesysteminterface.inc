@@ -4,7 +4,7 @@
  *
  * @license   http://www.gnu.org/licenses/gpl.html GPL Version 3
  * @author    Volker Theile <volker.theile@openmediavault.org>
- * @copyright Copyright (c) 2009-2022 Volker Theile
+ * @copyright Copyright (c) 2009-2025 Volker Theile
  *
  * OpenMediaVault is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -218,6 +218,26 @@ interface FilesystemInterface {
 	 * @return The file system description.
 	 */
 	public function getDescription();
+
+	/**
+	 * Get statistics about a mounted filesystem.
+	 * @return The filesystem statistics as an array if successful,
+	 *   otherwise FALSE. The following fields are included:
+	 *   \em devicefile, \em type, \em blocks, \em size, \em used,
+	 *   \em available, \em percentage and \em mountpoint.
+	 *   Please note, the fields \em size, \em used and \em available are
+	 *   strings and their unit is 'B' (bytes).
+	 * @throw \OMV\ExecException
+	 */
+	public function getStatistics();
+
+	/**
+	 * Get details about the filesystem, e.g. the health status.
+	 * @return A string that contains information and details about the
+	 *   filesystem.
+	 * @throw \OMV\ExecException
+	 */
+	public function getDetails();
 
 	/**
 	 * Check if a filesystem is mounted.

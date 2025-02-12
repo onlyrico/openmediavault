@@ -3,7 +3,7 @@
  *
  * @license   http://www.gnu.org/licenses/gpl.html GPL Version 3
  * @author    Volker Theile <volker.theile@openmediavault.org>
- * @copyright Copyright (c) 2009-2022 Volker Theile
+ * @copyright Copyright (c) 2009-2025 Volker Theile
  *
  * OpenMediaVault is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,16 +15,16 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  */
-import { APP_INITIALIZER, NgModule } from '@angular/core';
+import { APP_INITIALIZER, inject, NgModule } from '@angular/core';
 import { ActivatedRouteSnapshot, RouterModule, Routes } from '@angular/router';
-import { marker as gettext } from '@biesbjerg/ngx-translate-extract-marker';
+import { marker as gettext } from '@ngneat/transloco-keys-manager/marker';
 import * as _ from 'lodash';
 import { EMPTY } from 'rxjs';
 
 import { BlankLayoutComponent } from '~/app/core/components/layouts/blank-layout/blank-layout.component';
 import { WorkbenchLayoutComponent } from '~/app/core/components/layouts/workbench-layout/workbench-layout.component';
 import { AboutPageComponent } from '~/app/core/pages/about-page/about-page.component';
-import { EmptyPageComponent } from '~/app/core/pages/empty-page/empty-page.component';
+import { BlankPageComponent } from '~/app/core/pages/blank-page/blank-page.component';
 import { GuruMeditationPageComponent } from '~/app/core/pages/guru-meditation-page/guru-meditation-page.component';
 import { LoginPageComponent } from '~/app/core/pages/login-page/login-page.component';
 import { NavigationPageComponent } from '~/app/core/pages/navigation-page/navigation-page.component';
@@ -32,6 +32,7 @@ import { ShutdownPageComponent } from '~/app/core/pages/shutdown-page/shutdown-p
 import { StandbyPageComponent } from '~/app/core/pages/standby-page/standby-page.component';
 import { RouteConfigService } from '~/app/core/services/route-config.service';
 import { AuthGuardService } from '~/app/shared/services/auth-guard.service';
+import { RpcService } from '~/app/shared/services/rpc.service';
 
 const routes: Routes = [
   {
@@ -113,14 +114,21 @@ const routes: Routes = [
         resolve: {
           url: 'externalRedirectResolver'
         },
-        component: EmptyPageComponent
+        component: BlankPageComponent
       },
       {
         path: 'reload',
         resolve: {
           url: 'reloadResolver'
         },
-        component: EmptyPageComponent
+        component: BlankPageComponent
+      },
+      {
+        path: 'download',
+        resolve: {
+          url: 'downloadResolver'
+        },
+        component: BlankPageComponent
       },
       {
         path: 'guruMeditation',
@@ -166,7 +174,7 @@ const routes: Routes = [
         // Example: /externalRedirect/https%3A%2F%2Fwww.openmediavault.org
         const url = decodeURIComponent(route.paramMap.get('url'));
         if (_.isString(url)) {
-          window.open(url, '_blank');
+          window.open(url, '_blank', 'noopener');
         }
         return EMPTY;
       }
@@ -176,6 +184,23 @@ const routes: Routes = [
       useValue: () => {
         // Reload the whole page.
         document.location.replace('');
+        return EMPTY;
+      }
+    },
+    {
+      provide: 'downloadResolver',
+      useValue: (route: ActivatedRouteSnapshot) => {
+        // Example: /download?service=LogFile&method=getContent&params={"id":"syslog"}
+        // Note, it might be necessary to encode the JSON content of `params`, see
+        // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/encodeURIComponent?retiredLocale=de
+        // for more information.
+        const rpcService: RpcService = inject(RpcService);
+        const params: string | null = route.queryParamMap.get('params');
+        rpcService.download(
+          route.queryParamMap.get('service'),
+          route.queryParamMap.get('method'),
+          _.isNull(params) ? undefined : JSON.parse(decodeURIComponent(params))
+        );
         return EMPTY;
       }
     }

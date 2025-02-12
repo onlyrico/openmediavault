@@ -3,7 +3,7 @@
  *
  * @license   http://www.gnu.org/licenses/gpl.html GPL Version 3
  * @author    Volker Theile <volker.theile@openmediavault.org>
- * @copyright Copyright (c) 2009-2022 Volker Theile
+ * @copyright Copyright (c) 2009-2025 Volker Theile
  *
  * OpenMediaVault is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,12 +17,13 @@
  */
 import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
-import { marker as gettext } from '@biesbjerg/ngx-translate-extract-marker';
+import { marker as gettext } from '@ngneat/transloco-keys-manager/marker';
 import * as _ from 'lodash';
 
 import { DashboardWidgetConfig } from '~/app/core/components/dashboard/models/dashboard-widget-config.model';
 import { SelectionListPageConfig } from '~/app/core/components/intuition/models/selection-list-page-config.type';
 import { DashboardWidgetConfigService } from '~/app/core/services/dashboard-widget-config.service';
+import { BaseSelectionListPageComponent } from '~/app/pages/base-page-component';
 
 type SelectionListItem = Pick<DashboardWidgetConfig, 'id' | 'title' | 'description'> & {
   enabled: boolean;
@@ -32,7 +33,10 @@ type SelectionListItem = Pick<DashboardWidgetConfig, 'id' | 'title' | 'descripti
   template:
     '<omv-intuition-selection-list-page [config]="this.config"></omv-intuition-selection-list-page>'
 })
-export class DashboardSettingsPageComponent implements OnInit {
+export class DashboardSettingsPageComponent
+  extends BaseSelectionListPageComponent
+  implements OnInit
+{
   public config: SelectionListPageConfig = {
     title: gettext('Enabled widgets'),
     hasSelectAllButton: true,
@@ -72,7 +76,9 @@ export class DashboardSettingsPageComponent implements OnInit {
   constructor(
     private dashboardWidgetConfigService: DashboardWidgetConfigService,
     private router: Router
-  ) {}
+  ) {
+    super();
+  }
 
   ngOnInit(): void {
     this.dashboardWidgetConfigService.configs$.subscribe(
@@ -93,6 +99,7 @@ export class DashboardSettingsPageComponent implements OnInit {
   }
 
   onSubmit(buttonConfig, store, value: Array<string>) {
+    this.markAsPristine();
     this.dashboardWidgetConfigService.setEnabled(value);
     this.router.navigate(['/dashboard']);
   }

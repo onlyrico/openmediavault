@@ -2,7 +2,7 @@
 #
 # @license   http://www.gnu.org/licenses/gpl.html GPL Version 3
 # @author    Volker Theile <volker.theile@openmediavault.org>
-# @copyright Copyright (c) 2009-2022 Volker Theile
+# @copyright Copyright (c) 2009-2025 Volker Theile
 #
 # OpenMediaVault is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -47,13 +47,10 @@
   #     "fsname": "008530ff-a134-4264-898d-9ce30eeab927",
   # }
   {% if salt['mount.is_mounted'](mountpoint.dir) %}
-    {% set parent_device_file = salt['omv_utils.get_fs_parent_device_file'](mountpoint.fsname) %}
+    # Get the canonical device file to extract the device name. The collectd disk
+    # plugin wants this format: https://collectd.org/wiki/index.php/Plugin:Disk
+    {% set parent_device_file = salt['omv_utils.get_fs_parent_device_file'](mountpoint.fsname, True) %}
     {% if parent_device_file | is_device_file %}
-      # Get the canonical device file to extract the device name. The collectd disk
-      # plugin wants this format: https://collectd.org/wiki/index.php/Plugin:Disk
-      {% if parent_device_file | is_link %}
-        {% set parent_device_file = salt['file.readlink'](parent_device_file, True) %}
-      {% endif %}
       # Extract the device name from '/dev/xxx'.
       {% set _ = disks.append(parent_device_file[5:]) %}
     {% endif %}
@@ -62,8 +59,10 @@
 
 # Append the root file system.
 {% set root_fs = salt['omv_utils.get_root_filesystem']() %}
-{% set disk = salt['omv_utils.get_fs_parent_device_file'](root_fs) %}
-{% set _ = disks.append(disk[5:]) %}
+{% set parent_device_file = salt['omv_utils.get_fs_parent_device_file'](root_fs, True) %}
+{% if parent_device_file | is_device_file %}
+  {% set _ = disks.append(parent_device_file[5:]) %}
+{% endif %}
 
 configure_collectd_conf_disk_plugin:
   file.managed:

@@ -1,10 +1,10 @@
-#!/bin/sh
+#!/usr/bin/env dash
 #
 # This file is part of OpenMediaVault.
 #
 # @license   http://www.gnu.org/licenses/gpl.html GPL Version 3
 # @author    Volker Theile <volker.theile@openmediavault.org>
-# @copyright Copyright (c) 2009-2022 Volker Theile
+# @copyright Copyright (c) 2009-2025 Volker Theile
 #
 # OpenMediaVault is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -37,7 +37,7 @@ set -e
 #           <comment>xxx</comment>
 #           <devicefile>xxx</devicefile>
 #           <sharedfolderref>xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx</sharedfolderref>
-#           <usesubdir>0|1</usesubdir>
+#           <reldirpath>xxx</reldirpath>
 #           <optionrecursive>1</optionrecursive>
 #           <optiontimes>1</optiontimes>
 #           <optiongroup>1</optiongroup>

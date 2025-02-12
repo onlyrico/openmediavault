@@ -4,7 +4,7 @@
  *
  * @license   http://www.gnu.org/licenses/gpl.html GPL Version 3
  * @author    Volker Theile <volker.theile@openmediavault.org>
- * @copyright Copyright (c) 2009-2022 Volker Theile
+ * @copyright Copyright (c) 2009-2025 Volker Theile
  *
  * OpenMediaVault is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -33,8 +33,8 @@ class System {
 	 * /dev/sda1). To avoid further useless process calls to determine the
 	 * root device file the value is cached in a static variable when this
 	 * method is called the first time.
-	 * @return Returns the device file where the operating system is installed
-	 *   on.
+	 * @return Returns the canonical device file where the operating system
+	 *   is installed on.
 	 * @throw \OMV\ExecException
 	 */
 	public static function getRootDeviceFile() {
@@ -49,12 +49,14 @@ class System {
 		//if (is_block_device("/dev/root"))
 		//	return realpath("/dev/root");
 		$mp = new \OMV\System\MountPoint("/");
-		return $mp->getDeviceFile();
+		// Return the canonical device file to prevent future hiccups,
+		// e.g. `/dev/mapper/omv--lvm--vg-root` => `/dev/dm-0`.
+		return realpath($mp->getDeviceFile());
 	}
 
 	/**
 	 * Check if the given device file contains the operating system.
-	 * @param deviceFile The devicefile to check, e.g. /dev/sdb or /dev/sda1.
+	 * @param deviceFile The device file to check, e.g. /dev/sdb or /dev/sda1.
 	 * @param exact Set to FALSE to detect partitions, too. Defaults to TRUE.
 	 * @return Returns TRUE if the device file contains the operating system,
 	 *   otherwise FALSE.
@@ -147,6 +149,7 @@ class System {
 	 *   periods or FALSE on failure.
 	 */
 	public static function getLoadAverage() {
+		// https://scoutapm.com/blog/understanding-load-averages
 		$loadavg = explode(" ", trim(file_get_contents("/proc/loadavg")));
 		return [
 			"1min" => floatval($loadavg[0]),
@@ -369,64 +372,18 @@ class System {
 
 	/**
 	 * Get CPU statistics.
-	 * @return The memory statistics as array or FALSE on failure.
-	 * array(
-	 *   cpumhz => "2792.999"
-	 *   modelname => "Intel(R) Core(TM) i7 CPU         860  @ 2.80GHz",
-	 *   usage => 12
-	 * )
+	 * @return The CPU statistics as an array.
+	 *   array(
+	 *     mhz => "2792.999"
+	 *     cores => 4
+	 *     modelname => "Intel(R) Core(TM) i7 CPU         860  @ 2.80GHz",
+	 *     utilization => 12
+	 *   )
 	 */
 	public static function getCpuStats() {
-		// Get the CPU information. Take care about CPUs with multiple cores.
-		// processor	: 0
-		// vendor_id	: GenuineIntel
-		// cpu family	: 6
-		// model		: 30
-		// model name	: Intel(R) Core(TM) i7 CPU         860  @ 2.80GHz
-		// stepping	    : 5
-		// microcode	: 0x3
-		// cpu MHz		: 2792.999
-		// ...
-		// system type             : MT7621
-		// machine                 : GnuBee
-		// processor               : 0
-		// cpu model               : MIPS 1004Kc V2.15
-		// BogoMIPS                : 663.55
-		// ...
-		$cpuInfo = new \OMV\Util\KeyValueFile("/proc/cpuinfo", ":");
-		$cpuInfo->setKeyNameDelimiter("");
-		$cpuInfo->setKeyCaseSensitiv(TRUE);
-		// Get the current CPU statistics.
-		// Use the very first "cpu" line which aggregates the numbers in
-		// all of the other "cpuN" lines.
-		// cpu  2255 34 2290 22625563 6290 127 456
-		// * user: normal processes executing in user mode
-		// * nice: niced processes executing in user mode
-		// * system: processes executing in kernel mode
-		// * idle: twiddling thumbs
-		// * iowait: waiting for I/O to complete
-		// * irq: servicing interrupts
-		// * softirq: servicing softirqs
-		//
-		// See also
-		// - https://serverfault.com/a/667250.
-		// - https://en.wikipedia.org/wiki/Load_(computing)
-		$tprev = file("/proc/stat");
-		sleep(1);
-		$tnow = file("/proc/stat");
-		$tprev = explode(" ", $tprev[0]);
-		array_shift($tprev); array_shift($tprev);
-		$tnow = explode(" ", $tnow[0]);
-		array_shift($tnow); array_shift($tnow);
-		// Calculate the total CPU time.
-		$tprevTotal = array_sum($tprev);
-		$tnowTotal = array_sum($tnow);
-		// Calculate the CPU usage since we last checked.
-		$diffIdle = $tnow[3] - $tprev[3];
-		$diffIowait = $tnow[4] - $tprev[4];
-		$diffTotal = $tnowTotal - $tprevTotal;
+		$cpuInfo = new \OMV\Dictionary(\OMV\System\Cpu::info());
 		// Get the processor name.
-		// Parse output:
+		// Example 1:
 		// ...
 		// CPU part	: 0xd03
 		// CPU revision	: 4
@@ -434,8 +391,24 @@ class System {
 		// Hardware		: Allwinnersun50iw2Family
 		// Revision		: 0000
 		// Serial		: 0000000000000000
-		$modelName = gettext("n/a");
-		foreach ([ "modelname", "cpumodel", "Processor", "Hardware" ] as $key) {
+		// ...
+		//
+		// Example 2:
+		// processor	: 0
+		// vendor_id	: AuthenticAMD
+		// cpu family	: 23
+		// model		: 96
+		// model name	: AMD Ryzen 7 PRO 4750U with Radeon Graphics
+		//
+		// Example 3:
+		// processor    : 0
+		// BogoMIPS     : 108.00
+		//
+		// Revision     : d03141
+		// Serial       : xxxxxxxxxxxxxxxx
+		// Model        : Raspberry Pi Compute Module 4 Rev 1.1
+		$modelName = NULL;
+		foreach ([ "model_name", "cpu_model", "hardware", "model" ] as $key) {
 			if (TRUE === $cpuInfo->exists($key)) {
 				$modelName = $cpuInfo->get($key);
 				break;
@@ -443,10 +416,9 @@ class System {
 		}
 		return [
 			"modelname" => $modelName,
-			"cpumhz" => $cpuInfo->exists("cpumhz") ?
-				$cpuInfo->get("cpumhz") : gettext("n/a"),
-			"usage" => (0 == $diffTotal) ? 0 :
-				(($diffTotal - $diffIowait - $diffIdle) / $diffTotal) * 100
+			"mhz" => $cpuInfo->get("cpu_mhz"),
+			"cores" => $cpuInfo->get("cpu_cores"),
+			"utilization" => \OMV\System\Cpu::utilization()
 		];
 	}
 

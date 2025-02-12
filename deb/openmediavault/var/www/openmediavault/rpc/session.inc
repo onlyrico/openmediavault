@@ -4,7 +4,7 @@
  *
  * @license   http://www.gnu.org/licenses/gpl.html GPL Version 3
  * @author    Volker Theile <volker.theile@openmediavault.org>
- * @copyright Copyright (c) 2009-2022 Volker Theile
+ * @copyright Copyright (c) 2009-2025 Volker Theile
  *
  * OpenMediaVault is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -50,6 +50,8 @@ class OMVRpcServiceSession extends \OMV\Rpc\ServiceAbstract {
 		$this->validateMethodParams($params, "rpc.session.login");
 		$authenticated = FALSE;
 		$permissions = [];
+		$sessionId = "";
+		$server = new \OMV\SuperGlobalServer();
 		// Strip whitespaces from the user name.
 		if (is_string($params['username'])) {
 			$params['username'] = trim($params['username']);
@@ -72,9 +74,10 @@ class OMVRpcServiceSession extends \OMV\Rpc\ServiceAbstract {
 				}
 			} else {
 				// Initialize session.
-				$role = ("admin" === $permissions['role']) ?
+				$role = ("admin" == $permissions['role']) ?
 					OMV_ROLE_ADMINISTRATOR : OMV_ROLE_USER;
-				$session->initialize($params['username'], $role);
+				$sessionId = $session->initialize($params['username'],
+					$role);
 			}
 			$authenticated = $session->isAuthenticated();
 			$session->commit();
@@ -83,14 +86,14 @@ class OMVRpcServiceSession extends \OMV\Rpc\ServiceAbstract {
 		// and cookie name.
 		$prd = new \OMV\ProductInfo();
 		$ident = mb_strtolower(sprintf("%s-webgui", $prd->getName()));
-		$prefix = mb_strtoupper(sprintf("X-%s-LOGIN", $prd->getName()));
+		$prefix = mb_strtoupper(sprintf("%s-LOGIN", $prd->getName()));
 		// Open connection to system logger.
 		openlog($ident, LOG_PID | LOG_PERROR, LOG_AUTH);
 		if (TRUE === $authenticated) {
 			// Log the successful login attempt via syslog.
 			syslog(LOG_ALERT, sprintf("Authorized login from %s ".
-				"[username=%s, user-agent=%s]", $_SERVER['REMOTE_ADDR'],
-				$params['username'], $_SERVER['HTTP_USER_AGENT']));
+				"[username=%s, user-agent=%s]", $server->getClientIP(),
+				$params['username'], $server->getUserAgent()));
 			// Send an email to the user if a new web browser is used to log
 			// in to the control panel. If no special cookie is detected,
 			// then it is assumed that the web browser has not been used to
@@ -125,8 +128,8 @@ class OMVRpcServiceSession extends \OMV\Rpc\ServiceAbstract {
 					"Sincerely,\n".
 					"your %s system",
 					$params['username'], \OMV\System\Net\Dns::getFqdn(),
-					$_SERVER['SERVER_ADDR'], date('r'), $_SERVER['REMOTE_ADDR'],
-					$_SERVER['HTTP_USER_AGENT'], $prd->getName());
+					$server->getServerAddr(), date('r'), $server->getClientIP(),
+					$server->getUserAgent(), $prd->getName());
 				$mail = new \OMV\Email("root", $params['username'],
 					$subject, $message);
 				$mail->send();
@@ -149,8 +152,8 @@ class OMVRpcServiceSession extends \OMV\Rpc\ServiceAbstract {
 		} else {
 			// Log the unauthorized login attempt via syslog.
 			syslog(LOG_ALERT, sprintf("Unauthorized login attempt from %s ".
-				"[username=%s, user-agent=%s]", $_SERVER['REMOTE_ADDR'],
-				$params['username'], $_SERVER['HTTP_USER_AGENT']));
+				"[username=%s, user-agent=%s]", $server->getClientIP(),
+				$params['username'], $server->getUserAgent()));
 			closelog();
 			throw new \OMV\HttpErrorException(400,
 				_("Incorrect username or password."));
@@ -159,7 +162,8 @@ class OMVRpcServiceSession extends \OMV\Rpc\ServiceAbstract {
 		return [
 			"authenticated" => $authenticated,
 			"username" => $params['username'],
-			"permissions" => $permissions
+			"permissions" => $permissions,
+			"sessionid" => $sessionId
 		];
 	}
 

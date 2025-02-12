@@ -3,7 +3,7 @@
  *
  * @license   http://www.gnu.org/licenses/gpl.html GPL Version 3
  * @author    Volker Theile <volker.theile@openmediavault.org>
- * @copyright Copyright (c) 2009-2022 Volker Theile
+ * @copyright Copyright (c) 2009-2025 Volker Theile
  *
  * OpenMediaVault is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -39,6 +39,12 @@ export type TextPageConfig = {
       params?: Record<string, any>;
       // Set `true` if the RPC is a long-running background task.
       task?: boolean;
+      // Convert the response object into a string.
+      // Example:
+      // Response = { foo: 'hello', bar: 'world' }
+      // format = '{{ foo }} {{ bar }}'
+      // Result = 'hello world'
+      format?: string;
     };
   };
   buttonAlign?: 'start' | 'center' | 'end';

@@ -3,7 +3,7 @@
  *
  * @license   http://www.gnu.org/licenses/gpl.html GPL Version 3
  * @author    Volker Theile <volker.theile@openmediavault.org>
- * @copyright Copyright (c) 2009-2022 Volker Theile
+ * @copyright Copyright (c) 2009-2025 Volker Theile
  *
  * OpenMediaVault is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,19 +18,23 @@
 import { Component, Inject, ViewChild } from '@angular/core';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { Router } from '@angular/router';
-import { marker as gettext } from '@biesbjerg/ngx-translate-extract-marker';
+import { marker as gettext } from '@ngneat/transloco-keys-manager/marker';
 import * as _ from 'lodash';
-import { BlockUI, NgBlockUI } from 'ng-block-ui';
 import { finalize } from 'rxjs/operators';
 
 import { FormComponent } from '~/app/core/components/intuition/form/form.component';
+import { FormFieldName } from '~/app/core/components/intuition/models/form.type';
+import { FormValues } from '~/app/core/components/intuition/models/form.type';
 import {
   FormDialogButtonConfig,
   FormDialogConfig
 } from '~/app/core/components/intuition/models/form-dialog-config.type';
-import { format, formatDeep } from '~/app/functions.helper';
+import { format, formatDeep, isFormatable } from '~/app/functions.helper';
 import { translate } from '~/app/i18n.helper';
+import { TaskDialogComponent } from '~/app/shared/components/task-dialog/task-dialog.component';
 import { NotificationType } from '~/app/shared/enum/notification-type.enum';
+import { BlockUiService } from '~/app/shared/services/block-ui.service';
+import { DialogService } from '~/app/shared/services/dialog.service';
 import { NotificationService } from '~/app/shared/services/notification.service';
 import { RpcService } from '~/app/shared/services/rpc.service';
 
@@ -45,9 +49,6 @@ import { RpcService } from '~/app/shared/services/rpc.service';
   styleUrls: ['./form-dialog.component.scss']
 })
 export class FormDialogComponent {
-  @BlockUI()
-  blockUI: NgBlockUI;
-
   @ViewChild(FormComponent, { static: true })
   form: FormComponent;
 
@@ -55,6 +56,8 @@ export class FormDialogComponent {
   public config: FormDialogConfig;
 
   constructor(
+    private blockUiService: BlockUiService,
+    private dialogService: DialogService,
     private router: Router,
     private rpcService: RpcService,
     private notificationService: NotificationService,
@@ -66,21 +69,16 @@ export class FormDialogComponent {
   }
 
   /**
-   * Sets the values of the form fields.
+   * Sets the form values.
    *
    * @param values The values to be set.
+   * @param markAsPristine Mark the form as pristine. Defaults to `true`.
    */
-  setFormValues(values: Array<any>) {
-    // Set the value for each form field separately to prevent a
-    // runtime error to be thrown when the values contains keys
-    // for non-existing fields or when there is no form field for
-    // a key.
-    _.forEach(values, (value: any, key: string) => {
-      const control = this.form.formGroup.get(key);
-      if (!_.isNull(control)) {
-        control.setValue(value);
-      }
-    });
+  setFormValues(values: FormValues, markAsPristine = true): void {
+    this.form.formGroup.patchValue(values);
+    if (markAsPristine) {
+      this.form.formGroup.markAsPristine();
+    }
   }
 
   /**
@@ -89,14 +87,17 @@ export class FormDialogComponent {
    *
    * @return Returns an object containing the form field values.
    */
-  getFormValues(): Record<string, any> {
-    const values = _.pickBy(this.form.formGroup.value, (value: any, key: string) => {
-      const field = _.find(this.config.fields, { name: key });
-      if (_.isUndefined(field)) {
-        return true;
+  getFormValues(): FormValues {
+    const values: FormValues = _.pickBy(
+      this.form.formGroup.getRawValue(),
+      (value: any, key: FormFieldName) => {
+        const field = _.find(this.config.fields, { name: key });
+        if (_.isUndefined(field)) {
+          return true;
+        }
+        return _.defaultTo(field.submitValue, true);
       }
-      return _.defaultTo(field.submitValue, true);
-    });
+    );
     return values;
   }
 
@@ -124,12 +125,13 @@ export class FormDialogComponent {
   }
 
   private onButtonClick(buttonConfig: FormDialogButtonConfig) {
-    const values = this.getFormValues();
+    const values: FormValues = this.getFormValues();
     const dialogResult = _.defaultTo(buttonConfig.dialogResult, values);
     switch (buttonConfig?.execute?.type) {
       case 'url':
         this.matDialogRef.close(dialogResult);
-        this.router.navigate([buttonConfig.execute.url]);
+        const url = format(buttonConfig.execute.url, values);
+        this.router.navigateByUrl(url);
         break;
       case 'request':
         const request = buttonConfig.execute.request;
@@ -141,7 +143,7 @@ export class FormDialogComponent {
         }
         // Block UI and display the progress message.
         if (_.isString(request.progressMessage)) {
-          this.blockUI.start(translate(request.progressMessage));
+          this.blockUiService.start(translate(request.progressMessage));
         }
         this.rpcService[request.task ? 'requestTask' : 'request'](
           request.service,
@@ -151,28 +153,57 @@ export class FormDialogComponent {
           .pipe(
             finalize(() => {
               if (_.isString(request.progressMessage)) {
-                this.blockUI.stop();
+                this.blockUiService.stop();
               }
             })
           )
           .subscribe(() => {
             // Close dialog on success only, so the user can change the
             // data in case of an error without entering the form data
-            // from scratch.
+            // again from scratch.
             this.matDialogRef.close(dialogResult);
             // Display a notification?
             if (_.isString(request.successNotification)) {
               this.notificationService.show(
                 NotificationType.success,
+                undefined,
                 format(request.successNotification, values)
               );
             }
             // Navigate to a specified URL?
             if (_.isString(request.successUrl)) {
-              const url = format(request.successUrl, values);
-              this.router.navigate([url]);
+              const successUrl = format(request.successUrl, values);
+              this.router.navigateByUrl(successUrl);
             }
           });
+        break;
+      case 'taskDialog':
+        const taskDialog = _.cloneDeep(buttonConfig.execute.taskDialog);
+        // Process tokenized configuration properties.
+        _.forEach(['request.params'], (path) => {
+          const value = _.get(taskDialog.config, path);
+          if (isFormatable(value)) {
+            _.set(taskDialog.config, path, formatDeep(value, values));
+          }
+        });
+        const dialog = this.dialogService.open(TaskDialogComponent, {
+          width: _.get(taskDialog.config, 'width', '75%'),
+          data: _.omit(taskDialog.config, ['width'])
+        });
+        // Navigate to the specified URL if pressed button returns `true`.
+        dialog.afterClosed().subscribe((res) => {
+          if (res) {
+            // Close dialog on success only, so the user can change the
+            // data in case of an error without entering the form data
+            // again from scratch.
+            this.matDialogRef.close(dialogResult);
+            // Navigate to a specified URL?
+            if (_.isString(taskDialog.successUrl)) {
+              const successUrl = format(taskDialog.successUrl, values);
+              this.router.navigateByUrl(successUrl);
+            }
+          }
+        });
         break;
       default:
         this.matDialogRef.close(dialogResult);

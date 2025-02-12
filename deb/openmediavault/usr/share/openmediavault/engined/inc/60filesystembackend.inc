@@ -4,7 +4,7 @@
  *
  * @license   http://www.gnu.org/licenses/gpl.html GPL Version 3
  * @author    Volker Theile <volker.theile@openmediavault.org>
- * @copyright Copyright (c) 2009-2022 Volker Theile
+ * @copyright Copyright (c) 2009-2025 Volker Theile
  *
  * OpenMediaVault is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -24,13 +24,15 @@ namespace OMV\System\Filesystem\Backend;
 ///////////////////////////////////////////////////////////////////////////////
 // Register default filesystem backends.
 ///////////////////////////////////////////////////////////////////////////////
-$backends = [ "Btrfs", "Ext", "Ext2", "Ext3", "Ext4", "Hfsplus",
+$backends = [ "Bcache", "Btrfs", "Ext", "Ext2", "Ext3", "Ext4", "Hfsplus",
   "Iso9660", "Jfs", "Msdos", "None", "Ntfs", "Reiserfs", "Udf", "Ufs",
-  "Umsdos", "Exfat", "Vfat", "Xfs", "Fuseblk", "Swap", "F2fs" ];
+  "Umsdos", "Exfat", "Vfat", "Xfs", "Fuseblk", "Swap", "F2fs",
+  "Reiser4" ];
 $mngr = Manager::getInstance();
 foreach ($backends as $backendk => $backendv) {
 	$className = sprintf("%s\%s", __NAMESPACE__, $backendv);
 	$mngr->registerBackend(new $className());
 }
-if (TRUE === $debug)
+if (TRUE === $debug) {
 	$mngr->dump();
+}

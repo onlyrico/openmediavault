@@ -3,7 +3,7 @@
  *
  * @license   http://www.gnu.org/licenses/gpl.html GPL Version 3
  * @author    Volker Theile <volker.theile@openmediavault.org>
- * @copyright Copyright (c) 2009-2022 Volker Theile
+ * @copyright Copyright (c) 2009-2025 Volker Theile
  *
  * OpenMediaVault is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,14 +16,15 @@
  * GNU General Public License for more details.
  */
 import { Component } from '@angular/core';
-import { marker as gettext } from '@biesbjerg/ngx-translate-extract-marker';
+import { marker as gettext } from '@ngneat/transloco-keys-manager/marker';
 
 import { FormPageConfig } from '~/app/core/components/intuition/models/form-page-config.type';
+import { BaseFormPageComponent } from '~/app/pages/base-page-component';
 
 @Component({
   template: '<omv-intuition-form-page [config]="this.config"></omv-intuition-form-page>'
 })
-export class SshFormPageComponent {
+export class SshFormPageComponent extends BaseFormPageComponent {
   public config: FormPageConfig = {
     request: {
       service: 'SSH',
@@ -34,15 +35,17 @@ export class SshFormPageComponent {
         method: 'set'
       }
     },
-    fields: [
+    hints: [
       {
-        type: 'hint',
+        type: 'info',
         text: gettext(
-          'Users must be assigned to the <em>ssh</em> group to be able to log in via SSH.'
+          'Users must be assigned to the <em>_ssh</em> group to be able to log in via SSH.'
         ),
         dismissible: true,
         stateId: '1f7e0754-e049-4578-9272-8cbb365fad97'
-      },
+      }
+    ],
+    fields: [
       {
         type: 'checkbox',
         name: 'enable',
@@ -95,9 +98,7 @@ export class SshFormPageComponent {
         label: gettext('Compression'),
         value: true,
         hint: gettext(
-          'Compression is worth using if your connection is slow. ' +
-            'The efficiency of the compression depends on the type of the ' +
-            'file, and varies widely. Useful for internet transfer only.'
+          'Compression is worth using if your connection is slow. The efficiency of the compression depends on the type of the file, and varies widely. Useful for internet transfer only.'
         )
       },
       {

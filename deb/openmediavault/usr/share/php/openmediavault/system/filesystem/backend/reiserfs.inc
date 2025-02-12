@@ -4,7 +4,7 @@
  *
  * @license   http://www.gnu.org/licenses/gpl.html GPL Version 3
  * @author    Volker Theile <volker.theile@openmediavault.org>
- * @copyright Copyright (c) 2009-2022 Volker Theile
+ * @copyright Copyright (c) 2009-2025 Volker Theile
  *
  * OpenMediaVault is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,19 +21,15 @@
  */
 namespace OMV\System\Filesystem\Backend;
 
+/**
+ * References:
+ * - https://en.wikipedia.org/wiki/ReiserFS
+ */
 class Reiserfs extends BackendAbstract {
 	public function __construct() {
 		$this->type = "reiserfs";
 		$this->properties = self::PROP_MNTENT | self::PROP_POSIX_ACL;
-	}
-
-	/**
-	 * See parent class definition.
-	 */
-	public function getFstabMntOptions(
-	  \OMV\System\Storage\StorageDevice $sd = null) {
-		$options = parent::getFstabMntOptions($sd);
-		$options[] = "acl";
-		return $options;
+		$this->mntOptions = explode(",", \OMV\Environment::get(
+			"OMV_FSTAB_MNTOPS_REISERFS"));
 	}
 }

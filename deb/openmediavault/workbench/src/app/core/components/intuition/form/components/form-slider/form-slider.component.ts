@@ -3,7 +3,7 @@
  *
  * @license   http://www.gnu.org/licenses/gpl.html GPL Version 3
  * @author    Volker Theile <volker.theile@openmediavault.org>
- * @copyright Copyright (c) 2009-2022 Volker Theile
+ * @copyright Copyright (c) 2009-2025 Volker Theile
  *
  * OpenMediaVault is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,7 +15,7 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  */
-import { Component } from '@angular/core';
+import { Component, ViewEncapsulation } from '@angular/core';
 import { MatSliderChange } from '@angular/material/slider';
 
 import { AbstractFormFieldComponent } from '~/app/core/components/intuition/form/components/abstract-form-field-component';
@@ -23,7 +23,8 @@ import { AbstractFormFieldComponent } from '~/app/core/components/intuition/form
 @Component({
   selector: 'omv-form-slider',
   templateUrl: './form-slider.component.html',
-  styleUrls: ['./form-slider.component.scss']
+  styleUrls: ['./form-slider.component.scss'],
+  encapsulation: ViewEncapsulation.None
 })
 export class FormSliderComponent extends AbstractFormFieldComponent {
   onChange(event: MatSliderChange) {

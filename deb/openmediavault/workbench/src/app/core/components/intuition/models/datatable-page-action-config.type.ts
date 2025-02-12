@@ -3,7 +3,7 @@
  *
  * @license   http://www.gnu.org/licenses/gpl.html GPL Version 3
  * @author    Volker Theile <volker.theile@openmediavault.org>
- * @copyright Copyright (c) 2009-2022 Volker Theile
+ * @copyright Copyright (c) 2009-2025 Volker Theile
  *
  * OpenMediaVault is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -47,15 +47,16 @@ export type DatatablePageActionConfig = DatatableAction & {
 };
 
 export type DatatablePageActionExecute = {
-  // .-------------------------------------------------.
-  // |            | single selection | multi selection |
-  // |------------|------------------|-----------------|
-  // | url        |        x         |                 |
-  // | request    |        x         |       x         |
-  // | taskDialog |        x         |                 |
-  // | formDialog |        x         |                 |
-  // '-------------------------------------------------'
-  type: 'url' | 'request' | 'taskDialog' | 'formDialog';
+  // .------------------------------------------------------.
+  // |                 | single selection | multi selection |
+  // |-----------------|------------------|-----------------|
+  // | url             |        x         |                 |
+  // | request         |        x         |       x         |
+  // | taskDialog      |        x         |                 |
+  // | formDialog      |        x         |                 |
+  // | copyToClipboard |        x         |                 |
+  // '------------------------------------------------------'
+  type: 'url' | 'request' | 'taskDialog' | 'formDialog' | 'copyToClipboard';
   // An URL can contain "interpolate" delimiters that are
   // interpolated with the properties of the selected row.
   // Example: /certificate/ssh/{{ uuid }}
@@ -79,6 +80,14 @@ export type DatatablePageActionExecute = {
     // Display a notification when the request was successful.
     // The notification can contain route config/params tokens.
     successNotification?: string;
+    // Copy the specified template to the clipboard.
+    // Example:
+    // "{{ _response['token'] }}"
+    successCopyToClipboard?: string;
+    // Navigate to this URL when the request was successful.
+    // The URL is formatted with the page context (please see
+    // AbstractPageComponent::pageContext).
+    successUrl?: string;
   };
   // Display a dialog that shows the output the given RPC.
   taskDialog?: {
@@ -91,4 +100,7 @@ export type DatatablePageActionExecute = {
   };
   // Display a dialog with the specified form fields.
   formDialog?: FormDialogConfig;
+  // Copy the specified template to the clipboard.
+  // Example: "foo bar {{ id }}"
+  copyToClipboard?: string;
 };

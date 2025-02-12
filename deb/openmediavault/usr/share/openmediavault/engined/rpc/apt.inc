@@ -4,7 +4,7 @@
  *
  * @license   http://www.gnu.org/licenses/gpl.html GPL Version 3
  * @author    Volker Theile <volker.theile@openmediavault.org>
- * @copyright Copyright (c) 2009-2022 Volker Theile
+ * @copyright Copyright (c) 2009-2025 Volker Theile
  *
  * OpenMediaVault is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -33,8 +33,10 @@ class Apt extends \OMV\Rpc\ServiceAbstract {
 	 * Initialize the RPC service.
 	 */
 	public function initialize() {
-		$this->registerMethod("getSettings");
-		$this->registerMethod("setSettings");
+		$this->registerMethod("getSoftwareSettings");
+		$this->registerMethod("setSoftwareSettings");
+		$this->registerMethod("getUpdatesSettings");
+		$this->registerMethod("setUpdatesSettings");
 		$this->registerMethod("enumerateUpgraded");
 		$this->registerMethod("getUpgradedList");
 		$this->registerMethod("install");
@@ -45,48 +47,60 @@ class Apt extends \OMV\Rpc\ServiceAbstract {
 	}
 
 	/**
-	 * Get settings.
+	 * Get software settings.
 	 * @param params The method parameters.
 	 * @param context The context of the caller.
 	 * @return The requested configuration object.
 	 */
-	function getSettings($params, $context) {
-		// Validate the RPC caller context.
-		$this->validateMethodContext($context, [
-			"role" => OMV_ROLE_ADMINISTRATOR
-		]);
-		// Get the configuration object.
-		$db = \OMV\Config\Database::getInstance();
-		$object = $db->get("conf.system.apt.distribution");
-		return $object->getAssoc();
+	function getSoftwareSettings($params, $context) {
+		return \OMV\Rpc\Rpc::call("Config", "get", [
+			"id" => "conf.system.apt.distribution"
+		], $context);
 	}
 
 	/**
-	 * Set settings.
+	 * Set software settings.
 	 * @param params The method parameters.
 	 * @param context The context of the caller.
 	 * @return The stored configuration object.
 	 */
-	function setSettings($params, $context) {
-		// Validate the RPC caller context.
-		$this->validateMethodContext($context, [
-			"role" => OMV_ROLE_ADMINISTRATOR
-		]);
-		// Validate the parameters of the RPC service method.
-		$this->validateMethodParams($params, "rpc.apt.setsettings");
-		// Prepare the configuration object.
-		$object = new \OMV\Config\ConfigObject("conf.system.apt.distribution");
-		$object->setAssoc($params);
-		// Update the configuration object.
-		$db = \OMV\Config\Database::getInstance();
-		$db->set($object);
+	function setSoftwareSettings($params, $context) {
+		$object = \OMV\Rpc\Rpc::call("Config", "set", [
+			"id" => "conf.system.apt.distribution",
+			"data" => $params
+		], $context);
 		// Apply the changes immediately (no user interaction is wanted).
 		\OMV\Rpc\Rpc::call("Config", "applyChanges", [
 			"modules" => [ "apt" ],
 			"force" => TRUE
 		], $context);
 		// Return the configuration object.
-		return $object->getAssoc();
+		return $object;
+	}
+
+	/**
+	 * Get updates settings.
+	 * @param params The method parameters.
+	 * @param context The context of the caller.
+	 * @return The requested configuration object.
+	 */
+	function getUpdatesSettings($params, $context) {
+		return \OMV\Rpc\Rpc::call("Config", "get", [
+			"id" => "conf.system.apt.updates"
+		], $context);
+	}
+
+	/**
+	 * Set updates settings.
+	 * @param params The method parameters.
+	 * @param context The context of the caller.
+	 * @return The stored configuration object.
+	 */
+	function setUpdatesSettings($params, $context) {
+		return \OMV\Rpc\Rpc::call("Config", "set", [
+			"id" => "conf.system.apt.updates",
+			"data" => $params
+		], $context);
 	}
 
 	/**
@@ -173,14 +187,15 @@ class Apt extends \OMV\Rpc\ServiceAbstract {
 			$cmdArgs[] = "--show-upgraded";
 			$cmdArgs[] = "--option DPkg::Options::=\"--force-confold\"";
 			$cmdArgs[] = "install";
-			$cmdArgs = array_merge($cmdArgs, $params['packages']);
+			foreach ($params['packages'] as $packagek => $packagev) {
+				$cmdArgs[] = escapeshellarg($packagev);
+			}
 			$cmd = new \OMV\System\Process("apt-get", $cmdArgs);
 			$cmd->setRedirect2to1();
 			$cmd->setEnv("DEBIAN_FRONTEND", "noninteractive");
-			if (0 !== ($exitStatus = $this->exec($cmd->getCommandLine(),
-				$output, $bgOutputFilename))) {
-				throw new \OMV\ExecException($cmd->getCommandLine(), $output,
-					$exitStatus);
+			if (0 !== ($exitStatus = $this->exec($cmd, $output,
+					$bgOutputFilename))) {
+				throw new \OMV\ExecException($cmd, $output, $exitStatus);
 			}
 			return $output;
 		});
@@ -220,10 +235,9 @@ class Apt extends \OMV\Rpc\ServiceAbstract {
 			$cmd = new \OMV\System\Process("apt-get", $cmdArgs);
 			$cmd->setRedirect2to1();
 			$cmd->setEnv("DEBIAN_FRONTEND", "noninteractive");
-			if (0 !== ($exitStatus = $this->exec($cmd->getCommandLine(),
-				$output, $bgOutputFilename))) {
-				throw new \OMV\ExecException($cmd->getCommandLine(), $output,
-					$exitStatus);
+			if (0 !== ($exitStatus = $this->exec($cmd, $output,
+					$bgOutputFilename))) {
+				throw new \OMV\ExecException($cmd, $output, $exitStatus);
 			}
 			return $output;
 		});
@@ -242,6 +256,9 @@ class Apt extends \OMV\Rpc\ServiceAbstract {
 		$this->validateMethodContext($context, [
 			"role" => OMV_ROLE_ADMINISTRATOR
 		]);
+		if ($this->isModuleDirty("apt")) {
+			throw new \OMV\Config\ConfigDirtyException();
+		}
 		// Check if the package database is locked.
 		\OMV\System\Apt::assertNotLocked();
 		// Create the background process.
@@ -250,10 +267,9 @@ class Apt extends \OMV\Rpc\ServiceAbstract {
 			// Update package database.
 			$cmd = new \OMV\System\Process("apt-get", "update");
 			$cmd->setRedirect2to1();
-			if (0 !== ($exitStatus = $this->exec($cmd->getCommandLine(),
-				$output, $bgOutputFilename))) {
-				throw new \OMV\ExecException($cmd->getCommandLine(), $output,
-					$exitStatus);
+			if (0 !== ($exitStatus = $this->exec($cmd, $output,
+					$bgOutputFilename))) {
+				throw new \OMV\ExecException($cmd, $output, $exitStatus);
 			}
 			return $output;
 		});
@@ -292,7 +308,7 @@ class Apt extends \OMV\Rpc\ServiceAbstract {
 		}
 		// Create the 'Packages' file required by local APT archives.
 		// The 'packages' command should be run in the root of the tree.
-		$cmd = sprintf("export LANG=C; cd %s && apt-ftparchive " .
+		$cmd = sprintf("export LC_ALL=C.UTF-8; cd %s && apt-ftparchive " .
 		  "packages . > Packages", \OMV\Environment::get(
 		  "OMV_DPKGARCHIVE_DIR"));
 		if (0 !== $this->exec($cmd, $output))
@@ -367,16 +383,15 @@ class Apt extends \OMV\Rpc\ServiceAbstract {
 //			$cmdArgs[] = escapeshellarg($packagePath);
 //			$cmd = new \OMV\System\Process("apt-listchanges", $cmdArgs);
 //			$cmd->setRedirect2to1();
-//			$cmdLine = $cmd->getCommandLine();
-//			if (0 !== $this->exec($cmdLine, $output, $bgOutputFilename))
-//				throw new \OMV\ExecException($cmdLine, $output);
+//			if (0 !== $this->exec($cmd, $output, $bgOutputFilename))
+//				throw new \OMV\ExecException($cmd, $output);
 //			return $output;
 			// Extract the changelog from the Debian package.
 			if (FALSE === ($tmpDir = mkdtemp())) {
 				throw new \OMV\Exception(
 				  "Failed to created a temporary directory.");
 			}
-			$cmd = sprintf("export LANG=C; dpkg-deb --fsys-tarfile %s | ".
+			$cmd = sprintf("export LC_ALL=C.UTF-8; dpkg-deb --fsys-tarfile %s | ".
 			  "tar --extract --wildcards --directory=%s ".
 			  "./usr/share/doc/%s/changelog\* 2>&1",
 			  escapeshellarg($packagePath), escapeshellarg($tmpDir),
@@ -399,10 +414,9 @@ class Apt extends \OMV\Rpc\ServiceAbstract {
 			$cmd = new \OMV\System\Process("gzip", $cmdArgs);
 			$cmd->setInputFromFile($matches[0]);
 			$cmd->setRedirect2to1();
-			if (0 !== ($exitStatus = $this->exec($cmd->getCommandLine(),
-				$output, $bgOutputFilename))) {
-				throw new \OMV\ExecException($cmd->getCommandLine(), $output,
-					$exitStatus);
+			if (0 !== ($exitStatus = $this->exec($cmd, $output,
+					$bgOutputFilename))) {
+				throw new \OMV\ExecException($cmd, $output, $exitStatus);
 			}
 			return $output;
 		});

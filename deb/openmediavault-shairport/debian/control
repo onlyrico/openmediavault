@@ -5,11 +5,11 @@ Priority: optional
 Maintainer: Volker Theile <volker.theile@openmediavault.org>
 Build-Depends: debhelper (>= 12), gettext
 Standards-Version: 3.9.6
-Homepage: http://www.openmediavault.org
+Homepage: https://www.openmediavault.org
 
 Package: openmediavault-shairport
 Architecture: all
-Depends: openmediavault (>= 6.0.25), shairport-sync (>= 2.8.6), alsa-utils
+Depends: openmediavault (>= 7.0), shairport-sync (>= 2.8.6), alsa-utils
 Priority: optional
 Description: openmediavault shairport (AirPlay/RAOP receiver) plugin
  Shairport emulates an AirPort Express for the purpose of streaming

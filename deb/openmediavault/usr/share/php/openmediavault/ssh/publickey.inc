@@ -4,7 +4,7 @@
  *
  * @license   http://www.gnu.org/licenses/gpl.html GPL Version 3
  * @author    Volker Theile <volker.theile@openmediavault.org>
- * @copyright Copyright (c) 2009-2022 Volker Theile
+ * @copyright Copyright (c) 2009-2025 Volker Theile
  *
  * OpenMediaVault is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -50,7 +50,7 @@ class PublicKey {
 	public static function isOpenSSH(string $data): bool {
 		// Format: <algorithm> <key> <comment>
 		if (!preg_match(
-				'/^ssh-(rsa|dss|ed25519) AAAA[0-9A-Za-z+\/]+[=]{0,3}\s*(.+)*$/',
+				'/^(sk-ssh-ed25519@openssh\.com|ssh-(rsa|ed25519)) AAAA[0-9A-Za-z+\/]+[=]{0,3}\s*(.+)*$/',
 				$data)) {
 			return FALSE;
 		}

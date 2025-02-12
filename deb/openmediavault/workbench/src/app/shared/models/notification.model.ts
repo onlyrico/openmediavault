@@ -3,7 +3,7 @@
  *
  * @license   http://www.gnu.org/licenses/gpl.html GPL Version 3
  * @author    Volker Theile <volker.theile@openmediavault.org>
- * @copyright Copyright (c) 2009-2022 Volker Theile
+ * @copyright Copyright (c) 2009-2025 Volker Theile
  *
  * OpenMediaVault is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,13 +21,15 @@ export class Notification {
   private static nextId = 1;
 
   public readonly id: number;
-  public readonly timestamp: string;
+  public timestamp: string;
 
   constructor(
     public type: NotificationType = NotificationType.info,
     public title?: string,
     public message?: string,
-    public traceback?: string
+    public traceback?: string,
+    public url?: string,
+    public dismissible: boolean = true
   ) {
     this.id = Notification.nextId++;
     this.timestamp = new Date().toJSON(); // ISO 8601

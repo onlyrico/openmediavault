@@ -2,7 +2,7 @@
 #
 # @license   http://www.gnu.org/licenses/gpl.html GPL Version 3
 # @author    Volker Theile <volker.theile@openmediavault.org>
-# @copyright Copyright (c) 2009-2022 Volker Theile
+# @copyright Copyright (c) 2009-2025 Volker Theile
 #
 # OpenMediaVault is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -19,13 +19,9 @@
 
 {% set dirpath = '/srv/salt' | path_join(tpldir) %}
 
-prereq_nginx_service_monit:
-  salt.state:
-    - tgt: '*'
-    - sls: omv.deploy.monit
-
 include:
-{% for file in salt['file.find'](dirpath, iname='*.sls', print='name') | difference(['init.sls', 'default.sls']) %}
+  - omv.deploy.monit
+{% for file in salt['file.find'](dirpath, iname='*.sls', print='name') | difference(['init.sls', 'default.sls']) | sort %}
   - .{{ file | replace('.sls', '') }}
 {% endfor %}
 
@@ -39,6 +35,9 @@ restart_nginx_service:
     - enable: True
     - require:
       - cmd: test_nginx_service_config
+    - watch:
+      - file: configure_nginx_site_webgui
+      - file: configure_nginx_security
 
 monitor_nginx_service:
   module.run:
@@ -46,3 +45,4 @@ monitor_nginx_service:
       - name: nginx
     - require:
       - service: restart_nginx_service
+      - service: reload_monit_service

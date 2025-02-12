@@ -3,7 +3,7 @@
  *
  * @license   http://www.gnu.org/licenses/gpl.html GPL Version 3
  * @author    Volker Theile <volker.theile@openmediavault.org>
- * @copyright Copyright (c) 2009-2022 Volker Theile
+ * @copyright Copyright (c) 2009-2025 Volker Theile
  *
  * OpenMediaVault is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -70,7 +70,10 @@ export class NavigationConfigService {
 
   private configsSource = new BehaviorSubject<NavigationMenuItem[]>([]);
 
-  constructor(private authSessionService: AuthSessionService, private http: HttpClient) {
+  constructor(
+    private authSessionService: AuthSessionService,
+    private http: HttpClient
+  ) {
     this.configs$ = this.configsSource.asObservable().pipe(
       map((configs: NavigationMenuItem[]) => {
         const permissions: Permissions = this.authSessionService.getPermissions();
@@ -107,9 +110,7 @@ export class NavigationConfigService {
      */
     return this.http.get('./assets/navigation-config.json').pipe(
       catchError((error) => {
-        if (_.isFunction(error.preventDefault)) {
-          error.preventDefault();
-        }
+        error.preventDefault?.();
         return of([]);
       }),
       map((menuItemConfigs: Array<MenuItem>) => {

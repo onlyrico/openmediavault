@@ -29,7 +29,13 @@
               "strip-ansi",
               "chart.js",
               "chartjs-plugin-datalabels",
-              "validator"
+              "cronstrue",
+              "validator",
+              "bezier-easing",
+              "dayjs",
+              "@ngneat/transloco-keys-manager/marker",
+              "nunjucks",
+              "flat"
             ],
             "outputPath": "dist/openmediavault-workbench",
             "index": "src/index.html",
@@ -49,10 +55,10 @@
               }
             ],
             "styles": [
-              "node_modules/@fontsource/inter",
-              "node_modules/@fontsource/roboto-mono",
-              "node_modules/@swimlane/ngx-datatable/index.scss",
-              "node_modules/@swimlane/ngx-datatable/assets/icons.css",
+              "node_modules/@fontsource/inter/index.css",
+              "node_modules/@fontsource/roboto-mono/index.css",
+              "node_modules/@siemens/ngx-datatable/index.scss",
+              "node_modules/@siemens/ngx-datatable/assets/icons.css",
               "node_modules/ngx-toastr/toastr.css",
               "src/styles.scss"
             ],
@@ -131,36 +137,10 @@
         "lint": {
           "builder": "@angular-eslint/builder:lint",
           "options": {
-            "lintFilePatterns": ["src/**/*.ts", "src/**/*.html"]
-          }
-        }
-      }
-    },
-    "openmediavault-workbench-e2e": {
-      "root": "e2e/",
-      "projectType": "application",
-      "prefix": "",
-      "architect": {
-        "e2e": {
-          "builder": "@angular-devkit/build-angular:protractor",
-          "options": {
-            "protractorConfig": "e2e/protractor.conf.js",
-            "devServerTarget": "openmediavault-workbench:serve"
-          },
-          "configurations": {
-            "production": {
-              "devServerTarget": "openmediavault-workbench:serve:production"
-            }
-          }
-        },
-        "lint": {
-          "builder": "@angular-eslint/builder:lint",
-          "options": {
-            "lintFilePatterns": ["e2e/**/*.ts", "e2e/**/*.html"]
+            "lintFilePatterns": ["cypress/**/*.ts", "src/**/*.ts", "src/**/*.html"]
           }
         }
       }
     }
-  },
-  "defaultProject": "openmediavault-workbench"
+  }
 }

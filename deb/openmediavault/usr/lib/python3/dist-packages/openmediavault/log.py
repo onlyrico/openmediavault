@@ -4,7 +4,7 @@
 #
 # @license   http://www.gnu.org/licenses/gpl.html GPL Version 3
 # @author    Volker Theile <volker.theile@openmediavault.org>
-# @copyright Copyright (c) 2009-2022 Volker Theile
+# @copyright Copyright (c) 2009-2025 Volker Theile
 #
 # OpenMediaVault is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -25,16 +25,18 @@ import syslog
 
 
 def _log(priority, msg, args, verbose=True):
-    tag = {
-        syslog.LOG_INFO: "INFO",
-        syslog.LOG_WARNING: "WARNING",
-        syslog.LOG_ERR: "ERROR",
-        syslog.LOG_DEBUG: "DEBUG",
-    }
     msg = msg % args if args else msg
     if verbose:
         fd = sys.stderr if priority is syslog.LOG_ERR else sys.stdout
-        fd.write("{}: {}\n".format(tag[priority], msg))
+        if priority == syslog.LOG_INFO:
+            fd.write(f"{msg}\n")
+        else:
+            priority2text = {
+                syslog.LOG_WARNING: "WARNING",
+                syslog.LOG_ERR: "ERROR",
+                syslog.LOG_DEBUG: "DEBUG",
+            }
+            fd.write(f"{priority2text[priority]}: {msg}\n")
     syslog.openlog(facility=syslog.LOG_SYSLOG)
     syslog.syslog(priority, msg)
     syslog.closelog()

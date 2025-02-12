@@ -2,7 +2,7 @@
 //
 // @license   http://www.gnu.org/licenses/gpl.html GPL Version 3
 // @author    Volker Theile <volker.theile@openmediavault.org>
-// @copyright Copyright (c) 2009-2022 Volker Theile
+// @copyright Copyright (c) 2009-2025 Volker Theile
 //
 // OpenMediaVault is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -13,8 +13,8 @@
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License for more details.
-@use 'src/scss/theme/colors' as tc;
-@use 'src/scss/mixins';
+@use 'scss/theme/colors' as tc;
+@use 'scss/mixins';
 
 @mixin theme($mode, $theme-config, $typography-config) {
   .mat-menu-panel {

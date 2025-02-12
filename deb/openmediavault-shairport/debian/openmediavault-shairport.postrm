@@ -1,10 +1,10 @@
-#!/bin/sh
+#!/usr/bin/env dash
 #
 # This file is part of OpenMediaVault.
 #
 # @license   http://www.gnu.org/licenses/gpl.html GPL Version 3
 # @author    Volker Theile <volker.theile@openmediavault.org>
-# @copyright Copyright (c) 2009-2022 Volker Theile
+# @copyright Copyright (c) 2009-2025 Volker Theile
 #
 # OpenMediaVault is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -25,12 +25,11 @@ set -e
 . /usr/share/openmediavault/scripts/helper-functions
 
 remove_action() {
-	# Force the creation of the monit service configuration files. This
-	# way we can simply purge this service configuration file. Finally
-	# reload the monit configuration.
-	omv-salt deploy run --no-color monit
 	# Activate trigger to rebuild workbench configuration files.
 	dpkg-trigger update-workbench
+	# Mark modules as dirty.
+	echo "Mark modules as dirty ..."
+	omv_module_set_dirty monit
 }
 
 case "$1" in

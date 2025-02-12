@@ -2,7 +2,7 @@
 #
 # @license   http://www.gnu.org/licenses/gpl.html GPL Version 3
 # @author    Volker Theile <volker.theile@openmediavault.org>
-# @copyright Copyright (c) 2009-2022 Volker Theile
+# @copyright Copyright (c) 2009-2025 Volker Theile
 #
 # OpenMediaVault is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -30,10 +30,8 @@
 {% set flush_interval = salt['pillar.get']('default:OMV_RRDCACHED_FLUSHINTERVAL', '3600') %}
 {% set base_options = salt['pillar.get']('default:OMV_RRDCACHED_BASEOPTIONS', '-B -F -f ' ~ flush_interval) %}
 
-prereq_rrdcached_service_monit:
-  salt.state:
-    - tgt: '*'
-    - sls: omv.deploy.monit
+include:
+  - omv.deploy.monit
 
 configure_default_rrdcached:
   file.managed:
@@ -90,12 +88,15 @@ monitor_rrdcached_service:
       - name: rrdcached
     - require:
       - service: start_rrdcached_service
+      - service: reload_monit_service
 
 {% else %}
 
 unmonitor_rrdcached_service:
   cmd.run:
     - name: monit unmonitor rrdcached || true
+    - require:
+      - service: reload_monit_service
 
 stop_rrdcached_service:
   service.dead:

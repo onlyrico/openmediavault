@@ -4,7 +4,7 @@
 #
 # @license   http://www.gnu.org/licenses/gpl.html GPL Version 3
 # @author    Volker Theile <volker.theile@openmediavault.org>
-# @copyright Copyright (c) 2009-2022 Volker Theile
+# @copyright Copyright (c) 2009-2025 Volker Theile
 #
 # OpenMediaVault is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -41,7 +41,7 @@ def call_rrdtool_graph(args):
     """
     Call the rrdtool command line executable with the given arguments.
     """
-    # The command below does not work because the RRD tool synatx is escaped
+    # The command below does not work because the RRD tool syntax is escaped
     # and the graph legend is not rendered as expected.
     # return openmediavault.subprocess.check_output(['rrdtool', 'graph', *args])
     return os.system(' '.join(['rrdtool', 'graph', *args, '>/dev/null']))

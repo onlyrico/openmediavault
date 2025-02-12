@@ -3,7 +3,7 @@
  *
  * @license   http://www.gnu.org/licenses/gpl.html GPL Version 3
  * @author    Volker Theile <volker.theile@openmediavault.org>
- * @copyright Copyright (c) 2009-2022 Volker Theile
+ * @copyright Copyright (c) 2009-2025 Volker Theile
  *
  * OpenMediaVault is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -22,6 +22,8 @@ import { interval, Observable } from 'rxjs';
 import { concatMap, map, mergeMap, takeWhile } from 'rxjs/operators';
 
 import { retryDelayed, takeWhen } from '~/app/rxjs.helper';
+import { NotificationType } from '~/app/shared/enum/notification-type.enum';
+import { NotificationService } from '~/app/shared/services/notification.service';
 
 type RpcResponse = {
   error?: any;
@@ -42,7 +44,11 @@ export type RpcBgResponse = {
 export class RpcService {
   private url = 'rpc.php';
 
-  constructor(private http: HttpClient, private ngZone: NgZone) {}
+  constructor(
+    private http: HttpClient,
+    private ngZone: NgZone,
+    private notificationService: NotificationService
+  ) {}
 
   /**
    * Execute the specified RPC.
@@ -60,12 +66,16 @@ export class RpcService {
     rpcOptions?: any,
     maxRetries?: number
   ): Observable<any> {
-    const body = JSON.stringify({
+    const body: Record<string, any> = {
       service: rpcService,
-      method: rpcMethod,
-      params: _.defaultTo(rpcParams, null),
-      options: _.defaultTo(rpcOptions, null)
-    });
+      method: rpcMethod
+    };
+    if (!(_.isUndefined(rpcParams) || _.isNull(rpcParams))) {
+      body.params = rpcParams;
+    }
+    if (!(_.isUndefined(rpcParams) || _.isNull(rpcParams))) {
+      body.options = rpcOptions;
+    }
     return this.http.post(this.url, body).pipe(
       retryDelayed(maxRetries),
       map((res: RpcResponse) => res.response)
@@ -154,10 +164,13 @@ export class RpcService {
    */
   download(rpcService: string, rpcMethod: string, rpcParams: any) {
     this.ngZone.runOutsideAngular(() => {
-      const body = new URLSearchParams();
-      body.set('service', rpcService);
-      body.set('method', rpcMethod);
-      body.set('params', JSON.stringify(rpcParams));
+      const body: Record<string, any> = {
+        service: rpcService,
+        method: rpcMethod
+      };
+      if (!(_.isUndefined(rpcParams) || _.isNull(rpcParams))) {
+        body.params = rpcParams;
+      }
       const request = new XMLHttpRequest();
       request.open('POST', 'download.php', true);
       request.responseType = 'blob';
@@ -175,8 +188,19 @@ export class RpcService {
           link.click();
           document.body.removeChild(link);
         }
+        if (request.readyState === 4 && request.status !== 200) {
+          const reader = new FileReader();
+          reader.onload = (e: any) => {
+            const err = JSON.parse(e.target.result);
+            const title = `${request.status} - ${request.statusText}`;
+            const message = _.defaultTo(err.error.message, '');
+            const traceback = _.defaultTo(err.error.traceback, '');
+            this.notificationService.show(NotificationType.error, title, message, traceback);
+          };
+          reader.readAsText(request.response);
+        }
       };
-      request.send(body);
+      request.send(JSON.stringify(body));
     });
   }
 
@@ -184,7 +208,7 @@ export class RpcService {
    * Poll the executed task until it has been finished.
    *
    * @param filename The name of the background process status file.
-   * @param period The poll interval in milliseconds. Defaults to
+   * @param pollPeriod The poll interval in milliseconds. Defaults to
    *   500 milliseconds.
    * @param maxRetries Number of retry attempts before failing.
    * @return Returns an Observable containing the RPC response.

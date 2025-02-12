@@ -4,7 +4,7 @@
 #
 # @license   http://www.gnu.org/licenses/gpl.html GPL Version 3
 # @author    Volker Theile <volker.theile@openmediavault.org>
-# @copyright Copyright (c) 2009-2022 Volker Theile
+# @copyright Copyright (c) 2009-2025 Volker Theile
 #
 # OpenMediaVault is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -19,7 +19,6 @@
 # You should have received a copy of the GNU General Public License
 # along with OpenMediaVault. If not, see <http://www.gnu.org/licenses/>.
 import ipaddress
-import re
 import sys
 
 import dialog
@@ -28,7 +27,6 @@ import openmediavault.firstaid
 import openmediavault.net
 import openmediavault.rpc
 import openmediavault.stringutils
-import pyudev
 
 import openmediavault
 
@@ -43,11 +41,13 @@ class Module(openmediavault.firstaid.IModule):
         address = ""
         netmask = ""
         gateway = ""
+        routemetric = 0
         method = "manual"
         address6 = ""
         method6 = "manual"
         netmask6 = 64
         gateway6 = ""
+        routemetric6 = 1
         wol = False
         dns_nameservers = ""
         wpa_ssid = None
@@ -55,36 +55,18 @@ class Module(openmediavault.firstaid.IModule):
         rpc_method = "setEthernetIface"
         rpc_params = {}
         # Get the network interface device.
-        devices = []
-        context = pyudev.Context()
-        for device in context.list_devices(subsystem="net"):
-            # Skip unwanted network interface devices.
-            if device.sys_name in ["lo"]:
-                continue
-            if device.device_type and device.device_type in ["bond"]:
-                continue
-            # Append the network interface name for later use.
-            devices.append(device.sys_name)
-        devices = natsort.humansorted(devices)
+        devices = openmediavault.rpc.call(
+            "Network",
+            "enumerateDevices",
+        )
         choices = []
         # Get a description for each network interface to help the user to
         # choose the correct one.
-        for _, sys_name in enumerate(devices):
-            device = pyudev.Devices.from_name(context, "net", sys_name)
-            description = ""
-            # Use the following properties as description in the specified order:
-            for prop in [
-                "ID_MODEL_FROM_DATABASE",
-                "ID_VENDOR_FROM_DATABASE",
-                "ID_NET_NAME_MAC",
-            ]:
-                if prop not in device.properties:
-                    continue
-                description = device.properties.get(prop)
-                break
+        for device in devices:
+            if device["type"] not in ["ethernet", "wifi"]:
+                continue
             choices.append(
-                [sys_name, openmediavault.stringutils.truncate(
-                    description, 50)]
+                [device["devicename"], device["description"]]
             )
         if not choices:
             raise Exception("No network interfaces found.")
@@ -385,15 +367,18 @@ class Module(openmediavault.firstaid.IModule):
                 "address": address,
                 "netmask": netmask,
                 "gateway": gateway,
+                "routemetric": routemetric,
                 "method6": method6,
                 "address6": address6,
                 "netmask6": netmask6,
                 "gateway6": gateway6,
+                "routemetric6": routemetric6,
                 "dnsnameservers": dns_nameservers,
                 "dnssearch": "",
                 "mtu": 0,
                 "wol": wol,
                 "comment": "",
+                "altmacaddress": "",
             }
         )
         # Do we process a wireless network interface?
@@ -419,10 +404,45 @@ class Module(openmediavault.firstaid.IModule):
                         width=32,
                     )
             rpc_params["wpassid"] = wpa_ssid
-            # Get the pre-shared key.
+            # Get the frequency band.
+            choices = [
+                ["auto", "Automatic"],
+                ["2.4GHz", "B/G (2.4 GHz)"],
+                ["5GHz", "A (5 GHz)"],
+            ]
+            (code, tag) = d.menu(
+                "Please select the frequency band.",
+                backtitle=self.description,
+                clear=True,
+                height=11,
+                width=65,
+                menu_height=8,
+                choices=choices,
+            )
+            if code in (d.CANCEL, d.ESC):
+                return 0
+            rpc_params["band"] = tag
+            # Get the key management mode.
+            choices = [
+                ["psk", "WPA2-Personal"],
+                # ["sae", "WPA3-Personal"]
+            ]
+            (code, tag) = d.menu(
+                "Please select the key management mode.",
+                backtitle=self.description,
+                clear=True,
+                height=18,
+                width=65,
+                menu_height=8,
+                choices=choices,
+            )
+            if code in (d.CANCEL, d.ESC):
+                return 0
+            rpc_params["keymanagement"] = tag
+            # Get the password.
             while not wpa_psk:
                 (code, wpa_psk) = d.inputbox(
-                    "Please enter the pre-shared key (PSK).",
+                    "Please enter the password.",
                     backtitle=self.description,
                     clear=True,
                     height=8,
@@ -439,8 +459,21 @@ class Module(openmediavault.firstaid.IModule):
                         width=32,
                     )
             rpc_params["wpapsk"] = wpa_psk
+            # Is this a hidden wireless network?
+            code = d.yesno(
+                "Is this network hidden and not broadcasting its SSID name?",
+                backtitle=self.description,
+                height=5,
+                width=62,
+                defaultno=True,
+            )
+            if code == d.ESC:
+                return 0
+            rpc_params["hidden"] = True if code == d.OK else False
         # Update the interface configuration.
-        print("Configuring network interface. Please wait ...")
+        print("Configuring the network interface.")
+        print("Note, the IP address may change and therefore you may lose the connection.")
+        print("Please wait ...")
         # Delete all existing network interface configuration objects.
         interfaces = openmediavault.rpc.call(
             "Network", "enumerateConfiguredDevices"
@@ -454,7 +487,7 @@ class Module(openmediavault.firstaid.IModule):
         openmediavault.rpc.call(
             "Config", "applyChanges", {"modules": [], "force": False}
         )
-        print("The network interface configuration was successfully changed.")
+        print("The configuration of the network interface has been successfully changed.")
         return 0
 
 

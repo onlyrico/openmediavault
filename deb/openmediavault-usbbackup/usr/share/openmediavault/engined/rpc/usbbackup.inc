@@ -4,7 +4,7 @@
  *
  * @license   http://www.gnu.org/licenses/gpl.html GPL Version 3
  * @author    Volker Theile <volker.theile@openmediavault.org>
- * @copyright Copyright (c) 2009-2022 Volker Theile
+ * @copyright Copyright (c) 2009-2025 Volker Theile
  *
  * OpenMediaVault is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -86,10 +86,12 @@ class OMVRpcServiceUsbBackup extends \OMV\Rpc\ServiceAbstract {
 			if (1 < count($sd->getPartitionDeviceNames())) {
 				continue;
 			}
-			// Skip everything which is not an USB or eSATA device or is a
-			// read-only medium.
-			if (!($sd->isUsb() || $sd->isAta()) || $sd->isReadOnly())
+			// Skip everything which is not an USB, eSATA, SAS, SD or eMMC
+			// device or is a read-only medium.
+			if (!($sd->isHotPluggable() || $sd->isAta() || $sd->isMmc()) ||
+					$sd->isReadOnly()) {
 				continue;
+			}
 			// Prepare result object.
 			$result[] = [
 				"uuid" => $objectv['uuid'],

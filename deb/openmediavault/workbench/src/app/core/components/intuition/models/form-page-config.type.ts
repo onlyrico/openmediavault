@@ -3,7 +3,7 @@
  *
  * @license   http://www.gnu.org/licenses/gpl.html GPL Version 3
  * @author    Volker Theile <volker.theile@openmediavault.org>
- * @copyright Copyright (c) 2009-2022 Volker Theile
+ * @copyright Copyright (c) 2009-2025 Volker Theile
  *
  * OpenMediaVault is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,12 +15,16 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  */
+import { FormValues } from '~/app/core/components/intuition/models/form.type';
 import { FormFieldConfig } from '~/app/core/components/intuition/models/form-field-config.type';
+import { PageHintConfig } from '~/app/core/components/intuition/models/page-config.type';
 import { Constraint } from '~/app/shared/models/constraint.type';
 import { ModalDialogConfig } from '~/app/shared/models/modal-dialog-config.type';
 import { TaskDialogConfig } from '~/app/shared/models/task-dialog-config.type';
 
 export type FormPageConfig = {
+  // A list of hints to be displayed at the top of the page.
+  hints?: Array<PageHintConfig>;
   // Specifies a unique ID for the form.
   id?: string;
   // A title within the header.
@@ -44,7 +48,12 @@ export type FormPageConfig = {
       // URL = '/usermgmt/users/edit/test01'
       // params = { username: '{{ name }}', foo: 2 } => { username: 'test01', foo: 2 }
       params?: Record<string, any>;
-      // Set `true` if the RPC is a long running background task.
+      // Execute the request only if the given predicate returns
+      // a boolean `true`.
+      // Example:
+      // "{{ _routeParams | length > 0 }}"
+      onlyIf?: string;
+      // Set `true` if the RPC is a long-running background task.
       task?: boolean;
       // Transform the given parameters in the request response.
       // The given parameters can be tokenized strings that will be
@@ -170,5 +179,5 @@ export type FormPageButtonExecute = {
     successUrl?: string;
   };
   // A callback function. Internal only.
-  click?: (buttonConfig: FormPageButtonConfig, values: Record<string, any>) => void;
+  click?: (buttonConfig: FormPageButtonConfig, values: FormValues) => void;
 };

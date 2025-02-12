@@ -4,7 +4,7 @@
 #
 # @license   http://www.gnu.org/licenses/gpl.html GPL Version 3
 # @author    Volker Theile <volker.theile@openmediavault.org>
-# @copyright Copyright (c) 2009-2022 Volker Theile
+# @copyright Copyright (c) 2009-2025 Volker Theile
 #
 # OpenMediaVault is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -414,8 +414,9 @@ class Schema:
                     name, "The value '%s' does not match to hh:mm:ss." % value
                 )
         elif schema['format'] in ["host-name", "hostname"]:
+            # See https://datatracker.ietf.org/doc/html/rfc1123#section-2
             if not re.match(
-                r'^[a-zA-Z]([-a-zA-Z0-9]{0,61}[a-zA-Z0-9])?$', value
+                r'^[a-zA-Z0-9]([-a-zA-Z0-9]{0,61}[a-zA-Z0-9])?$', value
             ):
                 raise SchemaValidationException(
                     name, "The value '%s' is not a valid hostname." % value

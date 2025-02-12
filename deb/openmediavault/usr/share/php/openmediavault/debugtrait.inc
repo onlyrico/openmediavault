@@ -4,7 +4,7 @@
  *
  * @license   http://www.gnu.org/licenses/gpl.html GPL Version 3
  * @author    Volker Theile <volker.theile@openmediavault.org>
- * @copyright Copyright (c) 2009-2022 Volker Theile
+ * @copyright Copyright (c) 2009-2025 Volker Theile
  *
  * OpenMediaVault is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -50,7 +50,7 @@ trait DebugTrait {
 			$msg .= sprintf(" Method=%s::%s()", $bt1['class'],
 			  $bt1['function']);
 		} else if (isset($bt1['function'])) {
-			$msg .= sprintf(" Function=%s()", $entry['function']);
+			$msg .= sprintf(" Function=%s()", $bt1['function']);
 		}
 		$msg .= sprintf("]: %s\n", vsprintf($fmt, $args));
 
@@ -60,6 +60,6 @@ trait DebugTrait {
 
 		// Append the message to the debug log file.
 		file_put_contents(\OMV\Environment::get("OMV_DEBUG_PHP_LOGFILE"),
-		  $msg, FILE_APPEND);
+			$msg, FILE_APPEND);
 	}
 }

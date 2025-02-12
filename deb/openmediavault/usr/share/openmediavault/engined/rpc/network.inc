@@ -4,7 +4,7 @@
  *
  * @license   http://www.gnu.org/licenses/gpl.html GPL Version 3
  * @author    Volker Theile <volker.theile@openmediavault.org>
- * @copyright Copyright (c) 2009-2022 Volker Theile
+ * @copyright Copyright (c) 2009-2025 Volker Theile
  *
  * OpenMediaVault is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -79,8 +79,10 @@ class Network extends \OMV\Rpc\ServiceAbstract {
 			"gateway6" => "",
 			"address" => "",
 			"address6" => "",
+			"prefix" => -1,
+			"prefix6" => -1,
 			"netmask" => "",
-			"netmask6" => -1,
+			"netmask6" => "",
 			"ether" => "",
 			"mtu" => "",
 			"state" => gettext("UNKNOWN"),
@@ -99,6 +101,8 @@ class Network extends \OMV\Rpc\ServiceAbstract {
 			$gateway6 = $iface->getGateway6();
 			$address = $iface->getIP();
 			$address6 = $iface->getIP6();
+			$prefix = $iface->getPrefix();
+			$prefix6 = $iface->getPrefix6();
 			$netmask = $iface->getNetmask();
 			$netmask6 = $iface->getNetmask6();
 			$ether = $iface->getMAC();
@@ -112,16 +116,16 @@ class Network extends \OMV\Rpc\ServiceAbstract {
 			$obj['gateway6'] = !$gateway6 ? "" : $gateway6;
 			$obj['address'] = !$address ? "" : $address;
 			$obj['address6'] = !$address6 ? "" : $address6;
-			$obj['prefix'] = $iface->getPrefix();
-			$obj['prefix6'] = $iface->getPrefix6();
+			$obj['prefix'] = !$prefix ? -1 : $prefix;
+			$obj['prefix6'] = !$prefix6 ? -1 : $prefix6;
 			$obj['netmask'] = !$netmask ? "" : $netmask;
-			$obj['netmask6'] = !$netmask6 ? -1 : $netmask6;
+			$obj['netmask6'] = !$netmask6 ? "" : $netmask6;
 			$obj['ether'] = !$ether ? "" : $ether;
 			$obj['mtu'] = $iface->getMTU();
 			$obj['state'] = !$state ? gettext("UNKNOWN") : $state;
 			$obj['link'] = $iface->getLink();
 			$obj['speed'] = !$speed ? -1 : $speed;
-			if ("vlan" === $obj['type']) {
+			if ("vlan" == $obj['type']) {
 				$obj['vlan'] = TRUE;
 				$obj['vlanid'] = $iface->getVlanId();
 			}
@@ -138,10 +142,10 @@ class Network extends \OMV\Rpc\ServiceAbstract {
 	 */
     private function setInterfaceConfig($params, $ifaceParams) {
 		// Modify various configuration attributes.
-		$params['dnsnameservers'] = preg_replace("/[,;]/", " ",
-			$params['dnsnameservers']);
-		$params['dnssearch'] = preg_replace("/[,;]/", " ",
-			$params['dnssearch']);
+		$params['dnsnameservers'] = implode(" ", explode_csv(
+		    $params['dnsnameservers']));
+		$params['dnssearch'] = implode(" ", explode_csv(
+		    $params['dnssearch']));
 		// Prepare the configuration object.
 		$object = new \OMV\Config\ConfigObject("conf.system.network.interface");
 		$object->setAssoc($params);
@@ -389,10 +393,9 @@ class Network extends \OMV\Rpc\ServiceAbstract {
 			$cmdArgs[] = $params['seconds'];
 			$cmd = new \OMV\System\Process("ethtool", $cmdArgs);
 			$cmd->setRedirect2to1();
-			if (0 !== ($exitStatus = $this->exec($cmd->getCommandLine(),
-				$output, $bgOutputFilename))) {
-				throw new \OMV\ExecException($cmd->getCommandLine(), $output,
-					$exitStatus);
+			if (0 !== ($exitStatus = $this->exec($cmd, $output,
+					$bgOutputFilename))) {
+				throw new \OMV\ExecException($cmd, $output, $exitStatus);
 			}
 			return $output;
 		});
@@ -465,7 +468,7 @@ class Network extends \OMV\Rpc\ServiceAbstract {
 		// Other interface type related data must be modified separately.
 		$result = $object->getAssoc();
 		$result['dnsnameservers'] = str_replace(" ", ",",
-		  $result['dnsnameservers']);
+			$result['dnsnameservers']);
 		$result['dnssearch'] = str_replace(" ", ",", $result['dnssearch']);
 		$result['slaves'] = explode_safe(",", $result['slaves']);
 		return $result;
@@ -544,7 +547,7 @@ class Network extends \OMV\Rpc\ServiceAbstract {
 	 * @return The requested configuration object.
 	 */
 	function getEthernetIface($params, $context) {
-			return $this->callMethod("getInterface", $params, $context);
+		return $this->callMethod("getInterface", $params, $context);
 	}
 
 	/**
@@ -762,6 +765,7 @@ class Network extends \OMV\Rpc\ServiceAbstract {
 			"bondmiimon" => $params['bondmiimon'],
 			"bonddowndelay" => $params['bonddowndelay'],
 			"bondupdelay" => $params['bondupdelay'],
+			"bondtransmithashpolicy" => $params['bondtransmithashpolicy'],
 			"slaves" => $params['slaves']
 		]);
 	}
@@ -905,7 +909,9 @@ class Network extends \OMV\Rpc\ServiceAbstract {
 		return $this->setInterfaceConfig($params, [
 			"type" => "wifi",
 			"wpassid" => $params['wpassid'],
-			"wpapsk" => $params['wpapsk']
+			"wpapsk" => $params['wpapsk'],
+			"keymanagement" => $params['keymanagement'],
+			"hidden" => $params['hidden']
 		]);
     }
 

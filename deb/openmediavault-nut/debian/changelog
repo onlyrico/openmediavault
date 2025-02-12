@@ -1,3 +1,93 @@
+openmediavault-nut (7.0.6-1) stable; urgency=low
+
+  * Update locale files.
+  * Several improvements.
+
+ -- Volker Theile <volker.theile@openmediavault.org>  Tue, 10 Dec 2024 13:40:37 +0100
+
+openmediavault-nut (7.0.5-1) stable; urgency=low
+
+  * Update locale files.
+  * Make sure the NUT config parser is not irritated by the characters
+    `#` and `=` in a password.
+
+ -- Volker Theile <volker.theile@openmediavault.org>  Wed, 04 Sep 2024 19:31:57 +0200
+
+openmediavault-nut (7.0.4-1) stable; urgency=low
+
+  * Improve log file parsing.
+
+ -- Volker Theile <volker.theile@openmediavault.org>  Fri, 23 Aug 2024 21:29:44 +0200
+
+openmediavault-nut (7.0.3-2) stable; urgency=low
+
+  * Issue #1721: nut-driver systemd service is not stopped in
+    'Netclient' mode.
+
+ -- Volker Theile <volker.theile@openmediavault.org>  Sat, 09 Mar 2024 18:07:06 +0100
+
+openmediavault-nut (7.0.2-2) stable; urgency=low
+
+  * Make sure all systemd services are disabled when the
+    plugin is disabled.
+
+ -- Volker Theile <volker.theile@openmediavault.org>  Thu, 25 Jan 2024 20:23:32 +0100
+
+openmediavault-nut (7.0.1-1) stable; urgency=low
+
+  * Issue #1681: Add ability to disable email notifications.
+
+ -- Volker Theile <volker.theile@openmediavault.org>  Sun, 21 Jan 2024 13:37:40 +0100
+
+openmediavault-nut (7.0-2) unstable; urgency=low
+
+  * Adapt to openmediavault 7 (Sandworm).
+
+ -- Volker Theile <volker.theile@openmediavault.org>  Thu, 27 Jul 2023 17:08:31 +0200
+
+openmediavault-nut (6.0.7-1) stable; urgency=low
+
+  * Enhance cleanup after removing the plugin.
+
+ -- Volker Theile <volker.theile@openmediavault.org>  Tue, 01 Aug 2023 17:40:31 +0200
+
+openmediavault-nut (6.0.6-1) stable; urgency=low
+
+  * Update locale files.
+  * Update package dependency.
+
+ -- Volker Theile <volker.theile@openmediavault.org>  Wed, 26 Jul 2023 19:52:02 +0200
+
+openmediavault-nut (6.0.5-1) stable; urgency=low
+
+  * Make sure rendering of the Salt state will not break because
+    of punctuation characters.
+
+ -- vot <vot@caladan>  Tue, 06 Jun 2023 00:13:50 +0200
+
+openmediavault-nut (6.0.4-1) stable; urgency=low
+
+  * Update locales.
+  * Make sure rendering of the Salt state will not break.
+
+ -- Volker Theile <volker.theile@openmediavault.org>  Thu, 01 Jun 2023 19:54:28 +0200
+
+openmediavault-nut (6.0.3-1) stable; urgency=low
+
+  * Make plugin uninstallation more failure tolerant.
+
+ -- Volker Theile <volker.theile@openmediavault.org>  Tue, 24 Jan 2023 17:32:20 +0100
+
+openmediavault-nut (6.0.2-1) stable; urgency=low
+
+  * Update locales.
+  * Issue #1432: Add support to customize the notification emails
+    via environment variables. The environment variable
+    OMV_NUT_UPSSCHEDCMD_EMAIL_SUBJECT supports the placeholders
+    %d (date) and %h (hostname).
+
+ -- Volker Theile <volker.theile@openmediavault.org>  Mon, 16 Jan 2023 06:41:38 +0100
+
 openmediavault-nut (6.0.1-1) stable; urgency=low
 
   * Update locales.

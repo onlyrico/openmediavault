@@ -3,7 +3,7 @@
  *
  * @license   http://www.gnu.org/licenses/gpl.html GPL Version 3
  * @author    Volker Theile <volker.theile@openmediavault.org>
- * @copyright Copyright (c) 2009-2022 Volker Theile
+ * @copyright Copyright (c) 2009-2025 Volker Theile
  *
  * OpenMediaVault is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,7 +17,7 @@
  */
 import * as _ from 'lodash';
 
-import { format, isUUID } from '~/app/functions.helper';
+import { format, isFormatable, isUUID } from '~/app/functions.helper';
 import {
   Constraint,
   ConstraintProperty,
@@ -51,6 +51,7 @@ export class ConstraintService {
             case 'eq':
             case '!==':
             case 'ne':
+            case '<>':
             case '==':
             case '!=':
             case '<':
@@ -105,7 +106,7 @@ export class ConstraintService {
           result = _.get(data, node.prop);
         } else if (_.has(node, 'value')) {
           node = node as ConstraintValue;
-          result = format(node.value, data);
+          result = isFormatable(node.value) ? format(node.value, data) : node.value;
         } else if (_.has(node, 'operator')) {
           let arg0;
           let arg1;
@@ -134,6 +135,7 @@ export class ConstraintService {
             case '!=':
             case '!==':
             case 'ne':
+            case '<>':
               result = innerTest(data, node.arg0) !== innerTest(data, node.arg1);
               break;
             case '<':
@@ -163,12 +165,7 @@ export class ConstraintService {
             case 'in':
               arg0 = innerTest(data, node.arg0);
               arg1 = innerTest(data, node.arg1);
-              if (_.isString(arg1)) {
-                result = (arg1 as string).search(arg0) !== -1;
-              } else {
-                // Array
-                result = -1 !== _.indexOf(arg1, arg0);
-              }
+              result = _.includes(arg1, arg0);
               break;
             case 'startsWith':
               result = _.startsWith(innerTest(data, node.arg0), innerTest(data, node.arg1));
@@ -189,12 +186,30 @@ export class ConstraintService {
               result = isUUID(innerTest(data, node.arg0));
               break;
             case 'truthy':
-              result = _.includes([1, 'true', true, 'yes', 'y'], innerTest(data, node.arg0));
+              result = _.includes(
+                [1, 'TRUE', 'True', 'true', true, 'YES', 'Yes', 'yes', 'Y', 'y'],
+                innerTest(data, node.arg0)
+              );
               break;
             case 'falsy':
               // https://developer.mozilla.org/en-US/docs/Glossary/Falsy
               result = _.includes(
-                [0, 'false', false, 'no', 'n', undefined, null, NaN, ''],
+                [
+                  0,
+                  'FALSE',
+                  'False',
+                  'false',
+                  false,
+                  'NO',
+                  'No',
+                  'no',
+                  'N',
+                  'n',
+                  undefined,
+                  null,
+                  NaN,
+                  ''
+                ],
                 innerTest(data, node.arg0)
               );
               break;
@@ -220,11 +235,12 @@ export class ConstraintService {
   }
 
   /**
-   * Filter all objects that meet the condition.
+   * Iterates over elements of collection, returning an array of all elements
+   * the constraint returns truthy for.
    *
-   * @param objects The objects to be filtered.
+   * @param objects The collection to iterate over.
    * @param constraint The constraint to process.
-   * @return Return a list ob objects that meet the specified condition.
+   * @return Returns the new filtered array.
    */
   static filter(objects: Array<ConstraintRecord>, constraint: Constraint): Array<ConstraintRecord> {
     return _.filter(objects, (object) => ConstraintService.test(constraint, object));

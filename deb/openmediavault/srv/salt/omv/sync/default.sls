@@ -2,7 +2,7 @@
 #
 # @license   http://www.gnu.org/licenses/gpl.html GPL Version 3
 # @author    Volker Theile <volker.theile@openmediavault.org>
-# @copyright Copyright (c) 2009-2022 Volker Theile
+# @copyright Copyright (c) 2009-2025 Volker Theile
 #
 # OpenMediaVault is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -23,18 +23,15 @@ clear_cache:
 
 # Sync grains from salt://_grains to the minion.
 sync_grains:
-  module.run:
-    - saltutil.sync_grains:
-      - refresh: True
-
-# Sync execution modules from salt://_modules to the minion.
-sync_modules:
-  module.run:
-    - saltutil.sync_modules:
-      - refresh: True
+  saltutil.sync_grains:
+    - refresh: True
 
 # Sync state modules from salt://_states to the minion.
 sync_states:
-  module.run:
-    - saltutil.sync_states:
-      - refresh: True
+  saltutil.sync_states:
+    - refresh: True
+
+# Sync execution modules from salt://_modules to the minion.
+sync_modules:
+  saltutil.sync_modules:
+    - refresh: True

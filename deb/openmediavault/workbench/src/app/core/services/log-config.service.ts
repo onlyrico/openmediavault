@@ -3,7 +3,7 @@
  *
  * @license   http://www.gnu.org/licenses/gpl.html GPL Version 3
  * @author    Volker Theile <volker.theile@openmediavault.org>
- * @copyright Copyright (c) 2009-2022 Volker Theile
+ * @copyright Copyright (c) 2009-2025 Volker Theile
  *
  * OpenMediaVault is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,13 +17,12 @@
  */
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import * as _ from 'lodash';
 import { Observable, of, ReplaySubject } from 'rxjs';
 import { catchError, tap } from 'rxjs/operators';
 
 import { DatatableColumn } from '~/app/shared/models/datatable-column.type';
 
-export interface ILogConfig {
+export type LogConfig = {
   // A unique identifier.
   id: string;
   text: string;
@@ -39,29 +38,27 @@ export interface ILogConfig {
     dir: 'asc' | 'desc';
     prop: string;
   }>;
-}
+};
 
 @Injectable({
   providedIn: 'root'
 })
 export class LogConfigService {
-  public readonly configs$: Observable<ILogConfig[]>;
+  public readonly configs$: Observable<LogConfig[]>;
 
-  private configsSource = new ReplaySubject<ILogConfig[]>(1);
+  private configsSource = new ReplaySubject<LogConfig[]>(1);
 
   constructor(private http: HttpClient) {
     this.configs$ = this.configsSource.asObservable();
   }
 
-  public load(): Observable<ILogConfig[]> {
+  public load(): Observable<LogConfig[]> {
     return this.http.get('./assets/log-config.json').pipe(
       catchError((error) => {
-        if (_.isFunction(error.preventDefault)) {
-          error.preventDefault();
-        }
+        error.preventDefault?.();
         return of([]);
       }),
-      tap((logs: Array<ILogConfig>) => {
+      tap((logs: Array<LogConfig>) => {
         this.configsSource.next(logs);
       })
     );

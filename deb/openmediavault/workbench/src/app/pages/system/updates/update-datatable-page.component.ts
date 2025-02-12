@@ -3,7 +3,7 @@
  *
  * @license   http://www.gnu.org/licenses/gpl.html GPL Version 3
  * @author    Volker Theile <volker.theile@openmediavault.org>
- * @copyright Copyright (c) 2009-2022 Volker Theile
+ * @copyright Copyright (c) 2009-2025 Volker Theile
  *
  * OpenMediaVault is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,7 +16,7 @@
  * GNU General Public License for more details.
  */
 import { Component } from '@angular/core';
-import { marker as gettext } from '@biesbjerg/ngx-translate-extract-marker';
+import { marker as gettext } from '@ngneat/transloco-keys-manager/marker';
 
 import { DatatablePageConfig } from '~/app/core/components/intuition/models/datatable-page-config.type';
 
@@ -33,7 +33,7 @@ export class UpdateDatatablePageComponent {
         cellTemplateName: 'template',
         cellTemplateConfig:
           '<div>' +
-          '  <div fxLayout="row">' +
+          '  <div class="omv-display-flex omv-flex-column">' +
           '    <div class="omv-font-weight-title omv-font-size-title">{{ name }} {{ version }}</div>' +
           '    <div class="omv-font-size-subheading-2">{{ summary }}</div>' +
           '  </div>' +
@@ -41,7 +41,7 @@ export class UpdateDatatablePageComponent {
           '{% if extendeddescription %}  <span>{{ extendeddescription }}</span><br><br>{% endif %}' +
           '{% if maintainer %}  <span>{{ "Maintainer" | translate }}: {{ maintainer }}</span><br>{% endif %}' +
           // eslint-disable-next-line max-len
-          '{% if homepage %}  <span>{{ "Homepage" | translate }}: <a href="{{ homepage }}" target="_blank">{{ homepage }}</a></span><br>{% endif %}' +
+          '{% if homepage %}  <span>{{ "Homepage" | translate }}: <a href="{{ homepage }}">{{ homepage }}</a></span><br>{% endif %}' +
           '{% if repository %}  <span>{{ "Repository" | translate }}: {{ repository }}</span><br>{% endif %}' +
           '{% if size %}  <span>{{ "Size" | translate }}: {{ size | binaryunit }}</span><br>{% endif %}' +
           '</div>'
@@ -118,6 +118,7 @@ export class UpdateDatatablePageComponent {
         type: 'iconButton',
         icon: 'mdi:download',
         tooltip: gettext('Install updates'),
+        hasBadge: 'numDataItems',
         enabledConstraints: {
           hasData: true
         },
@@ -130,7 +131,6 @@ export class UpdateDatatablePageComponent {
           taskDialog: {
             config: {
               title: gettext('Upgrade system'),
-              width: '75%',
               startOnInit: true,
               buttons: {
                 start: {
@@ -145,7 +145,8 @@ export class UpdateDatatablePageComponent {
               },
               request: {
                 service: 'Apt',
-                method: 'upgrade'
+                method: 'upgrade',
+                maxRetries: 5
               }
             },
             successUrl: '/reload'
@@ -165,7 +166,6 @@ export class UpdateDatatablePageComponent {
           taskDialog: {
             config: {
               title: gettext('Changelog'),
-              width: '75%',
               autoScroll: false,
               startOnInit: true,
               showCompletion: false,

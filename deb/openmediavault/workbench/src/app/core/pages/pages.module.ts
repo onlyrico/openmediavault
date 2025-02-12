@@ -1,14 +1,13 @@
 import { CommonModule } from '@angular/common';
 import { NgModule } from '@angular/core';
-import { FlexLayoutModule } from '@angular/flex-layout';
 import { RouterModule } from '@angular/router';
-import { TranslateModule } from '@ngx-translate/core';
+import { TranslocoModule } from '@ngneat/transloco';
 
 import { ComponentsModule } from '~/app/core/components/components.module';
 import { DashboardModule } from '~/app/core/components/dashboard/dashboard.module';
 import { AboutPageComponent } from '~/app/core/pages/about-page/about-page.component';
+import { BlankPageComponent } from '~/app/core/pages/blank-page/blank-page.component';
 import { DashboardPageComponent } from '~/app/core/pages/dashboard-page/dashboard-page.component';
-import { EmptyPageComponent } from '~/app/core/pages/empty-page/empty-page.component';
 import { GuruMeditationPageComponent } from '~/app/core/pages/guru-meditation-page/guru-meditation-page.component';
 import { LoginPageComponent } from '~/app/core/pages/login-page/login-page.component';
 import { NavigationPageComponent } from '~/app/core/pages/navigation-page/navigation-page.component';
@@ -26,7 +25,7 @@ import { SharedModule } from '~/app/shared/shared.module';
     StandbyPageComponent,
     DashboardPageComponent,
     AboutPageComponent,
-    EmptyPageComponent
+    BlankPageComponent
   ],
   exports: [
     GuruMeditationPageComponent,
@@ -36,16 +35,15 @@ import { SharedModule } from '~/app/shared/shared.module';
     StandbyPageComponent,
     DashboardPageComponent,
     AboutPageComponent,
-    EmptyPageComponent
+    BlankPageComponent
   ],
   imports: [
     CommonModule,
     SharedModule,
     ComponentsModule,
-    FlexLayoutModule,
     MaterialModule,
     RouterModule,
-    TranslateModule.forChild(),
+    TranslocoModule,
     DashboardModule
   ]
 })

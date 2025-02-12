@@ -4,7 +4,7 @@
  *
  * @license   http://www.gnu.org/licenses/gpl.html GPL Version 3
  * @author    Volker Theile <volker.theile@openmediavault.org>
- * @copyright Copyright (c) 2009-2022 Volker Theile
+ * @copyright Copyright (c) 2009-2025 Volker Theile
  *
  * OpenMediaVault is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -29,6 +29,7 @@ class Wifi extends BackendAbstract {
 	// Examples:
 	// - wlan1
 	// - wlp3s0
+	// - wlx984827050421
 	//
 	// Predictable network interface device name types:
 	// - BCMA bus core number
@@ -47,7 +48,8 @@ class Wifi extends BackendAbstract {
 	//   [P<domain>]p<bus>s<slot>[f<function>][u<port>][..][c<config>][i<interface>]
 	//
 	// Understanding systemd’s predictable network device names:
-	// https://github.com/systemd/systemd/blob/master/src/udev/udev-builtin-net_id.c
+	// - https://www.freedesktop.org/wiki/Software/systemd/PredictableNetworkInterfaceNames
+	// - https://github.com/systemd/systemd/blob/v242/src/udev/udev-builtin-net_id.c
 	protected $regex = "/^wlan[0-9]+|wl(b\d+|c\d+|o\d+(n\S+|d\d+)?|".
 		"s\d+(f\d+)?(n\S+|d\d+)?|".
 		"x[\da-f]{12}|(P\d+)?p\d+s\d+(f\d+)?(n\S+|d\d+)?|".

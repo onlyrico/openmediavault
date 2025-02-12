@@ -4,7 +4,7 @@
  *
  * @license   http://www.gnu.org/licenses/gpl.html GPL Version 3
  * @author    Volker Theile <volker.theile@openmediavault.org>
- * @copyright Copyright (c) 2009-2022 Volker Theile
+ * @copyright Copyright (c) 2009-2025 Volker Theile
  *
  * OpenMediaVault is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -201,6 +201,14 @@ class StorageDevice extends \OMV\System\BlockDevice
 	}
 
 	/**
+	 * Check if the given device is an SD or MMC device.
+	 * @return boolean TRUE if device is SD or MMC, otherwise FALSE.
+	 */
+	public function isMmc() {
+		return FALSE;
+	}
+
+	/**
 	 * Check if the given device is read-only.
 	 * @return boolean TRUE if the device is read-only, otherwise FALSE.
 	 */
@@ -215,6 +223,14 @@ class StorageDevice extends \OMV\System\BlockDevice
 	 */
 	public function IsMediaAvailable() {
 		return TRUE;
+	}
+
+	/**
+	 * Check if the given device is hot pluggable.
+	 * @return boolean TRUE if the device is hot pluggable, otherwise FALSE.
+	 */
+	public function isHotPluggable(): bool {
+		return $this->isUsb();
 	}
 
 	/**
@@ -419,7 +435,7 @@ class StorageDevice extends \OMV\System\BlockDevice
 	public static function assertGetStorageDevice($deviceFile) {
 		$result = self::getStorageDevice($deviceFile);
 		if (is_null($result) || !$result->exists()) {
-			throw new \OMV\AssertException("Device '%s' not found.",
+			throw new \OMV\AssertException("Device '%s' does not exist.",
 				$deviceFile);
 		}
 		return $result;

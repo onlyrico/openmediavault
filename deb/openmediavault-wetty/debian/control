@@ -6,11 +6,11 @@ Priority: optional
 Maintainer: Volker Theile <volker.theile@openmediavault.org>
 Build-Depends: debhelper (>= 12), gettext
 Standards-Version: 3.9.6
-Homepage: http://www.openmediavault.org
+Homepage: https://www.openmediavault.org
 
 Package: openmediavault-wetty
 Architecture: all
-Depends: openmediavault (>= 6.0.26), podman
+Depends: openmediavault (>= 7.0), podman
 Priority: optional
 Description: openmediavault WeTTY (Web + TTY) plugin
  Terminal access in browser over HTTP/HTTPS.

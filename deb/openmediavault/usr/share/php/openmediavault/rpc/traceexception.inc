@@ -4,7 +4,7 @@
  *
  * @license   http://www.gnu.org/licenses/gpl.html GPL Version 3
  * @author    Volker Theile <volker.theile@openmediavault.org>
- * @copyright Copyright (c) 2009-2022 Volker Theile
+ * @copyright Copyright (c) 2009-2025 Volker Theile
  *
  * OpenMediaVault is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -47,7 +47,7 @@ class TraceException extends Exception {
 	 * String representation of the exception.
 	 * @return Returns the string representation of the exception.
 	 */
-	public function __toString() : string {
-		return $this->trace;
+	public function __toString(): string {
+		return strval($this->trace);
 	}
 }

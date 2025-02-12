@@ -3,7 +3,7 @@
  *
  * @license   http://www.gnu.org/licenses/gpl.html GPL Version 3
  * @author    Volker Theile <volker.theile@openmediavault.org>
- * @copyright Copyright (c) 2009-2022 Volker Theile
+ * @copyright Copyright (c) 2009-2025 Volker Theile
  *
  * OpenMediaVault is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,6 +16,7 @@
  * GNU General Public License for more details.
  */
 import { Component, Input, OnInit } from '@angular/core';
+import * as _ from 'lodash';
 
 import { DashboardWidgetConfig } from '~/app/core/components/dashboard/models/dashboard-widget-config.model';
 
@@ -41,6 +42,9 @@ export class DashboardWidgetValueComponent implements OnInit {
   }
 
   protected sanitizeConfig() {
-    this.config.hideTitle = true;
+    _.defaultsDeep(this.config, {
+      hideTitle: true,
+      reloadPeriod: 10000
+    });
   }
 }

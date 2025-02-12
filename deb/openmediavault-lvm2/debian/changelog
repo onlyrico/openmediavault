@@ -1,3 +1,23 @@
+openmediavault-lvm2 (7.0-2) unstable; urgency=low
+
+  * Adapt to openmediavault 7 (Sandworm).
+
+ -- Volker Theile <volker.theile@openmediavault.org>  Thu, 27 Jul 2023 17:08:23 +0200
+
+openmediavault-lvm2 (6.0.3-1) stable; urgency=low
+
+  * Update locale files.
+  * Update package dependency.
+
+ -- Volker Theile <volker.theile@openmediavault.org>  Wed, 26 Jul 2023 19:51:38 +0200
+
+openmediavault-lvm2 (6.0.2-1) stable; urgency=low
+
+  * Update locales.
+  * Change order in navigation menu.
+
+ -- Volker Theile <volker.theile@openmediavault.org>  Tue, 31 Jan 2023 12:44:48 +0100
+
 openmediavault-lvm2 (6.0.1-1) stable; urgency=low
 
   * Update locales.

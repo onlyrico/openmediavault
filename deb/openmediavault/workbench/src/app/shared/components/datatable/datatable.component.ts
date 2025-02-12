@@ -3,7 +3,7 @@
  *
  * @license   http://www.gnu.org/licenses/gpl.html GPL Version 3
  * @author    Volker Theile <volker.theile@openmediavault.org>
- * @copyright Copyright (c) 2009-2022 Volker Theile
+ * @copyright Copyright (c) 2009-2025 Volker Theile
  *
  * OpenMediaVault is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -26,15 +26,16 @@ import {
   SimpleChange,
   SimpleChanges,
   TemplateRef,
-  ViewChild
+  ViewChild,
+  ViewEncapsulation
 } from '@angular/core';
 import { MatButtonToggleChange } from '@angular/material/button-toggle';
-import { marker as gettext } from '@biesbjerg/ngx-translate-extract-marker';
-import { DatatableComponent as NgxDatatableComponent } from '@swimlane/ngx-datatable';
+import { marker as gettext } from '@ngneat/transloco-keys-manager/marker';
+import { DatatableComponent as NgxDatatableComponent } from '@siemens/ngx-datatable';
 import * as _ from 'lodash';
 import { Subscription, timer } from 'rxjs';
 
-import { Throttle } from '~/app/decorators';
+import { CoerceBoolean, Throttle, Unsubscribe } from '~/app/decorators';
 import { translate } from '~/app/i18n.helper';
 import { Icon } from '~/app/shared/enum/icon.enum';
 import { Datatable } from '~/app/shared/models/datatable.interface';
@@ -43,7 +44,7 @@ import { DatatableData } from '~/app/shared/models/datatable-data.type';
 import { DatatableSelection } from '~/app/shared/models/datatable-selection.model';
 import { Sorter } from '~/app/shared/models/sorter.type';
 import { ClipboardService } from '~/app/shared/services/clipboard.service';
-import { UserStorageService } from '~/app/shared/services/user-storage.service';
+import { UserLocalStorageService } from '~/app/shared/services/user-local-storage.service';
 
 export type DataTableLoadParams = {
   dir?: 'asc' | 'desc';
@@ -63,13 +64,18 @@ export type DataTableCellChanged = {
 @Component({
   selector: 'omv-datatable',
   templateUrl: './datatable.component.html',
-  styleUrls: ['./datatable.component.scss']
+  styleUrls: ['./datatable.component.scss'],
+  encapsulation: ViewEncapsulation.None
 })
 export class DatatableComponent implements Datatable, OnInit, OnDestroy, OnChanges {
   @ViewChild('table', { static: true })
   table: NgxDatatableComponent;
   @ViewChild('textTpl', { static: true })
   textTpl: TemplateRef<any>;
+  @ViewChild('htmlTpl', { static: true })
+  htmlTpl: TemplateRef<any>;
+  @ViewChild('imageTpl', { static: true })
+  imageTpl: TemplateRef<any>;
   @ViewChild('checkIconTpl', { static: true })
   checkIconTpl: TemplateRef<any>;
   @ViewChild('checkBoxTpl', { static: true })
@@ -102,6 +108,8 @@ export class DatatableComponent implements Datatable, OnInit, OnDestroy, OnChang
   buttonToggleTpl: TemplateRef<any>;
   @ViewChild('copyToClipboardTpl', { static: true })
   copyToClipboardTpl: TemplateRef<any>;
+  @ViewChild('cronToHumanTpl', { static: true })
+  cronToHumanTpl: TemplateRef<any>;
 
   // Define a query selector if the datatable is used in an
   // overflow container.
@@ -113,6 +121,7 @@ export class DatatableComponent implements Datatable, OnInit, OnDestroy, OnChang
   data: DatatableData[];
 
   // Show the linear loading bar.
+  @CoerceBoolean()
   @Input()
   loadingIndicator? = false;
 
@@ -128,33 +137,40 @@ export class DatatableComponent implements Datatable, OnInit, OnDestroy, OnChang
   @Input()
   columnMode?: 'standard' | 'flex' | 'force' = 'flex';
 
+  @CoerceBoolean()
   @Input()
   reorderable? = false;
 
   // Display the toolbar above the datatable that includes
   // the custom and default (e.g. 'Reload') action buttons?
+  @CoerceBoolean()
   @Input()
   hasActionBar? = true;
 
   // Use a fixed action bar so that it does not leave the viewport
   // even when scrolled.
+  @CoerceBoolean()
   @Input()
   hasStickyActionBar? = false;
 
   // Show/Hide the reload button. If 'autoReload' is set to `true`,
   // then the button is automatically hidden.
+  @CoerceBoolean()
   @Input()
   hasReloadButton? = true;
 
   // Show/Hide the search field. Defaults to `false`.
+  @CoerceBoolean()
   @Input()
   hasSearchField? = false;
 
   // Display the datatable header?
+  @CoerceBoolean()
   @Input()
   hasHeader? = true;
 
   // Display the datatable footer?
+  @CoerceBoolean()
   @Input()
   hasFooter? = true;
 
@@ -168,6 +184,7 @@ export class DatatableComponent implements Datatable, OnInit, OnDestroy, OnChang
   // Automatically load the data after datatable has been
   // initialized. If set to false, the autoReload configuration
   // is not taken into action. Defaults to `true`.
+  @CoerceBoolean()
   @Input()
   autoLoad? = true;
 
@@ -177,6 +194,7 @@ export class DatatableComponent implements Datatable, OnInit, OnDestroy, OnChang
   autoReload?: boolean | number = false;
 
   // Page size to show. To disable paging, set the limit to 0.
+  // Defaults to 25.
   @Input()
   limit? = 25;
 
@@ -185,16 +203,26 @@ export class DatatableComponent implements Datatable, OnInit, OnDestroy, OnChang
   count? = 0;
 
   // Use remote paging instead of client-side.
+  @CoerceBoolean()
   @Input()
   remotePaging = false;
 
   // Use remote sorting instead of client-side.
+  @CoerceBoolean()
   @Input()
   remoteSorting = false;
 
   // Use remote searching instead of client-side.
+  @CoerceBoolean()
   @Input()
   remoteSearching = false;
+
+  // Sorting mode. In "single" mode, clicking on a column name will
+  // reset the existing sorting before sorting by the new selection.
+  // In multi selection mode, additional clicks on column names will
+  // add sorting using multiple columns.
+  @Input()
+  sortType?: 'single' | 'multi' = 'single';
 
   // Ordered array of objects used to determine sorting by column.
   @Input()
@@ -216,6 +244,9 @@ export class DatatableComponent implements Datatable, OnInit, OnDestroy, OnChang
   @Output()
   readonly cellDataChangedEvent = new EventEmitter<DataTableCellChanged>();
 
+  @Unsubscribe()
+  private subscriptions = new Subscription();
+
   // Internal
   public icon = Icon;
   public rows = [];
@@ -229,13 +260,12 @@ export class DatatableComponent implements Datatable, OnInit, OnDestroy, OnChang
   };
   public searchFilter = '';
 
-  private subscriptions = new Subscription();
   private cellTemplates: { [key: string]: TemplateRef<any> };
   private rawColumns: DatatableColumn[] = [];
 
   constructor(
     private clipboardService: ClipboardService,
-    private userStorageService: UserStorageService
+    private userLocalStorageService: UserLocalStorageService
   ) {
     this.messages = {
       emptyMessage: translate(gettext('No data to display.')),
@@ -284,7 +314,6 @@ export class DatatableComponent implements Datatable, OnInit, OnDestroy, OnChang
   }
 
   ngOnDestroy(): void {
-    this.subscriptions.unsubscribe();
     (this.onSearchFilterChange as any).cancel?.();
   }
 
@@ -383,7 +412,8 @@ export class DatatableComponent implements Datatable, OnInit, OnDestroy, OnChang
     this.updateColumns();
   }
 
-  onCopyToClipboard(value: any): void {
+  onCopyToClipboard(event: Event, value: any): void {
+    event.stopPropagation();
     this.clipboardService.copy(value);
   }
 
@@ -449,6 +479,8 @@ export class DatatableComponent implements Datatable, OnInit, OnDestroy, OnChang
   protected initTemplates(): void {
     this.cellTemplates = {
       text: this.textTpl,
+      html: this.htmlTpl,
+      image: this.imageTpl,
       checkIcon: this.checkIconTpl,
       checkBox: this.checkBoxTpl,
       join: this.joinTpl,
@@ -464,7 +496,8 @@ export class DatatableComponent implements Datatable, OnInit, OnDestroy, OnChang
       unsortedList: this.unsortedListTpl,
       template: this.templateTpl,
       buttonToggle: this.buttonToggleTpl,
-      copyToClipboard: this.copyToClipboardTpl
+      copyToClipboard: this.copyToClipboardTpl,
+      cronToHuman: this.cronToHumanTpl
     };
   }
 
@@ -486,8 +519,9 @@ export class DatatableComponent implements Datatable, OnInit, OnDestroy, OnChang
     if (!this.cellTemplates) {
       return;
     }
-    columns.forEach((column) => {
+    columns.forEach((column: DatatableColumn) => {
       column.hidden = !!column.hidden;
+      column.sortable = !!column.sortable;
       // Convert column configuration.
       if (_.isString(column.cellTemplateName) && column.cellTemplateName.length) {
         column.cellTemplate = this.cellTemplates[column.cellTemplateName];
@@ -507,8 +541,8 @@ export class DatatableComponent implements Datatable, OnInit, OnDestroy, OnChang
     if (!this.stateId) {
       return;
     }
-    const value = this.userStorageService.get(`datatable_state_${this.stateId}`);
-    if (value) {
+    const value = this.userLocalStorageService.get(`datatable_state_${this.stateId}`);
+    if (_.isString(value)) {
       const columnsConfig = JSON.parse(value);
       _.forEach(columnsConfig, (columnConfig: Record<string, any>) => {
         const column = _.find(this.columns, ['name', _.get(columnConfig, 'name')]);
@@ -530,6 +564,9 @@ export class DatatableComponent implements Datatable, OnInit, OnDestroy, OnChang
         hidden: column.hidden
       });
     });
-    this.userStorageService.set(`datatable_state_${this.stateId}`, JSON.stringify(columnsConfig));
+    this.userLocalStorageService.set(
+      `datatable_state_${this.stateId}`,
+      JSON.stringify(columnsConfig)
+    );
   }
 }

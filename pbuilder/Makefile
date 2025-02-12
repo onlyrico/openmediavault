@@ -2,7 +2,7 @@
 #
 # @license   http://www.gnu.org/licenses/gpl.html GPL Version 3
 # @author    Volker Theile <votdev@gmx.de>
-# @copyright Copyright (c) 2009-2022 Volker Theile
+# @copyright Copyright (c) 2009-2025 Volker Theile
 #
 # OpenMediaVault is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -17,14 +17,13 @@
 # You should have received a copy of the GNU General Public License
 # along with OpenMediaVault. If not, see <http://www.gnu.org/licenses/>.
 
-# Install before usage:
-# apt-get install pbuilder qemubuilder qemu-user-static
-
 # This packages need to be installed to fix a pbuilder issue.
+# https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=878961
+# https://bugs.launchpad.net/ubuntu/+source/debootstrap/+bug/86536
 FIX_DEBOOTSTRAP_PKG_INSTALL=perl-openssl-defaults
 
-DISTRIBUTION=bullseye
-OMV_DISTRIBUTION=shaitan
+DISTRIBUTION=bookworm
+OMV_DISTRIBUTION=sandworm
 ARCHITECTURE?=amd64
 NAME=$(DISTRIBUTION)-$(ARCHITECTURE)
 MIRROR="http://deb.debian.org/debian/"
@@ -44,11 +43,8 @@ $(BUILDPLACE) $(BUILDRESULT) $(APTCACHE):
 	sudo mkdir -p $@
 
 install_keyring:
-	wget -O "/tmp/openmediavault-archive-keyring.asc" \
-		https://packages.openmediavault.org/public/archive.key
-	gpg --dearmor < /tmp/openmediavault-archive-keyring.asc \
-		> /tmp/openmediavault-archive-keyring.gpg
-	sudo cp -v /tmp/openmediavault-archive-keyring.* /etc/apt/trusted.gpg.d
+	wget --quiet --output-document=- https://packages.openmediavault.org/public/archive.key | \
+		gpg --dearmor | sudo tee $(KEYRING)
 
 build:
 	sudo pbuilder build \
@@ -79,7 +75,7 @@ create: $(BUILDPLACE) $(BUILDRESULT) $(APTCACHE) install_keyring
 		--buildresult $(BUILDRESULT) \
 		--aptcache $(APTCACHE) \
 		--components $(COMPONENTS) \
-		--debootstrap qemu-debootstrap \
+		--debootstrap debootstrap \
 		--debootstrapopts --verbose \
 		--debootstrapopts --arch=$(ARCHITECTURE) \
 		--debootstrapopts --keyring=$(DEBOOTSTRAPOPTS_KEYRING) \
@@ -97,4 +93,11 @@ login:
 showresult:
 	xdg-open $(BUILDRESULT)
 
-.PHONY: build clean create login showresult list
+install_deps:
+	sudo apt-get install -y \
+		debian-archive-keyring \
+		pbuilder \
+		qemubuilder \
+		qemu-user-static
+
+.PHONY: build clean create login showresult list install_deps

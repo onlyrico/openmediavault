@@ -3,7 +3,7 @@
  *
  * @license   http://www.gnu.org/licenses/gpl.html GPL Version 3
  * @author    Volker Theile <volker.theile@openmediavault.org>
- * @copyright Copyright (c) 2009-2022 Volker Theile
+ * @copyright Copyright (c) 2009-2025 Volker Theile
  *
  * OpenMediaVault is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,14 +16,15 @@
  * GNU General Public License for more details.
  */
 import { Component } from '@angular/core';
-import { marker as gettext } from '@biesbjerg/ngx-translate-extract-marker';
+import { marker as gettext } from '@ngneat/transloco-keys-manager/marker';
 
 import { FormPageConfig } from '~/app/core/components/intuition/models/form-page-config.type';
+import { BaseFormPageComponent } from '~/app/pages/base-page-component';
 
 @Component({
   template: '<omv-intuition-form-page [config]="this.config"></omv-intuition-form-page>'
 })
-export class UserFormPageComponent {
+export class UserFormPageComponent extends BaseFormPageComponent {
   public config: FormPageConfig = {
     request: {
       service: 'UserMgmt',
@@ -95,7 +96,7 @@ export class UserFormPageComponent {
         name: 'shell',
         label: gettext('Shell'),
         placeholder: gettext('Select a shell ...'),
-        value: '/bin/sh',
+        value: '/usr/bin/sh',
         store: {
           proxy: {
             service: 'System',
@@ -184,12 +185,12 @@ export class UserFormPageComponent {
         name: 'disallowusermod',
         label: gettext('Disallow account modification'),
         value: false,
-        hint: gettext('Disallow the user to modify his own account.')
+        hint: gettext('Disallow the user to modify their own account.')
       },
       {
-        type: 'textInput',
+        type: 'tagInput',
         name: 'comment',
-        label: gettext('Comment'),
+        label: gettext('Tags'),
         value: '',
         validators: {
           maxLength: 65

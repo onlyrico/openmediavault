@@ -3,7 +3,7 @@
  *
  * @license   http://www.gnu.org/licenses/gpl.html GPL Version 3
  * @author    Volker Theile <volker.theile@openmediavault.org>
- * @copyright Copyright (c) 2009-2022 Volker Theile
+ * @copyright Copyright (c) 2009-2025 Volker Theile
  *
  * OpenMediaVault is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -33,7 +33,10 @@ import { Icon } from '~/app/shared/enum/icon.enum';
 export class NavigationPageComponent implements OnInit {
   public menuItems: NavigationMenuItem[] = [];
 
-  constructor(private router: Router, private navigationConfig: NavigationConfigService) {}
+  constructor(
+    private router: Router,
+    private navigationConfig: NavigationConfigService
+  ) {}
 
   ngOnInit(): void {
     this.navigationConfig

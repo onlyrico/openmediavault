@@ -56,6 +56,35 @@
 			"type": "boolean",
 			"default": false
 		},
+		"homesinheritacls": {
+			"type": "boolean",
+			"default": false
+		},
+		"homesinheritpermissions": {
+			"type": "boolean",
+			"default": false
+		},
+		"homesextraoptions": {
+			"type": "string",
+			"default": ""
+		},
+		"homesfollowsymlinks": {
+			"type": "boolean",
+			"default": true
+		},
+		"homeswidelinks": {
+			"type": "boolean",
+			"default": false
+		},
+		"netbios": {
+			"type": "boolean",
+			"default": false
+		},
+		"minprotocol": {
+			"type": "string",
+			"enum": [ "SMB1", "SMB2", "SMB3" ],
+			"default": "SMB2"
+		},
 		"extraoptions": {
 			"type": "string"
 		},
@@ -123,7 +152,7 @@
 							},
 							"easupport": {
 								"type": "boolean",
-								"default": false
+								"default": true
 							},
 							"storedosattributes": {
 								"type": "boolean",
@@ -140,6 +169,18 @@
 								"default": false
 							},
 							"timemachine": {
+								"type": "boolean",
+								"default": false
+							},
+							"transportencryption": {
+								"type": "boolean",
+								"default": false
+							},
+							"followsymlinks": {
+								"type": "boolean",
+								"default": true
+							},
+							"widelinks": {
 								"type": "boolean",
 								"default": false
 							},

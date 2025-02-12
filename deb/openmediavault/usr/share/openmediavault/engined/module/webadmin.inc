@@ -4,7 +4,7 @@
  *
  * @license   http://www.gnu.org/licenses/gpl.html GPL Version 3
  * @author    Volker Theile <volker.theile@openmediavault.org>
- * @copyright Copyright (c) 2009-2022 Volker Theile
+ * @copyright Copyright (c) 2009-2025 Volker Theile
  *
  * OpenMediaVault is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,7 +21,7 @@
  */
 namespace Engined\Module;
 
-class Webadmin extends \OMV\Engine\Module\ModuleAbstract
+class Webadmin extends \OMV\Engine\Module\ServiceAbstract
 		implements \OMV\Engine\Notify\IListener {
 	public function getName() {
 		return "webadmin";
@@ -29,13 +29,6 @@ class Webadmin extends \OMV\Engine\Module\ModuleAbstract
 
 	public function deploy() {
 		// Nothing to do here.
-	}
-
-	public function getZeroconfConfig() {
-		return [
-			"id" => "webadmin",
-			"title" => gettext("Web control panel")
-		];
 	}
 
 	function bindListeners(\OMV\Engine\Notify\Dispatcher $dispatcher) {

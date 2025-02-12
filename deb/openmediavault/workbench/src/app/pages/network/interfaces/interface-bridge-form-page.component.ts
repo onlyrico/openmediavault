@@ -3,7 +3,7 @@
  *
  * @license   http://www.gnu.org/licenses/gpl.html GPL Version 3
  * @author    Volker Theile <volker.theile@openmediavault.org>
- * @copyright Copyright (c) 2009-2022 Volker Theile
+ * @copyright Copyright (c) 2009-2025 Volker Theile
  *
  * OpenMediaVault is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,14 +16,15 @@
  * GNU General Public License for more details.
  */
 import { Component } from '@angular/core';
-import { marker as gettext } from '@biesbjerg/ngx-translate-extract-marker';
+import { marker as gettext } from '@ngneat/transloco-keys-manager/marker';
 
 import { FormPageConfig } from '~/app/core/components/intuition/models/form-page-config.type';
+import { BaseFormPageComponent } from '~/app/pages/base-page-component';
 
 @Component({
   template: '<omv-intuition-form-page [config]="this.config"></omv-intuition-form-page>'
 })
-export class InterfaceBridgeFormPageComponent {
+export class InterfaceBridgeFormPageComponent extends BaseFormPageComponent {
   public config: FormPageConfig = {
     request: {
       service: 'Network',
@@ -45,11 +46,34 @@ export class InterfaceBridgeFormPageComponent {
         type: 'confObjUuid'
       },
       {
+        type: 'select',
+        name: 'type',
+        label: gettext('Type'),
+        disabled: true,
+        submitValue: false,
+        value: 'bridge',
+        store: {
+          data: [
+            ['ethernet', gettext('Ethernet')],
+            ['bond', gettext('Bond')],
+            ['vlan', gettext('VLAN')],
+            ['wifi', gettext('Wi-Fi')],
+            ['bridge', gettext('Bridge')]
+          ]
+        }
+      },
+      {
         type: 'textInput',
         name: 'devicename',
         label: gettext('Device'),
         value: '',
-        disabled: true
+        disabled: true,
+        modifiers: [
+          {
+            type: 'hidden',
+            constraint: { operator: 'falsy', arg0: { prop: '_editing' } }
+          }
+        ]
       },
       {
         type: 'select',
@@ -81,13 +105,10 @@ export class InterfaceBridgeFormPageComponent {
         }
       },
       {
-        type: 'textInput',
+        type: 'tagInput',
         name: 'comment',
-        label: gettext('Comment'),
-        value: '',
-        validators: {
-          maxLength: 65
-        }
+        label: gettext('Tags'),
+        value: ''
       },
       {
         type: 'divider',
@@ -142,17 +163,40 @@ export class InterfaceBridgeFormPageComponent {
         ]
       },
       {
-        type: 'textInput',
-        name: 'gateway',
-        label: gettext('Gateway'),
-        value: '',
-        validators: {
-          patternType: 'ipv4'
-        },
-        modifiers: [
+        type: 'container',
+        fields: [
           {
-            type: 'disabled',
-            constraint: { operator: 'ne', arg0: { prop: 'method' }, arg1: 'static' }
+            type: 'textInput',
+            name: 'gateway',
+            label: gettext('Gateway'),
+            value: '',
+            validators: {
+              patternType: 'ipv4'
+            },
+            modifiers: [
+              {
+                type: 'disabled',
+                constraint: { operator: 'ne', arg0: { prop: 'method' }, arg1: 'static' }
+              }
+            ],
+            flex: 75
+          },
+          {
+            type: 'numberInput',
+            name: 'routemetric',
+            label: gettext('Metric'),
+            value: 0,
+            validators: {
+              min: 0,
+              max: 65535,
+              patternType: 'integer'
+            },
+            modifiers: [
+              {
+                type: 'disabled',
+                constraint: { operator: 'ne', arg0: { prop: 'method' }, arg1: 'static' }
+              }
+            ]
           }
         ]
       },
@@ -169,7 +213,7 @@ export class InterfaceBridgeFormPageComponent {
           data: [
             ['manual', gettext('Disabled')],
             ['dhcp', gettext('DHCP')],
-            ['auto', gettext('Auto')],
+            ['auto', gettext('Automatic')],
             ['static', gettext('Static')]
           ]
         },
@@ -212,23 +256,56 @@ export class InterfaceBridgeFormPageComponent {
         ]
       },
       {
-        type: 'textInput',
-        name: 'gateway6',
-        label: gettext('Gateway'),
-        value: '',
-        validators: {
-          patternType: 'ipv6'
-        },
-        modifiers: [
+        type: 'container',
+        fields: [
           {
-            type: 'disabled',
-            constraint: { operator: 'ne', arg0: { prop: 'method6' }, arg1: 'static' }
+            type: 'textInput',
+            name: 'gateway6',
+            label: gettext('Gateway'),
+            value: '',
+            validators: {
+              patternType: 'ipv6'
+            },
+            modifiers: [
+              {
+                type: 'disabled',
+                constraint: { operator: 'ne', arg0: { prop: 'method6' }, arg1: 'static' }
+              }
+            ],
+            flex: 75
+          },
+          {
+            type: 'numberInput',
+            name: 'routemetric6',
+            label: gettext('Metric'),
+            value: 1,
+            validators: {
+              min: 0,
+              max: 65535,
+              patternType: 'integer'
+            },
+            modifiers: [
+              {
+                type: 'disabled',
+                constraint: { operator: 'ne', arg0: { prop: 'method6' }, arg1: 'static' }
+              }
+            ]
           }
         ]
       },
       {
         type: 'divider',
         title: gettext('Advanced settings')
+      },
+      {
+        type: 'textInput',
+        name: 'altmacaddress',
+        label: gettext('MAC address'),
+        hint: gettext('Force a specific MAC address on this interface.'),
+        value: '',
+        validators: {
+          patternType: 'macAddress'
+        }
       },
       {
         type: 'textInput',

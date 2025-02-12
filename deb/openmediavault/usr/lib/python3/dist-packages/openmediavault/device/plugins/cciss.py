@@ -4,7 +4,7 @@
 #
 # @license   http://www.gnu.org/licenses/gpl.html GPL Version 3
 # @author    Volker Theile <volker.theile@openmediavault.org>
-# @copyright Copyright (c) 2009-2022 Volker Theile
+# @copyright Copyright (c) 2009-2025 Volker Theile
 #
 # OpenMediaVault is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -56,10 +56,10 @@ class StorageDevice(openmediavault.device.StorageDevice):
             return self.__class__(parent_device_file)
         return None
 
-    def device_name(self, canonical=False):
+    def device_name(self, canonicalize=False):
         # Get the device name and convert '/' character to '!', e.g.
         # cciss/c0d0 => cciss!c0d0.
-        return super().device_name(canonical).replace('/', '!')
+        return super().device_name(canonicalize).replace('/', '!')
 
     @property
     def is_raid(self):

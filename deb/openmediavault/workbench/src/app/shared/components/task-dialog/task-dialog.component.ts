@@ -3,7 +3,7 @@
  *
  * @license   http://www.gnu.org/licenses/gpl.html GPL Version 3
  * @author    Volker Theile <volker.theile@openmediavault.org>
- * @copyright Copyright (c) 2009-2022 Volker Theile
+ * @copyright Copyright (c) 2009-2025 Volker Theile
  *
  * OpenMediaVault is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -23,10 +23,11 @@ import {
   OnDestroy,
   OnInit,
   Output,
-  ViewChild
+  ViewChild,
+  ViewEncapsulation
 } from '@angular/core';
 import { MAT_DIALOG_DATA } from '@angular/material/dialog';
-import { marker as gettext } from '@biesbjerg/ngx-translate-extract-marker';
+import { marker as gettext } from '@ngneat/transloco-keys-manager/marker';
 import * as _ from 'lodash';
 import { from, of, Subscription } from 'rxjs';
 import { concatMap, delay, finalize, tap } from 'rxjs/operators';
@@ -45,7 +46,8 @@ import { RpcBgResponse, RpcService } from '~/app/shared/services/rpc.service';
 @Component({
   selector: 'omv-task-dialog',
   templateUrl: './task-dialog.component.html',
-  styleUrls: ['./task-dialog.component.scss']
+  styleUrls: ['./task-dialog.component.scss'],
+  encapsulation: ViewEncapsulation.None
 })
 export class TaskDialogComponent implements OnInit, OnDestroy {
   @Output()
@@ -55,7 +57,7 @@ export class TaskDialogComponent implements OnInit, OnDestroy {
   private content: ElementRef;
 
   // Internal
-  public config: TaskDialogConfig = {} as TaskDialogConfig;
+  public config: TaskDialogConfig = {};
   public running = false;
   private subscription: Subscription;
   private filename: string;
@@ -102,7 +104,10 @@ export class TaskDialogComponent implements OnInit, OnDestroy {
       .requestTaskOutput(
         this.config.request.service,
         this.config.request.method,
-        this.config.request.params
+        this.config.request.params,
+        undefined,
+        undefined,
+        this.config.request.maxRetries
       )
       .pipe(
         tap((res: RpcBgResponse) => (this.filename = res.filename)),
@@ -117,6 +122,9 @@ export class TaskDialogComponent implements OnInit, OnDestroy {
         next: (value: RpcBgResponse) => {
           this.print(value.output, true);
         },
+        error: () => {
+          this.printTypeWriter('** CONNECTION LOST **');
+        },
         complete: () => {
           // Set the result value to `true` because the request finished
           // successfully.
@@ -125,25 +133,7 @@ export class TaskDialogComponent implements OnInit, OnDestroy {
           this.finishEvent.emit(this.content.nativeElement.innerHTML);
           // Append EOL message.
           if (this.config.showCompletion) {
-            from([
-              '<br>',
-              'E',
-              'N',
-              'D',
-              ' ',
-              'O',
-              'F',
-              ' ',
-              'L',
-              'I',
-              'N',
-              'E',
-              '<br><span class="omv-text-blink">█</span>'
-            ])
-              .pipe(concatMap((text) => of(text).pipe(delay(25))))
-              .subscribe((text) => {
-                this.print(text);
-              });
+            this.printTypeWriter('END OF LINE');
           }
         }
       });
@@ -199,6 +189,8 @@ export class TaskDialogComponent implements OnInit, OnDestroy {
 
   private print(text: string, escape: boolean = false): void {
     const nativeEl = this.content.nativeElement;
+    const doScroll: boolean =
+      nativeEl.scrollHeight - nativeEl.clientHeight <= nativeEl.scrollTop + 1;
     // Make sure we do not exceed a max. size of displayed
     // content to keep the memory consumption low.
     // Allow displaying up to 100.000 lines (80 char per line) of
@@ -217,8 +209,16 @@ export class TaskDialogComponent implements OnInit, OnDestroy {
     // Strip ASCII escape codes and escape characters to
     // HTML-safe sequences if necessary.
     nativeEl.innerHTML += stripAnsi(escape ? format('{{ text | escape }}', { text }) : text);
-    if (this.config.autoScroll && _.isFunction(nativeEl.scroll)) {
+    if (this.config.autoScroll && _.isFunction(nativeEl.scroll) && doScroll) {
       nativeEl.scroll({ behavior: 'auto', top: nativeEl.scrollHeight });
     }
+  }
+
+  private printTypeWriter(text: string): void {
+    from(['<br>', ...text, '<br><span class="omv-text-blink">█</span>'])
+      .pipe(concatMap((value) => of(value).pipe(delay(25))))
+      .subscribe((value) => {
+        this.print(value);
+      });
   }
 }

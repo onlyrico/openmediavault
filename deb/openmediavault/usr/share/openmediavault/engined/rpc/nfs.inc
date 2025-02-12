@@ -4,7 +4,7 @@
  *
  * @license   http://www.gnu.org/licenses/gpl.html GPL Version 3
  * @author    Volker Theile <volker.theile@openmediavault.org>
- * @copyright Copyright (c) 2009-2022 Volker Theile
+ * @copyright Copyright (c) 2009-2025 Volker Theile
  *
  * OpenMediaVault is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -39,6 +39,7 @@ class Nfs extends \OMV\Rpc\ServiceAbstract {
 		$this->registerMethod("getShare");
 		$this->registerMethod("setShare");
 		$this->registerMethod("deleteShare");
+		$this->registerMethod("getStats");
 	}
 
 	/**
@@ -55,7 +56,9 @@ class Nfs extends \OMV\Rpc\ServiceAbstract {
 		// Get the configuration object.
 		$db = \OMV\Config\Database::getInstance();
 		$object = $db->get("conf.service.nfs");
-		return $object->getAssoc();
+		$result = $object->getAssoc();
+		$result["versions"] = explode_safe(",", $result["versions"]);
+		return $result;
 	}
 
 	/**
@@ -71,6 +74,7 @@ class Nfs extends \OMV\Rpc\ServiceAbstract {
 		]);
 		// Validate the parameters of the RPC service method.
 		$this->validateMethodParams($params, "rpc.nfs.setsettings");
+		$params["versions"] = implode(",", $params["versions"]);
 		// Get the existing configuration object.
 		$db = \OMV\Config\Database::getInstance();
 		$object = $db->get("conf.service.nfs");
@@ -256,5 +260,34 @@ class Nfs extends \OMV\Rpc\ServiceAbstract {
 		  }
 		// Return the deleted configuration object.
 		return $object;
+	}
+
+	/**
+	 * Get statistics.
+	 * @param params The method parameters.
+	 * @param context The context of the caller.
+	 * @return A string containing the requested statistics.
+	 */
+	public function getStats($params, $context) {
+		// Validate the RPC caller context.
+		$this->validateMethodContext($context, [
+			"role" => OMV_ROLE_ADMINISTRATOR
+		]);
+		if ($this->isModuleDirty("nfs")) {
+			throw new \OMV\Config\ConfigDirtyException();
+		}
+		$db = \OMV\Config\Database::getInstance();
+		$object = $db->get("conf.service.nfs");
+		if (FALSE === $object->get("enable")) {
+			$stats = gettext("Service disabled");
+		} else {
+			$cmdArgs = [];
+			$cmdArgs[] = "-v";
+			$cmd = new \OMV\System\Process("exportfs", $cmdArgs);
+			$cmd->setRedirect2to1();
+			$cmd->execute($output);
+			$stats = implode("\n", $output);
+		}
+		return $stats;
 	}
 }

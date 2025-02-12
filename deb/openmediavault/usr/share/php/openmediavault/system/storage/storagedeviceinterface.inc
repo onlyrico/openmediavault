@@ -4,7 +4,7 @@
  *
  * @license   http://www.gnu.org/licenses/gpl.html GPL Version 3
  * @author    Volker Theile <volker.theile@openmediavault.org>
- * @copyright Copyright (c) 2009-2022 Volker Theile
+ * @copyright Copyright (c) 2009-2025 Volker Theile
  *
  * OpenMediaVault is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -182,6 +182,12 @@ interface StorageDeviceInterface {
 	public function isAta();
 
 	/**
+	 * Check if the given device is an SD or MMC device.
+	 * @return boolean TRUE if device is SD or MMC, otherwise FALSE.
+	 */
+	public function isMmc();
+
+	/**
 	 * Check if the given device is read-only.
 	 * @return TRUE if the device is read-only, otherwise FALSE.
 	 */
@@ -193,6 +199,12 @@ interface StorageDeviceInterface {
 	 * @return Set to FALSE if no medium is available.
 	 */
 	public function isMediaAvailable();
+
+	/**
+	 * Check if the given device is hot pluggable.
+	 * @return boolean TRUE if the device is hot pluggable, otherwise FALSE.
+	 */
+	public function isHotPluggable(): bool;
 
 	/**
 	 * Check if the given device has S.M.A.R.T. support.

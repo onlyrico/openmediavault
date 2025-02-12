@@ -1,7 +1,7 @@
 <mat-form-field *ngIf="config.dirVisible"
-                fxFlex="25"
+                class="omv-flex-initial omv-w-25"
                 [formGroup]="formGroup">
-  <mat-label translate>Base path</mat-label>
+  <mat-label>{{ 'Base path' | transloco }}</mat-label>
   <input *ngIf="config.dirVisible"
          matInput
          type="text"
@@ -14,18 +14,18 @@
 <mat-form-field #origin="cdkOverlayOrigin"
                 #trigger
                 cdkOverlayOrigin
-                fxFlex
+                class="omv-flex-1"
                 [formGroup]="formGroup">
   <div *ngIf="config.icon"
        matPrefix>
     <mat-icon [svgIcon]="config.icon"></mat-icon>&nbsp;
   </div>
-  <mat-label>{{ config.label | translate }}</mat-label>
+  <mat-label>{{ config.label | transloco }}</mat-label>
   <input matInput
          type="text"
          [ngClass]="{'omv-text-monospace': config.monospace}"
          [formControlName]="config.name"
-         [placeholder]="config.placeholder | translate"
+         [placeholder]="config.placeholder | transloco"
          [readonly]="config.readonly"
          [autocapitalize]="config.autocapitalize"
          [autofocus]="config.autofocus"
@@ -34,32 +34,29 @@
          [maxlength]="config.validators?.maxLength">
   <mat-icon *ngIf="formGroup.controls[config.dirRefIdField].value"
             matSuffix
-            matTooltip="{{ 'Browse directory' | translate }}"
+            matTooltip="{{ 'Browse directory' | transloco }}"
             (click)="open()"
             svgIcon="mdi:file-tree">
   </mat-icon>
   <mat-error *ngIf="formGroup.invalid">
-    <span *ngIf="formGroup.hasError('required', config.name)"
-          translate>
-      This field is required.
+    <span *ngIf="formGroup.hasError('required', config.name)">
+      {{ 'This field is required.' | transloco }}
     </span>
     <span *ngIf="formGroup.hasError('minlength', config.name)"
-          translate>
-      The value must be at least {{ config.validators.minLength }} characters long.
+          transloco="The value must be at least {{ config.validators.minLength }} characters long.">
     </span>
     <span *ngIf="formGroup.hasError('maxlength', config.name)"
-          translate>
-      The value cannot exceed {{ config.validators.maxLength }} characters.
+          transloco="The value cannot exceed {{ config.validators.maxLength }} characters.">
     </span>
     <span *ngIf="formGroup.hasError('constraint', config.name)">
-      {{ formGroup.getError('constraint', config.name) | translate }}
+      {{ formGroup.getError('constraint', config.name) | transloco }}
     </span>
     <span *ngIf="formGroup.hasError('pattern', config.name)">
-      {{ formGroup.getError('pattern', config.name) | translate }}
+      {{ formGroup.getError('pattern', config.name) | transloco }}
     </span>
   </mat-error>
   <mat-hint *ngIf="config.hint?.length > 0"
-            [innerHTML]="config.hint | translate | sanitizeHtml">
+            [innerHTML]="config.hint | transloco | sanitizeHtml">
   </mat-hint>
 </mat-form-field>
 
@@ -74,11 +71,8 @@
              (backdropClick)="close()"
              (detach)="close()">
   <div class="mat-select-panel-wrap">
-    <div class="mat-select-panel mat-primary"
-         fxLayout="column">
-      <mat-toolbar class="omv-selection-header"
-                   fxLayout="row"
-                   fxLayoutAlign="end center">
+    <div class="mat-select-panel mat-primary omv-display-flex omv-flex-column">
+      <mat-toolbar class="omv-selection-header omv-display-flex omv-flex-row omv-justify-content-end">
         <mat-form-field>
           <button mat-icon-button
                   matPrefix>
@@ -89,13 +83,13 @@
                  [formControl]="searchFilter">
           <button mat-icon-button
                   matSuffix
-                  matTooltip="{{ 'Clear' | translate }}"
+                  matTooltip="{{ 'Clear' | transloco }}"
                   (click)="searchFilter.setValue('')">
             <mat-icon svgIcon="{{ icon.clear }}"></mat-icon>
           </button>
         </mat-form-field>
       </mat-toolbar>
-      <div class="omv-scrollable-y">
+      <div class="omv-scrollable-y omv-flex-1">
         <mat-selection-list [multiple]="false"
                             (selectionChange)="onSelectionChange($event)">
           <mat-list-option *ngIf="!folders.length"
@@ -116,22 +110,20 @@
           </mat-list-option>
         </mat-selection-list>
       </div>
-      <div class="omv-selection-actions"
-           fxLayout="row"
-           fxLayoutAlign="start center">
+      <div class="omv-selection-actions omv-display-flex omv-flex-row omv-justify-content-start omv-align-items-center">
         <mat-icon class="omv-text-muted omv-mr-q"
                   svgIcon="mdi:folder-open">
         </mat-icon>
         <div class="omv-text-muted">
           {{ currentPath }}
         </div>
-        <div fxFlex></div>
+        <div class="omv-flex-1"></div>
         <button mat-flat-button
                 (click)="close()">
-          {{ 'Cancel' | translate }}
+          {{ 'Cancel' | transloco }}
         </button>
         <omv-submit-button (buttonClick)="choose()">
-          {{ 'Choose' | translate }}
+          {{ 'Choose' | transloco }}
         </omv-submit-button>
       </div>
     </div>

@@ -2,7 +2,7 @@
 #
 # @license   http://www.gnu.org/licenses/gpl.html GPL Version 3
 # @author    Volker Theile <volker.theile@openmediavault.org>
-# @copyright Copyright (c) 2009-2022 Volker Theile
+# @copyright Copyright (c) 2009-2025 Volker Theile
 #
 # OpenMediaVault is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -21,6 +21,8 @@
 # http://technowizah.com/2007/01/debian-how-to-cpu-frequency-management.html
 # http://wiki.hetzner.de/index.php/Cool%27n%27Quiet
 # http://wiki.ubuntuusers.de/powernowd
+# https://wiki.debian.org/CpuFrequencyScaling
+# https://kernel.org/doc/Documentation/cpu-freq/governors.txt
 
 {% set config = salt['omv_conf.get']('conf.system.powermngmnt') %}
 

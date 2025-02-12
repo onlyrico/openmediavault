@@ -4,7 +4,7 @@
  *
  * @license   http://www.gnu.org/licenses/gpl.html GPL Version 3
  * @author    Volker Theile <volker.theile@openmediavault.org>
- * @copyright Copyright (c) 2009-2022 Volker Theile
+ * @copyright Copyright (c) 2009-2025 Volker Theile
  *
  * OpenMediaVault is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -172,8 +172,8 @@ class Btrfs extends Filesystem {
 		  "used=([0-9]+)$/i";
 		foreach (preg_filter($regex, "$1 $2 $3 $4", $output) as $rowv) {
 			list($type, $profile, $t, $u) = explode(" ", $rowv);
-			switch ($profile) {
-				case "single":
+			switch (mb_strtoupper($profile)) {
+				case "SINGLE":
 				case "RAID0":
 					$factor = 1.0;
 					break;
@@ -284,35 +284,77 @@ class Btrfs extends Filesystem {
 		if (1 == bccomp("0", $available)) {
 			$available = "0";
 		}
+
 		// Data ratio is calculated based only on Data (or Data+Metadata).
-		$dataRatio = bcdiv(
-			array_sum(array_filter($usedRaw, function($type) {
+		$dataRatio = "1.00";
+		$usedDataSum = array_sum(array_filter($used, function($type) {
 				return in_array($type, [ 'Data', 'Data+Metadata' ]);
-			}, ARRAY_FILTER_USE_KEY)),
-			array_sum(array_filter($used, function($type) {
-				return in_array($type, [ 'Data', 'Data+Metadata' ]);
-			}, ARRAY_FILTER_USE_KEY)),
-			2);
-		// Catch and fix division-by-zero.
-		if (is_null($dataRatio)) {
-			$dataRatio = "1.0";
+			}, ARRAY_FILTER_USE_KEY));
+		if (0 < $usedDataSum) {
+			$dataRatio = bcdiv(
+				array_sum(array_filter($usedRaw, function($type) {
+					return in_array($type, [ 'Data', 'Data+Metadata' ]);
+				}, ARRAY_FILTER_USE_KEY)),
+				$usedDataSum,
+				2);
 		}
+
+		// Calculate the correct device size.
+		// https://github.com/digint/btrbk/commit/b69e9ebf349c5430fbfa8d1b31a80b254eda0441#diff-82762b70e27ed444b151409dbf03955775fe33e3231cc0ec8786062522b8b2aaR786
+		$totalBytesRatio = bcdiv($totalBytes, $dataRatio, 0);
 
 		// Update the information.
 		// Raw disk(s) size.
-		$stats = array_merge($stats, [
-			"size" => $totalBytes,
-			"blocks" => bcdiv($totalBytes, "1024", 0),
+		return array_merge($stats, [
+			"size" => $totalBytesRatio,
+			"blocks" => bcdiv($totalBytesRatio, "1024", 0),
 			// Usage by all profiles (excluding redundancy).
 			"used" => array_sum($used),
 			// Space available for Data, adjusted for average data ratio.
 			"available" => bcdiv($available, $dataRatio, 0),
 			// Raw disk usage, all profiles, divided by raw size.
 			"percentage" => intval(bcmul(
-				bcdiv(array_sum($usedRaw), $totalBytes, 3), 100, 0))
+				bcdiv(array_sum($usedRaw), $totalBytes, 3), 100, 0)),
+			"dataratio" => $dataRatio
 		]);
+	}
 
-		return $stats;
+	/**
+	 * See parent class definition.
+	 */
+	public function getDetails() {
+		$result = "";
+
+		$cmdArgs = [];
+		$cmdArgs[] = "filesystem";
+		$cmdArgs[] = "show";
+		$cmdArgs[] = escapeshellarg($this->getDeviceFile());
+		$cmd = new \OMV\System\Process("btrfs", $cmdArgs);
+		$cmd->setRedirect2to1();
+		$cmd->execute($output);
+		$result = implode("\n", $output);
+
+		$output = [];
+		$cmdArgs = [];
+		$cmdArgs[] = "filesystem";
+		$cmdArgs[] = "df";
+		$cmdArgs[] = escapeshellarg($this->getMountPoint());
+		$cmd = new \OMV\System\Process("btrfs", $cmdArgs);
+		$cmd->setRedirect2to1();
+		$cmd->execute($output);
+		$result = $result . "\n" . implode("\n", $output);
+
+		$output = [];
+		$cmdArgs = [];
+		$cmdArgs[] = "device";
+		$cmdArgs[] = "stats";
+		$cmdArgs[] = escapeshellarg($this->getDeviceFile());
+		$cmd = new \OMV\System\Process("btrfs", $cmdArgs);
+		$cmd->setRedirect2to1();
+		$cmd->execute($output);
+		$result = $result . "\n\n" . implode("\n", $output);
+
+		return $result;
 	}
 
 	/**
@@ -383,5 +425,191 @@ class Btrfs extends Filesystem {
 		// To workaround this problem we use the mount point to unmount
 		// the file system.
 		parent::umount($force, $lazy, TRUE);
+	}
+
+	/**
+	 * Grow the filesystem.
+	 * @return void
+	 * @throw \OMV\ExecException
+	 */
+	final public function grow() {
+		$this->assertIsMounted();
+		$cmdArgs = [];
+		$cmdArgs[] = "filesystem";
+		$cmdArgs[] = "resize";
+		$cmdArgs[] = "max";
+		$cmdArgs[] = escapeshellarg($this->getMountPoint());
+		$cmd = new \OMV\System\Process("btrfs", $cmdArgs);
+		$cmd->setRedirect2to1();
+		$cmd->execute();
+	}
+
+	/**
+	 * Check if the specified path is a subvolume.
+	 * @param string $path The path to check.
+	 * @return Returns TRUE if the specified path is a subvolume,
+	 *   otherwise FALSE.
+	 */
+	public static function isSubvolume($path) {
+		$cmdArgs = [];
+		$cmdArgs[] = "subvolume";
+		$cmdArgs[] = "show";
+		$cmdArgs[] = escapeshellarg($path);
+		$cmd = new \OMV\System\Process("btrfs", $cmdArgs);
+		$cmd->setQuiet(TRUE);
+		$cmd->execute($output, $exitStatus);
+		if ($exitStatus !== 0)
+			return FALSE;
+		return TRUE;
+	}
+
+	/**
+	 * Get information about the specified subvolume.
+	 * @param string $path The path of the subvolume.
+	 * @return Returns an array containing the subvolume information,
+	 *   otherwise FALSE.
+	 */
+	public static function getSubvolumeInfo($path) {
+		$cmdArgs = [];
+		$cmdArgs[] = "subvolume";
+		$cmdArgs[] = "show";
+		$cmdArgs[] = escapeshellarg($path);
+		$cmd = new \OMV\System\Process("btrfs", $cmdArgs);
+		$cmd->setQuiet(TRUE);
+		$cmd->execute($output, $exitStatus);
+		if ($exitStatus !== 0)
+			return FALSE;
+		$result = [];
+		// Parse the output:
+		//
+		// test01
+		//     Name:            test01
+		//     UUID:            9b0fa98a-c1aa-934a-83c7-e48ec4d806db
+		//     Parent UUID:     -
+		//     Received UUID:   -
+		//     Creation time:   2023-02-01 16:12:53 +0300
+		//     Subvolume ID:    259
+		//     Generation:      32
+		//     Gen at creation: 12
+		//     Parent ID:       5
+		//     Top level ID:    5
+		//     Flags:           -
+		//     Snapshot(s):
+		//                      .snapshots/test01-foo-bar
+		foreach ($output as $outputk => $outputv) {
+			$regex = "/^\s+([\w ]+):\s+(.+)$/";
+			if (1 !== preg_match($regex, $outputv, $matches)) {
+				continue;
+			}
+			$key = mb_strtolower(str_replace(" ", "_", $matches[1]));
+			$result[$key] = $matches[2];
+		}
+		return $result;
+	}
+
+	/**
+	 * Create a subvolume.
+	 * @param string $path The path of the subvolume.
+	 */
+	public static function createSubvolume($path) {
+		$cmdArgs = [];
+		$cmdArgs[] = "subvolume";
+		$cmdArgs[] = "create";
+		$cmdArgs[] = escapeshellarg($path);
+		$cmd = new \OMV\System\Process("btrfs", $cmdArgs);
+		$cmd->execute();
+	}
+
+	/**
+	 * Delete a subvolume.
+	 * @param string $path The path of the subvolume.
+	 */
+	public static function deleteSubvolume($path) {
+		$cmdArgs = [];
+		$cmdArgs[] = "subvolume";
+		$cmdArgs[] = "delete";
+		$cmdArgs[] = "--verbose";
+		$cmdArgs[] = escapeshellarg($path);
+		$cmd = new \OMV\System\Process("btrfs", $cmdArgs);
+		$cmd->execute();
+	}
+
+	/**
+	 * Get a list of snapshots for the specified subvolume.
+	 * @param string $path The path of the subvolume.
+	 * @return Returns a list of snapshots.
+	 */
+	public static function listSnapshots($path) {
+		$cmdArgs = [];
+		$cmdArgs[] = "subvolume";
+		$cmdArgs[] = "list";
+		$cmdArgs[] = "-s";
+		$cmdArgs[] = "-q";
+		$cmdArgs[] = "-u";
+		$cmdArgs[] = escapeshellarg($path);
+		$cmd = new \OMV\System\Process("btrfs", $cmdArgs);
+		$cmd->execute($output);
+		$result = [];
+		// Parse the output:
+		//
+		// ID 262 gen 32 cgen 32 top level 5 otime 2023-02-02 15:01:14 parent_uuid 9b0fa98a-c1aa-934a-83c7-e48ec4d806db uuid d1cad0c2-10f7-8441-a978-c5e1c6ecf40b path .snapshots/test01-foo-bar
+		foreach ($output as $outputk => $outputv) {
+			$regex = "/^ID (\d+) gen (\d+) cgen (\d+) top level (\d+) otime (.+) parent_uuid (.+) uuid (.+) path (.+)$/";
+			if (1 !== preg_match($regex, $outputv, $matches)) {
+				continue;
+			}
+			$result[] = [
+				"id" => $matches[1],
+				"gen" => $matches[2],
+				"cgen" => $matches[3],
+				"top_level" => $matches[4],
+				"otime" => $matches[5],
+				"parent_uuid" => $matches[6],
+				"uuid" => $matches[7],
+				"path" => $matches[8],
+				"name" => basename($matches[8])
+			];
+		}
+		return $result;
+	}
+
+	/**
+	 * Create a snapshot of the specified subvolume.
+	 * @param string $path The path of the subvolume.
+	 * @param string $target The path where the snapshot is stored.
+	 * @param bool $readOnly Make the new snapshot readonly.
+	 *   Defaults to FALSE.
+	 * @return void
+	 */
+	public static function createSnapshot($path, $target, $readOnly = FALSE) {
+		$cmdArgs = [];
+		$cmdArgs[] = "subvolume";
+		$cmdArgs[] = "snapshot";
+		if (TRUE === $readOnly) {
+			$cmdArgs[] = "-r";
+		}
+		$cmdArgs[] = escapeshellarg($path);
+		$cmdArgs[] = escapeshellarg($target);
+		$cmd = new \OMV\System\Process("btrfs", $cmdArgs);
+		$cmd->execute();
+	}
+
+	/**
+	 * Delete a snapshot of a specified subvolume.
+	 * @param string $path The path of the subvolume.
+	 * @param string|int $id The ID of the subvolume. Defaults to NULL.
+	 * @return void
+	 */
+	public static function deleteSnapshot($path, $id = NULL) {
+		$cmdArgs = [];
+		$cmdArgs[] = "subvolume";
+		$cmdArgs[] = "delete";
+		if (!is_null($id)) {
+			$cmdArgs[] = "--subvolid";
+			$cmdArgs[] = $id;
+		}
+		$cmdArgs[] = escapeshellarg($path);
+		$cmd = new \OMV\System\Process("btrfs", $cmdArgs);
+		$cmd->execute();
 	}
 }

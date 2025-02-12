@@ -1,8 +1,6 @@
 <omv-alert-panel *ngIf="!monitoringEnabled"
                  type="info">
-  <span translate>
-    System monitoring is disabled. To enable it, please go to the <a routerLink="/system/monitoring">settings page</a>.
-  </span>
+  <span [innerHTML]="monitoringDisabledMessage | transloco | sanitizeHtml"></span>
 </omv-alert-panel>
 
 <ng-container *ngIf="monitoringEnabled && !config.store">
@@ -15,7 +13,7 @@
   <ng-container *ngIf="loading">
     <mat-progress-bar mode="indeterminate"></mat-progress-bar>
     <omv-alert-panel type="info">
-      {{ "Please wait, the data is being loaded ..." | translate }}
+      {{ "Please wait, the data is being loaded ..." | transloco }}
     </omv-alert-panel>
   </ng-container>
   <omv-alert-panel *ngIf="error && !loading"
@@ -54,44 +52,40 @@
 <ng-template #renderRrdGraph
              let-name>
   <mat-card>
-    <mat-toolbar fxLayout="row"
-                 class="omv-sticky">
-      <span fxFlex></span>
+    <mat-toolbar class="omv-display-flex omv-flex-row omv-justify-content-end omv-sticky">
       <button mat-icon-button
-              matTooltip="{{ 'Reload' | translate }}"
+              matTooltip="{{ 'Reload' | transloco }}"
               (click)="onGenerate()">
-        <mat-icon svgIcon="{{ icon.reload }}">
-        </mat-icon>
+        <mat-icon svgIcon="{{ icon.reload }}"></mat-icon>
       </button>
     </mat-toolbar>
-    <mat-card-content fxLayout="column"
-                      fxLayoutAlign="start center">
+    <mat-card-content class="omv-display-flex omv-flex-column omv-justify-content-start omv-align-items-center">
       <div>
-        <img src="rrd.php?name={{ name }}-hour.png&time={{ time }}"
+        <img src="download.php?service=Rrd&method=getGraph&params=%7B%22kind%22:%22{{ name }}%22,%22period%22:%22hour%22%7D&time={{ time }}"
              loading="lazy"
              loadingState
              alt="RRD graph - by hour"/>
       </div>
       <div>
-        <img src="rrd.php?name={{ name }}-day.png&time={{ time }}"
+        <img src="download.php?service=Rrd&method=getGraph&params=%7B%22kind%22:%22{{ name }}%22,%22period%22:%22day%22%7D&time={{ time }}"
              loading="lazy"
              loadingState
              alt="RRD graph - by day"/>
       </div>
       <div>
-        <img src="rrd.php?name={{ name }}-week.png&time={{ time }}"
+        <img src="download.php?service=Rrd&method=getGraph&params=%7B%22kind%22:%22{{ name }}%22,%22period%22:%22week%22%7D&time={{ time }}"
              loading="lazy"
              loadingState
              alt="RRD graph - by week"/>
       </div>
       <div>
-        <img src="rrd.php?name={{ name }}-month.png&time={{ time }}"
+        <img src="download.php?service=Rrd&method=getGraph&params=%7B%22kind%22:%22{{ name }}%22,%22period%22:%22month%22%7D&time={{ time }}"
              loading="lazy"
              loadingState
              alt="RRD graph - by month"/>
       </div>
       <div>
-        <img src="rrd.php?name={{ name }}-year.png&time={{ time }}"
+        <img src="download.php?service=Rrd&method=getGraph&params=%7B%22kind%22:%22{{ name }}%22,%22period%22:%22year%22%7D&time={{ time }}"
              loading="lazy"
              loadingState
              alt="RRD graph - by year"/>

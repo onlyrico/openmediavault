@@ -4,7 +4,7 @@
  *
  * @license   http://www.gnu.org/licenses/gpl.html GPL Version 3
  * @author    Volker Theile <volker.theile@openmediavault.org>
- * @copyright Copyright (c) 2009-2022 Volker Theile
+ * @copyright Copyright (c) 2009-2025 Volker Theile
  *
  * OpenMediaVault is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -51,7 +51,7 @@ class DiskMgmt extends \OMV\Rpc\ServiceAbstract {
 	 * @return An array containing physical disk device objects with the
 	 *   fields \em devicename, \em canonicaldevicefile, \em devicefile,
 	 *   \em devicelinks, \em model, \em size, \em description, \em vendor,
-	 *   \em serialnumber, \em israid and \em isroot.
+	 *   \em serialnumber, \em israid, \em isroot and \em isreadonly.
 	 * @throw \OMV\Exception
 	 */
 	public function enumerateDevices($params, $context) {
@@ -78,6 +78,19 @@ class DiskMgmt extends \OMV\Rpc\ServiceAbstract {
 			// without an inserted media.
 			if (FALSE === $sd->IsMediaAvailable())
 				continue;
+			$powerMode = "UNKNOWN";
+			$temperature = FALSE;
+			if (TRUE === $sd->hasSmartSupport()) {
+				$si = $sd->getSmartInformation();
+				$si->setNoCheck("standby");
+				$powerMode = $si->getPowerMode();
+				// Get the temperature if the SMART information is
+				// available. Note, if the disk is in standby mode,
+				// `smartctl` does not return any temperature value.
+				if (TRUE === $si->isCached()) {
+					$temperature = $si->getTemperature();
+				}
+			}
 			$objects[] = [
 				"devicename" => $sd->getDeviceName(),
 				"canonicaldevicefile" => $sd->getCanonicalDeviceFile(),
@@ -91,7 +104,12 @@ class DiskMgmt extends \OMV\Rpc\ServiceAbstract {
 				"wwn" => $sd->getWorldWideName(),
 				"israid" => $sd->isRaid(),
 				"isroot" => \OMV\System\System::isRootDeviceFile(
-					$sd->getCanonicalDeviceFile(), FALSE)
+					$sd->getCanonicalDeviceFile(), FALSE),
+				"isreadonly" => $sd->isReadOnly(),
+				"powermode" => $powerMode,
+				"temperature" => (FALSE === $temperature) ?
+					"" : $temperature,
+				"hotpluggable" => $sd->isHotPluggable()
 			];
 		}
 		return $objects;
@@ -234,10 +252,9 @@ class DiskMgmt extends \OMV\Rpc\ServiceAbstract {
 				$cmdArgs[] = escapeshellarg($bd->getDeviceFile());
 				$cmd = new \OMV\System\Process("shred", $cmdArgs);
 				$cmd->setRedirect2to1();
-				if (0 !== ($exitStatus = $this->exec($cmd->getCommandLine(),
-					$output, $bgOutputFilename))) {
-					throw new \OMV\ExecException($cmd->getCommandLine(),
-						$output, $exitStatus);
+				if (0 !== ($exitStatus = $this->exec($cmd, $output,
+						$bgOutputFilename))) {
+					throw new \OMV\ExecException($cmd, $output, $exitStatus);
 				}
 			} else {
 				// Quick wipe the device (see omv-initfs).
@@ -246,31 +263,29 @@ class DiskMgmt extends \OMV\Rpc\ServiceAbstract {
 				$cmdArgs[] = escapeshellarg($bd->getDeviceFile());
 				$cmd = new \OMV\System\Process("sgdisk", $cmdArgs);
 				$cmd->setRedirect2to1();
-				if (0 !== ($exitStatus = $this->exec($cmd->getCommandLine(),
-					$output, $bgOutputFilename))) {
-					throw new \OMV\ExecException($cmd->getCommandLine(),
-						$output, $exitStatus);
+				if (0 !== ($exitStatus = $this->exec($cmd, $output,
+						$bgOutputFilename))) {
+					throw new \OMV\ExecException($cmd, $output, $exitStatus);
 				}
 				// To make sure really everything is wiped ...
 				$cmdArgs = [];
 				$cmdArgs[] = "if=/dev/zero";
 				$cmdArgs[] = sprintf("of=%s", escapeshellarg(
 					$bd->getDeviceFile()));
-				$cmdArgs[] = "bs=4M";
+				$cmdArgs[] = "bs=10M";
 				$cmdArgs[] = "count=1";
 				$cmd = new \OMV\System\Process("dd", $cmdArgs);
 				$cmd->setRedirect2to1();
-				if (0 !== ($exitStatus = $this->exec($cmd->getCommandLine(),
-					$output, $bgOutputFilename))) {
-					throw new \OMV\ExecException($cmd->getCommandLine(),
-						$output, $exitStatus);
+				if (0 !== ($exitStatus = $this->exec($cmd, $output,
+						$bgOutputFilename))) {
+					throw new \OMV\ExecException($cmd, $output, $exitStatus);
 				}
 				// Erase the metadata/signatures at the end of the device.
 				// Note, we still need to support 32bit systems, so use
 				// BC math functions.
 				$sectorSize = $bd->getSectorSize();
 				$sizeInSectors = bcdiv($bd->getSize(), strval($sectorSize), 0);
-				$count = bcdiv("4194304", strval($sectorSize), 0); // 4MiB
+				$count = bcdiv("10485760", strval($sectorSize), 0); // 10MiB
 				$seek = bcsub($sizeInSectors, $count, 0);
 				$cmdArgs = [];
 				$cmdArgs[] = "if=/dev/zero";
@@ -281,10 +296,9 @@ class DiskMgmt extends \OMV\Rpc\ServiceAbstract {
 				$cmdArgs[] = sprintf("seek=%s", $seek);
 				$cmd = new \OMV\System\Process("dd", $cmdArgs);
 				$cmd->setRedirect2to1();
-				if (0 !== ($exitStatus = $this->exec($cmd->getCommandLine(),
-					$output, $bgOutputFilename))) {
-					throw new \OMV\ExecException($cmd->getCommandLine(),
-						$output, $exitStatus);
+				if (0 !== ($exitStatus = $this->exec($cmd, $output,
+						$bgOutputFilename))) {
+					throw new \OMV\ExecException($cmd, $output, $exitStatus);
 				}
 			}
 			// Reread partition table.
@@ -293,10 +307,9 @@ class DiskMgmt extends \OMV\Rpc\ServiceAbstract {
 			$cmdArgs[] = escapeshellarg($bd->getDeviceFile());
 			$cmd = new \OMV\System\Process("blockdev", $cmdArgs);
 			$cmd->setRedirect2to1();
-			if (0 !== ($exitStatus = $this->exec($cmd->getCommandLine(),
-				$output, $bgOutputFilename))) {
-				throw new \OMV\ExecException($cmd->getCommandLine(), $output,
-					$exitStatus);
+			if (0 !== ($exitStatus = $this->exec($cmd, $output,
+					$bgOutputFilename))) {
+				throw new \OMV\ExecException($cmd, $output, $exitStatus);
 			}
 			return $output;
 		});

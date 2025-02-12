@@ -4,7 +4,7 @@
  *
  * @license   http://www.gnu.org/licenses/gpl.html GPL Version 3
  * @author    Volker Theile <volker.theile@openmediavault.org>
- * @copyright Copyright (c) 2009-2022 Volker Theile
+ * @copyright Copyright (c) 2009-2025 Volker Theile
  *
  * OpenMediaVault is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -147,14 +147,15 @@ class PluginMgmt extends \OMV\Rpc\ServiceAbstract {
 			$cmdArgs[] = "--auto-remove";
 			$cmdArgs[] = "--purge";
 			$cmdArgs[] = "remove";
-			$cmdArgs[] = implode(" ", $params['packages']);
+			foreach ($params['packages'] as $packagek => $packagev) {
+				$cmdArgs[] = escapeshellarg($packagev);
+			}
 			$cmd = new \OMV\System\Process("apt-get", $cmdArgs);
 			$cmd->setEnv("DEBIAN_FRONTEND", "noninteractive");
 			$cmd->setRedirect2to1();
-			if (0 !== ($exitStatus = $this->exec($cmd->getCommandLine(),
-				$output, $bgOutputFilename))) {
-				throw new \OMV\ExecException($cmd->getCommandLine(), $output,
-					$exitStatus);
+			if (0 !== ($exitStatus = $this->exec($cmd, $output,
+					$bgOutputFilename))) {
+				throw new \OMV\ExecException($cmd, $output, $exitStatus);
 			}
 			return $output;
 		});
@@ -178,7 +179,7 @@ class PluginMgmt extends \OMV\Rpc\ServiceAbstract {
 		// Validate the parameters of the RPC service method.
 		$this->validateMethodParams($params, "rpc.plugin.upload");
 		// Extract the package name.
-		$cmd = sprintf("export LANG=C; dpkg --field %s | ".
+		$cmd = sprintf("export LC_ALL=C.UTF-8; dpkg --field %s | ".
 		  "grep 'Package: ' | awk '{print \$2}'", escapeshellarg(
 		  $params['filepath']));
 		if (0 !== $this->exec($cmd, $output))
@@ -238,14 +239,15 @@ class PluginMgmt extends \OMV\Rpc\ServiceAbstract {
 			$cmdArgs[] = "--allow-unauthenticated";
 			$cmdArgs[] = "--reinstall";
 			$cmdArgs[] = "install";
-			$cmdArgs[] = implode(" ", $params['packages']);
+			foreach ($params['packages'] as $packagek => $packagev) {
+				$cmdArgs[] = escapeshellarg($packagev);
+			}
 			$cmd = new \OMV\System\Process("apt-get", $cmdArgs);
 			$cmd->setEnv("DEBIAN_FRONTEND", "noninteractive");
 			$cmd->setRedirect2to1();
-			if (0 !== ($exitStatus = $this->exec($cmd->getCommandLine(),
-				$output, $bgOutputFilename))) {
-				throw new \OMV\ExecException($cmd->getCommandLine(), $output,
-					$exitStatus);
+			if (0 !== ($exitStatus = $this->exec($cmd, $output,
+					$bgOutputFilename))) {
+				throw new \OMV\ExecException($cmd, $output, $exitStatus);
 			}
 			return $output;
 		});

@@ -4,7 +4,7 @@
  *
  * @license   http://www.gnu.org/licenses/gpl.html GPL Version 3
  * @author    Volker Theile <volker.theile@openmediavault.org>
- * @copyright Copyright (c) 2009-2022 Volker Theile
+ * @copyright Copyright (c) 2009-2025 Volker Theile
  *
  * OpenMediaVault is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -70,15 +70,15 @@ define("OMV_NETWORK_INTERFACE_TYPE_ALL", 0xFF);
 \OMV\Environment::set("OMV_USERMGMT_ENUMERATE_USER_ROOT", TRUE);
 \OMV\Environment::set("OMV_PLUGIN_ENUMERATE_GET_REPOSITORY", TRUE);
 \OMV\Environment::set("OMV_MKFS_OPTIONS_EXT3", "-b 4096 -m 0");
-\OMV\Environment::set("OMV_MKFS_OPTIONS_EXT4", "-b 4096 -m 0 -E lazy_itable_init=0,lazy_journal_init=0");
+\OMV\Environment::set("OMV_MKFS_OPTIONS_EXT4", "-b 4096 -m 0 -E lazy_itable_init=0,lazy_journal_init=0 -O quota");
 \OMV\Environment::set("OMV_MKFS_OPTIONS_JFS", "-q");
 \OMV\Environment::set("OMV_MKFS_OPTIONS_XFS", "-f");
 \OMV\Environment::set("OMV_MKFS_OPTIONS_BTRFS", "-O skinny-metadata,^mixed-bg");
 \OMV\Environment::set("OMV_MKFS_OPTIONS_F2FS", "");
-\OMV\Environment::set("OMV_MKFS_EXTRAOPTIONS_EXT4_MDADM", "-E lazy_itable_init=0,lazy_journal_init=0,stride=128,stripe-width=256");
+\OMV\Environment::set("OMV_MKFS_EXTRAOPTIONS_EXT4_MD", "-E lazy_itable_init=0,lazy_journal_init=0,stride=128,stripe-width=256");
 \OMV\Environment::set("OMV_FSTAB_MNTOPS_EXT2", "defaults,nofail,user_xattr");
-\OMV\Environment::set("OMV_FSTAB_MNTOPS_EXT3", "defaults,nofail,user_xattr,usrjquota=aquota.user,grpjquota=aquota.group,jqfmt=vfsv0");
-\OMV\Environment::set("OMV_FSTAB_MNTOPS_EXT4", "defaults,nofail,user_xattr,usrjquota=aquota.user,grpjquota=aquota.group,jqfmt=vfsv0");
+\OMV\Environment::set("OMV_FSTAB_MNTOPS_EXT3", "defaults,nofail,user_xattr,usrjquota=aquota.user,grpjquota=aquota.group,jqfmt=vfsv1");
+\OMV\Environment::set("OMV_FSTAB_MNTOPS_EXT4", "defaults,nofail,user_xattr,usrquota,grpquota");
 \OMV\Environment::set("OMV_FSTAB_MNTOPS_JFS", "defaults,nofail,usrquota,grpquota");
 \OMV\Environment::set("OMV_FSTAB_MNTOPS_XFS", "defaults,nofail,usrquota,grpquota");
 \OMV\Environment::set("OMV_FSTAB_MNTOPS_EXFAT", "defaults,nofail");
@@ -89,7 +89,9 @@ define("OMV_NETWORK_INTERFACE_TYPE_ALL", 0xFF);
 \OMV\Environment::set("OMV_FSTAB_MNTOPS_ISO9660", "ro");
 \OMV\Environment::set("OMV_FSTAB_MNTOPS_UDF", "ro");
 \OMV\Environment::set("OMV_FSTAB_MNTOPS_BIND", "nofail");
-\OMV\Environment::set("OMV_FSTAB_MNTOPS_F2FS", "defaults,nofail,user_xattr,usrjquota=aquota.user,grpjquota=aquota.group,jqfmt=vfsv0");
+\OMV\Environment::set("OMV_FSTAB_MNTOPS_F2FS", "defaults,nofail,user_xattr,usrjquota=aquota.user,grpjquota=aquota.group,jqfmt=vfsv1"); // https://www.kernel.org/doc/Documentation/filesystems/f2fs.txt
+\OMV\Environment::set("OMV_FSTAB_MNTOPS_REISERFS", "defaults,nofail,user_xattr,acl");
+\OMV\Environment::set("OMV_FSTAB_MNTOPS_REISER4", "defaults,nofail");
 \OMV\Environment::set("OMV_APT_PLUGINS_INDEX_FILE", "/var/lib/openmediavault/apt/pluginsindex.json");
 \OMV\Environment::set("OMV_APT_UPGRADE_INDEX_FILE", "/var/lib/openmediavault/apt/upgradeindex.json");
 \OMV\Environment::set("OMV_DUNE_QUOTES", [ // http://www.nightsolo.net/dune/god.html
@@ -118,7 +120,8 @@ define("OMV_NETWORK_INTERFACE_TYPE_ALL", 0xFF);
 	"Fear is the mind-killer.",
 	"Without change something sleeps inside us, and seldom awakens. ".
 		"The sleeper must awaken.",
-	"What does a mirror look at?"
+	"What does a mirror look at?",
+	"A great man does not seek to lead. He is called to it."
 ]);
 
 // Read the default file.

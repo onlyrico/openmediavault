@@ -3,7 +3,7 @@
  *
  * @license   http://www.gnu.org/licenses/gpl.html GPL Version 3
  * @author    Volker Theile <volker.theile@openmediavault.org>
- * @copyright Copyright (c) 2009-2022 Volker Theile
+ * @copyright Copyright (c) 2009-2025 Volker Theile
  *
  * OpenMediaVault is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -24,7 +24,7 @@ import { catchError, map, tap } from 'rxjs/operators';
 import { DashboardWidgetConfig } from '~/app/core/components/dashboard/models/dashboard-widget-config.model';
 import { Permissions, Roles } from '~/app/shared/models/permissions.model';
 import { AuthSessionService } from '~/app/shared/services/auth-session.service';
-import { UserStorageService } from '~/app/shared/services/user-storage.service';
+import { UserLocalStorageService } from '~/app/shared/services/user-local-storage.service';
 
 @Injectable({
   providedIn: 'root'
@@ -37,7 +37,7 @@ export class DashboardWidgetConfigService {
   constructor(
     private authSessionService: AuthSessionService,
     private http: HttpClient,
-    private userStorageService: UserStorageService
+    private userLocalStorageService: UserLocalStorageService
   ) {
     this.configs$ = this.configsSource.asObservable();
   }
@@ -49,9 +49,7 @@ export class DashboardWidgetConfigService {
   public load(): Observable<DashboardWidgetConfig[]> {
     return this.http.get('./assets/dashboard-widget-config.json').pipe(
       catchError((error) => {
-        if (_.isFunction(error.preventDefault)) {
-          error.preventDefault();
-        }
+        error.preventDefault?.();
         return of([]);
       }),
       map((widgets: Array<DashboardWidgetConfig>) => {
@@ -81,7 +79,7 @@ export class DashboardWidgetConfigService {
    * @return Returns a list of widget identifiers (UUID).
    */
   public getEnabled(): Array<string> {
-    const value = this.userStorageService.get('dashboard_widgets', '[]');
+    const value = this.userLocalStorageService.get('dashboard_widgets', '[]');
     const result: Array<string> = JSON.parse(value);
     return result;
   }
@@ -93,6 +91,6 @@ export class DashboardWidgetConfigService {
    */
   public setEnabled(ids: Array<string>) {
     const value = JSON.stringify(ids);
-    this.userStorageService.set('dashboard_widgets', value);
+    this.userLocalStorageService.set('dashboard_widgets', value);
   }
 }

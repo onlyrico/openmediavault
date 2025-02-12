@@ -3,7 +3,7 @@
  *
  * @license   http://www.gnu.org/licenses/gpl.html GPL Version 3
  * @author    Volker Theile <volker.theile@openmediavault.org>
- * @copyright Copyright (c) 2009-2022 Volker Theile
+ * @copyright Copyright (c) 2009-2025 Volker Theile
  *
  * OpenMediaVault is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,18 +17,17 @@
  */
 /* eslint-disable @typescript-eslint/member-ordering */
 import { BooleanInput, coerceBooleanProperty } from '@angular/cdk/coercion';
-import { MediaMatcher } from '@angular/cdk/layout';
 import {
   AfterViewInit,
   Component,
   ElementRef,
   HostBinding,
   Input,
-  OnDestroy,
   OnInit,
   Optional,
   Self,
-  ViewChild
+  ViewChild,
+  ViewEncapsulation
 } from '@angular/core';
 import { ControlValueAccessor, NgControl } from '@angular/forms';
 import { MatFormFieldControl } from '@angular/material/form-field';
@@ -40,7 +39,9 @@ import {
 } from '@codemirror/autocomplete';
 import { defaultKeymap, history, historyKeymap } from '@codemirror/commands';
 import { json } from '@codemirror/lang-json';
+import { python } from '@codemirror/lang-python';
 import { xml } from '@codemirror/lang-xml';
+import { yaml } from '@codemirror/lang-yaml';
 import {
   bracketMatching,
   defaultHighlightStyle,
@@ -51,7 +52,6 @@ import {
   syntaxHighlighting
 } from '@codemirror/language';
 import { shell } from '@codemirror/legacy-modes/mode/shell';
-import { yaml } from '@codemirror/legacy-modes/mode/yaml';
 import { highlightSelectionMatches, searchKeymap } from '@codemirror/search';
 import { Compartment, EditorState, Extension, StateEffect } from '@codemirror/state';
 import { oneDark } from '@codemirror/theme-one-dark';
@@ -64,7 +64,13 @@ import {
   ViewUpdate
 } from '@codemirror/view';
 import * as _ from 'lodash';
-import { Subject } from 'rxjs';
+import { Subject, Subscription } from 'rxjs';
+
+import { Unsubscribe } from '~/app/decorators';
+import {
+  PrefersColorScheme,
+  PrefersColorSchemeService
+} from '~/app/shared/services/prefers-color-scheme.service';
 
 let nextUniqueId = 0;
 
@@ -79,10 +85,11 @@ let nextUniqueId = 0;
       provide: MatFormFieldControl,
       useExisting: MatFormCodeEditorComponent
     }
-  ]
+  ],
+  encapsulation: ViewEncapsulation.None
 })
 export class MatFormCodeEditorComponent
-  implements OnInit, OnDestroy, AfterViewInit, ControlValueAccessor, MatFormFieldControl<string>
+  implements OnInit, AfterViewInit, ControlValueAccessor, MatFormFieldControl<string>
 {
   // eslint-disable-next-line @typescript-eslint/naming-convention
   static ngAcceptInputType_required: BooleanInput;
@@ -104,15 +111,20 @@ export class MatFormCodeEditorComponent
   private _uniqueId = `mat-form-code-editor-${++nextUniqueId}`;
   private _editorState: EditorState;
   private _editorView: EditorView;
-  private _mediaQueryList: MediaQueryList;
   private _useDarkTheme = false;
+
+  @Unsubscribe()
+  private subscriptions: Subscription = new Subscription();
 
   // @ts-ignore
   private onChange = (_value: any) => {};
   // @ts-ignore
   private onTouched = () => {};
 
-  constructor(private mediaMatcher: MediaMatcher, @Optional() @Self() public ngControl: NgControl) {
+  constructor(
+    private prefersColorSchemeService: PrefersColorSchemeService,
+    @Optional() @Self() public ngControl: NgControl
+  ) {
     if (!_.isNull(this.ngControl)) {
       this.ngControl.valueAccessor = this;
     }
@@ -122,7 +134,7 @@ export class MatFormCodeEditorComponent
   lineNumbers?: boolean = true;
 
   @Input()
-  language?: 'json' | 'shell' | 'xml' | 'yaml';
+  language?: 'json' | 'python' | 'shell' | 'xml' | 'yaml' | 'none';
 
   @Input()
   get value(): string {
@@ -177,8 +189,8 @@ export class MatFormCodeEditorComponent
   get required(): boolean {
     return this._required;
   }
-  set required(required: boolean) {
-    this._required = coerceBooleanProperty(required);
+  set required(value: boolean) {
+    this._required = coerceBooleanProperty(value);
     this.stateChanges.next();
   }
 
@@ -189,37 +201,35 @@ export class MatFormCodeEditorComponent
     return this._focused;
   }
   set focused(value: boolean) {
-    this._focused = value;
+    this._focused = coerceBooleanProperty(value);
     this.stateChanges.next();
   }
 
   /**
    * Implemented as part of MatFormFieldControl.
    */
-  get errorState() {
-    return this.ngControl && !this.ngControl.pristine && !this.ngControl.valid;
+  get errorState(): boolean {
+    return this.ngControl?.touched && this.ngControl?.invalid;
   }
 
   /**
    * Implemented as part of MatFormFieldControl.
    */
-  get empty() {
+  get empty(): boolean {
     return !this.value;
   }
 
   ngOnInit(): void {
-    this._mediaQueryList = this.mediaMatcher.matchMedia('(prefers-color-scheme: dark)');
-    this._useDarkTheme = this._mediaQueryList.matches;
-    this._mediaQueryList.onchange = (event: MediaQueryListEvent) => {
-      this._useDarkTheme = event.matches;
-      this._editorView.dispatch({
-        effects: StateEffect.reconfigure.of(this.getExtensions())
-      });
-    };
-  }
-
-  ngOnDestroy(): void {
-    this._mediaQueryList.onchange = undefined;
+    this.subscriptions.add(
+      this.prefersColorSchemeService.change$.subscribe(
+        (prefersColorScheme: PrefersColorScheme): void => {
+          this._useDarkTheme = prefersColorScheme === 'dark';
+          this._editorView.dispatch({
+            effects: StateEffect.reconfigure.of(this.getExtensions())
+          });
+        }
+      )
+    );
   }
 
   ngAfterViewInit(): void {
@@ -250,21 +260,21 @@ export class MatFormCodeEditorComponent
   /**
    * Implemented as part of ControlValueAccessor.
    */
-  writeValue(value: string) {
+  writeValue(value: string): void {
     this.value = value;
   }
 
   /**
    * Implemented as part of ControlValueAccessor.
    */
-  registerOnChange(fn: (value: any) => void) {
+  registerOnChange(fn: (value: any) => void): void {
     this.onChange = fn;
   }
 
   /**
    * Implemented as part of ControlValueAccessor.
    */
-  registerOnTouched(fn: any) {
+  registerOnTouched(fn: any): void {
     this.onTouched = fn;
   }
 
@@ -320,6 +330,12 @@ export class MatFormCodeEditorComponent
           this.focused = vu.view.hasFocus;
         }
       }),
+      EditorView.domEventHandlers({
+        blur: () => {
+          this.onTouched();
+          this.stateChanges.next();
+        }
+      }),
       this.getLineNumbersExtensions(),
       this.getThemeExtensions(),
       this.getLanguageExtensions()
@@ -331,12 +347,13 @@ export class MatFormCodeEditorComponent
   }
 
   private getLanguageExtensions(): Extension {
-    return _.isString(this.language)
+    return _.isString(this.language) && this.language !== 'none'
       ? {
-          xml: xml(),
           json: json(),
+          python: python(),
           shell: StreamLanguage.define(shell),
-          yaml: StreamLanguage.define(yaml)
+          xml: xml(),
+          yaml: yaml()
         }[this.language]
       : [];
   }

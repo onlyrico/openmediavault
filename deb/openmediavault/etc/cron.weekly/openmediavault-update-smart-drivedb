@@ -1,10 +1,10 @@
-#!/bin/bash -l
+#!/usr/bin/env dash
 #
 # This file is part of OpenMediaVault.
 #
 # @license   http://www.gnu.org/licenses/gpl.html GPL Version 3
 # @author    Volker Theile <volker.theile@openmediavault.org>
-# @copyright Copyright (c) 2009-2022 Volker Theile
+# @copyright Copyright (c) 2009-2025 Volker Theile
 #
 # OpenMediaVault is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -18,21 +18,27 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with OpenMediaVault. If not, see <http://www.gnu.org/licenses/>.
-
+#
 # Documentation/Howto:
 # https://www.thomas-krenn.com/de/wiki/Smartmontools_Drive_Database_aktualisieren
 # https://www.endpointdev.com/blog/2013/05/login-shells-in-scripts-called-from-cron/
 
-set -e
+# Import the configured proxy settings, but do not output anything to stdout.
+. /etc/profile 1>/dev/null
+
+MAILTO=""
+TERM=dumb
+
+export LC_ALL=C.UTF-8
 
 . /etc/default/openmediavault
 . /usr/share/openmediavault/scripts/helper-functions
 
 OMV_CRON_WEEKLY_UPDATE_SMART_DRIVEDB_ENABLED=${OMV_CRON_WEEKLY_UPDATE_SMART_DRIVEDB_ENABLED:-"yes"}
 
+set -e
+
 if omv_checkyesno "${OMV_CRON_WEEKLY_UPDATE_SMART_DRIVEDB_ENABLED}"; then
-    omv_syslog_info "Updating smartmontools drive database ..."
-    cd /var/lib/smartmontools/drivedb
-    wget --quiet --backups=1 https://raw.githubusercontent.com/mirror/smartmontools/master/drivedb.h
-    chown -c root:root drivedb.h
+  omv_syslog_info "Updating smartmontools drive database."
+  update-smart-drivedb >/dev/null
 fi

@@ -2,7 +2,7 @@
 #
 # @license   http://www.gnu.org/licenses/gpl.html GPL Version 3
 # @author    Volker Theile <volker.theile@openmediavault.org>
-# @copyright Copyright (c) 2009-2022 Volker Theile
+# @copyright Copyright (c) 2009-2025 Volker Theile
 #
 # OpenMediaVault is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -59,11 +59,18 @@ start_postfix_service:
   service.running:
     - name: postfix
     - enable: True
+    - watch:
+      - file: configure_postfix_main
+      - file: configure_postfix_master
+      - file: configure_postfix_recipient_bcc
+      - file: configure_postfix_recipient_canonical
+      - file: configure_postfix_sasl_passwd
+      - file: configure_postfix_sender_bcc
+      - file: configure_postfix_sender_canonical
+      - file: configure_postfix_smtp_header_checks
+      - file: configure_postfix_transport
 
 {% else %}
-
-start_postfix_service:
-  test.nop
 
 stop_postfix_service:
   service.dead:

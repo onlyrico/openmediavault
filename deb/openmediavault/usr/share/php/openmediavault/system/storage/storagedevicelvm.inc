@@ -4,7 +4,7 @@
  *
  * @license   http://www.gnu.org/licenses/gpl.html GPL Version 3
  * @author    Volker Theile <volker.theile@openmediavault.org>
- * @copyright Copyright (c) 2009-2022 Volker Theile
+ * @copyright Copyright (c) 2009-2025 Volker Theile
  *
  * OpenMediaVault is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -275,6 +275,7 @@ class StorageDeviceLvm extends StorageDeviceDM {
 	 */
 	public static function create($name, $size, $vgName) {
 		$cmdArgs = [];
+		$cmdArgs[] = "--yes";
 		$cmdArgs[] = sprintf("--name %s", escapeshellarg($name));
 		$cmdArgs[] = sprintf("--extents %d%%VG", $size);
 		$cmdArgs[] = escapeshellarg($vgName);
@@ -360,36 +361,5 @@ class StorageDeviceLvm extends StorageDeviceDM {
 		$cmd = new \OMV\System\Process("lvreduce", $cmdArgs);
 		$cmd->setRedirect2to1();
 		$cmd->execute();
-	}
-
-	/**
-	 * Enumerate LVM logical volumes.
-	 * @return A list of LVM logical volumes, otherwise FALSE.
-	 * Example: array(
-	 *   0 => /dev/mapper/vgName-lvName
-	 *   1 => /dev/mapper/...
-	 * )
-	 * @throw \OMV\ExecException
-	 */
-	public static function enumerate() {
-		$cmdArgs = [];
-		$cmdArgs[] = "--noheadings";
-		$cmdArgs[] = "--separator '|'";
-		$cmdArgs[] = "-C";
-		$cmdArgs[] = "-o vg_name,lv_name";
-		$cmd = new \OMV\System\Process("lvdisplay", $cmdArgs);
-		$cmd->setRedirect2toFile("/dev/null");
-		$cmd->execute($output);
-		$result = [];
-		foreach ($output as $outputk => $outputv) {
-			$outputv = explode("|", trim($outputv));
-			// Replace '-' with '--' in volume group name.
-			$result[] = sprintf("/dev/mapper/%s-%s",
-			  str_replace("-", "--", $outputv[0]),
-			  str_replace("-", "--", $outputv[1]));
-			// Alternative device path: /dev/<vg_name>/<lv_name>
-			//$list[] = sprintf("/dev/%s/%s", $outputv[0], $outputv[1]);
-		}
-		return $result;
 	}
 }

@@ -4,7 +4,7 @@
  *
  * @license   http://www.gnu.org/licenses/gpl.html GPL Version 3
  * @author    Volker Theile <volker.theile@openmediavault.org>
- * @copyright Copyright (c) 2009-2022 Volker Theile
+ * @copyright Copyright (c) 2009-2025 Volker Theile
  *
  * OpenMediaVault is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -214,8 +214,7 @@ class Manager implements \IteratorAggregate {
 		$cmd->setQuiet(TRUE);
 		$cmd->execute($output, $exitStatus);
 		if (!in_array($exitStatus, [0, 2])) {
-			throw new \OMV\ExecException($cmd->getCommandLine(), $output,
-				$exitStatus);
+			throw new \OMV\ExecException($cmd, $output, $exitStatus);
 		}
 		foreach ($output as $outputk => $outputv) {
 			// Parse command output:

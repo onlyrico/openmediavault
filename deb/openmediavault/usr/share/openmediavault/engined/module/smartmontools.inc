@@ -4,7 +4,7 @@
  *
  * @license   http://www.gnu.org/licenses/gpl.html GPL Version 3
  * @author    Volker Theile <volker.theile@openmediavault.org>
- * @copyright Copyright (c) 2009-2022 Volker Theile
+ * @copyright Copyright (c) 2009-2025 Volker Theile
  *
  * OpenMediaVault is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -65,6 +65,10 @@ class SmartMonTools extends \OMV\Engine\Module\ServiceAbstract
 		$dispatcher->addListener(
 			OMV_NOTIFY_CREATE | OMV_NOTIFY_MODIFY,
 			"org.openmediavault.conf.system.notification.notification",
+			[$this, "setDirty"]);
+		$dispatcher->addListener(
+			OMV_NOTIFY_CREATE | OMV_NOTIFY_MODIFY | OMV_NOTIFY_DELETE,
+			"org.openmediavault.conf.system.hdparm",
 			[$this, "setDirty"]);
 	}
 }

@@ -4,7 +4,7 @@
  *
  * @license   http://www.gnu.org/licenses/gpl.html GPL Version 3
  * @author    Volker Theile <volker.theile@openmediavault.org>
- * @copyright Copyright (c) 2009-2022 Volker Theile
+ * @copyright Copyright (c) 2009-2025 Volker Theile
  *
  * OpenMediaVault is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -43,10 +43,12 @@ class OMVRpcServiceFileSystemMgmt extends \OMV\Rpc\ServiceAbstract {
 		$this->registerMethod("getCandidatesBg");
 		$this->registerMethod("getMountCandidates");
 		$this->registerMethod("create");
-		$this->registerMethod("resize");
+		$this->registerMethod("createBtrfs");
+		$this->registerMethod("grow");
 		$this->registerMethod("setMountPoint");
 		$this->registerMethod("umount");
 		$this->registerMethod("hasFilesystem");
+		$this->registerMethod("getDetails");
 	}
 
 	/**
@@ -120,8 +122,7 @@ class OMVRpcServiceFileSystemMgmt extends \OMV\Rpc\ServiceAbstract {
 				"propfstab" => $fsb->hasFstabSupport(),
 				"propreadonly" => $fsb->hasReadOnlySupport(),
 				"propcompress" => $fsb->hasCompressSupport(),
-				"propautodefrag" => $fsb->hasAutoDefragSupport(),
-				"_readonly" => $fsb->hasReadOnlySupport()
+				"propautodefrag" => $fsb->hasAutoDefragSupport()
 			]);
 		}
 		return $result;
@@ -220,8 +221,9 @@ class OMVRpcServiceFileSystemMgmt extends \OMV\Rpc\ServiceAbstract {
 	 * Enumerate all file systems that have a mount point configuration
 	 * object, except binds, and that are actually mounted.
 	 * @param params The method parameters.
-	 *   \em includeroot TRUE to append the file system '/dev/root' if mounted.
-	 *     Defaults to FALSE.
+	 *   \em type Optional. Return only the file system of the specified type.
+	 *   \em includeroot Optional. Set to TRUE to append the file system
+	 *     '/dev/root' if mounted. Defaults to FALSE.
 	 * @param context The context of the caller.
 	 * @return An array of objects with the following fields: \em uuid,
 	 *   \em devicefile, \em type, \em label, \em blocks, \em size,
@@ -274,6 +276,11 @@ class OMVRpcServiceFileSystemMgmt extends \OMV\Rpc\ServiceAbstract {
 		// Get the file system details for each mount point.
 		$procs = [];
 		foreach ($objects as $objectk => $objectv) {
+			// Process only the specified file system types?
+			if (!is_null($params) && array_key_exists('type', $params) &&
+					(array_value($params, 'type') !== $objectv->get("type"))) {
+				continue;
+			}
 			// Collect the file system information asynchronous.
 			$procs[] = $this->asyncProc(function() use ($objectv) {
 				// Get the file system backend.
@@ -304,12 +311,18 @@ class OMVRpcServiceFileSystemMgmt extends \OMV\Rpc\ServiceAbstract {
 				return array_merge($this->getFsInfo($fs, $fsb), [
 					"comment" => $objectv->get("comment"),
 					"usagewarnthreshold" => $objectv->get("usagewarnthreshold"),
+					// Override the dynamically determined mount point with the
+					// configured one.
+					"mountpoint" => $objectv->get("dir")
 				]);
 			});
 		}
 		// Remove elements that are no associative arrays (e.g. these are
 		// file systems that are not mounted).
-		return array_filter($this->waitAsyncProcs($procs), "is_assoc_array");
+		// Re-index the filtered array.
+		return array_values(array_filter(
+			$this->waitAsyncProcs($procs), "is_assoc_array")
+		);
 	}
 
 	/**
@@ -336,7 +349,7 @@ class OMVRpcServiceFileSystemMgmt extends \OMV\Rpc\ServiceAbstract {
 				continue;
 			}
 			// Skip some specific file systems.
-			if (in_array($objectv['type'], ['swap'])) {
+			if (in_array($objectv['type'], ['swap', 'bcache'])) {
 				continue;
 			}
 			// Is there already an mount point configuration object?
@@ -659,10 +672,9 @@ class OMVRpcServiceFileSystemMgmt extends \OMV\Rpc\ServiceAbstract {
 				$cmdArgs[] = escapeshellarg($sd->getDeviceFile());
 				$cmd = new \OMV\System\Process("sgdisk", $cmdArgs);
 				$cmd->setRedirect2to1();
-				if (0 !== ($exitStatus = $this->exec($cmd->getCommandLine(),
-					$output, $bgOutputFilename))) {
-					throw new \OMV\ExecException($cmd->getCommandLine(),
-						$output, $exitStatus);
+				if (0 !== ($exitStatus = $this->exec($cmd, $output,
+						$bgOutputFilename))) {
+					throw new \OMV\ExecException($cmd, $output, $exitStatus);
 				}
 				break;
 			}
@@ -671,10 +683,9 @@ class OMVRpcServiceFileSystemMgmt extends \OMV\Rpc\ServiceAbstract {
 			$cmdArgs[] = escapeshellarg($sd->getDeviceFile());
 			$cmd = new \OMV\System\Process("partprobe", $cmdArgs);
 			$cmd->setRedirect2to1();
-			if (0 !== ($exitStatus = $this->exec($cmd->getCommandLine(),
-				$output, $bgOutputFilename))) {
-				throw new \OMV\ExecException($cmd->getCommandLine(),
-					$output, $exitStatus);
+			if (0 !== ($exitStatus = $this->exec($cmd, $output,
+					$bgOutputFilename))) {
+				throw new \OMV\ExecException($cmd, $output, $exitStatus);
 			}
 			// We need to wait to give the kernel some time to re-read the
 			// partition table and until the device file exists. Abort if
@@ -689,10 +700,9 @@ class OMVRpcServiceFileSystemMgmt extends \OMV\Rpc\ServiceAbstract {
 			$cmdArgs[] = escapeshellarg($fsbd->getDeviceFile());
 			$cmd = new \OMV\System\Process("mkfs", $cmdArgs);
 			$cmd->setRedirect2to1();
-			if (0 !== ($exitStatus = $this->exec($cmd->getCommandLine(),
-				$output, $bgOutputFilename))) {
-				throw new \OMV\ExecException($cmd->getCommandLine(), $output,
-					$exitStatus);
+			if (0 !== ($exitStatus = $this->exec($cmd, $output,
+					$bgOutputFilename))) {
+				throw new \OMV\ExecException($cmd, $output, $exitStatus);
 			}
 			// Notify configuration changes.
 			$dispatcher = \OMV\Engine\Notify\Dispatcher::getInstance();
@@ -710,39 +720,93 @@ class OMVRpcServiceFileSystemMgmt extends \OMV\Rpc\ServiceAbstract {
 	}
 
 	/**
-	 * Resize a file system.
-	 * @param params An array containing the following fields:
-	 *   \em id The UUID or block special device of the file system to resize.
+	 * Create a Btrfs volume.
+	 * @param params The method parameters.
 	 * @param context The context of the caller.
-	 * @return void
-	 * @throw \OMV\Exception
+	 * @return The requested configuration object.
 	 */
-	public function resize($params, $context) {
+	function createBtrfs($params, $context) {
 		// Validate the RPC caller context.
 		$this->validateMethodContext($context, [
 			"role" => OMV_ROLE_ADMINISTRATOR
 		]);
 		// Validate the parameters of the RPC service method.
-		$this->validateMethodParams($params, "rpc.filesystemmgmt.resize");
+		$this->validateMethodParams($params,
+			"rpc.filesystemmgmt.createbtrfs");
+		// Create the background process.
+		return $this->execBgProc(function($bgStatusFilename, $bgOutputFilename)
+		  use ($params) {
+		  	$deviceFiles = explode(",", $params['devicefiles']);
+			// Wipe all existing data on the storage devices.
+			foreach ($deviceFiles as $deviceFile) {
+				$sd = \OMV\System\Storage\StorageDevice::assertGetStorageDevice(
+					$deviceFile);
+				$sd->wipe();
+			}
+			// Create the Btrfs volume. We do not need to create an
+			// partition on each associated device.
+			// https://btrfs.readthedocs.io/en/latest/mkfs.btrfs.html#
+			// https://btrfs.readthedocs.io/en/latest/mkfs.btrfs.html#profiles
+			$dataProfile = $params['profile'];
+			$metadataProfile = $params['profile'];
+			if ("single" == $params['profile']) {
+				$metadataProfile = "dup";
+			}
+			$cmdArgs = [];
+			$cmdArgs[] = "--force";
+			if (!empty($params['label'])) {
+				$cmdArgs[] = "--label";
+				$cmdArgs[] = escapeshellarg($params['label']);
+			}
+			$cmdArgs[] = "--data";
+			$cmdArgs[] = escapeshellarg($dataProfile);
+			$cmdArgs[] = "--metadata";
+			$cmdArgs[] = escapeshellarg($metadataProfile);
+			$cmdArgs = array_merge($cmdArgs, $deviceFiles);
+			$cmd = new \OMV\System\Process("mkfs.btrfs", $cmdArgs);
+			$cmd->setRedirect2to1();
+			if (0 !== ($exitStatus = $this->exec($cmd, $output,
+					$bgOutputFilename))) {
+				throw new \OMV\ExecException($cmd, $output, $exitStatus);
+			}
+		});
+	}
+
+	/**
+	 * Grow a file system.
+	 * @param params An array containing the following fields:
+	 *   \em id The UUID or block special device of the file system to grow.
+	 * @param context The context of the caller.
+	 * @return void
+	 * @throw \OMV\Exception
+	 */
+	public function grow($params, $context) {
+		// Validate the RPC caller context.
+		$this->validateMethodContext($context, [
+			"role" => OMV_ROLE_ADMINISTRATOR
+		]);
+		// Validate the parameters of the RPC service method.
+		$this->validateMethodParams($params, "rpc.filesystemmgmt.grow");
 		// Get the file system backend.
 		$fsbMngr = \OMV\System\Filesystem\Backend\Manager::getInstance();
 		$fsb = $fsbMngr->getBackendById($params['id']);
 		if (is_null($fsb)) {
-			throw new \OMV\Exception("No file system backend exists for '%s'.",
-			  $params['id']);
+			throw new \OMV\Exception(
+				"No file system backend exists for '%s'.",
+				$params['id']);
 		}
 		// Check if the file system supports online resizing.
 		if (!$fsb->hasResizeSupport()) {
 			throw new \OMV\Exception(
-			  "The file system '%s' (type=%s) does not support online resizing.",
-			  $params['id'], $fsb->getType());
+				"The file system '%s' (type=%s) does not support online resizing.",
+				$params['id'], $fsb->getType());
 		}
 		// Get the file system implementation.
 		$fs = $fsb->getImpl($params['id']);
 		if (is_null($fs) || !$fs->exists()) {
 			throw new \OMV\Exception(
-			  "Failed to get the '%s' file system implementation or '%s' ".
-			  "does not exist.", $fsb->getType(), $params['id']);
+				"Failed to get the '%s' file system implementation or '%s' ".
+				"does not exist.", $fsb->getType(), $params['id']);
 		}
 		// Grow the file system.
 		$fs->grow();
@@ -852,8 +916,9 @@ class OMVRpcServiceFileSystemMgmt extends \OMV\Rpc\ServiceAbstract {
 		// Get the file system and unmount it.
 		$fs = \OMV\System\Filesystem\Filesystem::getImpl($params['id']);
 		if (!is_null($fs) && $fs->exists()) {
-			if (TRUE === $fs->isMounted())
+			if (TRUE === $fs->isMounted()) {
 				$fs->umount(TRUE);
+			}
 		}
 		// Delete the mount point configuration object. Unmount the file
 		// system and unlink the mount point. Changes to the fstab module
@@ -869,7 +934,9 @@ class OMVRpcServiceFileSystemMgmt extends \OMV\Rpc\ServiceAbstract {
 		// directory when the file system is still mounted.
 		$mp = new \OMV\System\MountPoint($meObject['dir']);
 		if (FALSE === $mp->isMountPoint()) {
-			$mp->unlink();
+			// Unlink if the mount point is empty (which should be the
+			// normal case).
+			$mp->unlink(FALSE, TRUE);
 		}
 	}
 
@@ -891,5 +958,22 @@ class OMVRpcServiceFileSystemMgmt extends \OMV\Rpc\ServiceAbstract {
 		// Check if the given device file contains a file system.
 		return (FALSE !== \OMV\System\Filesystem\Filesystem::hasFileSystem(
 			$params['devicefile']));
+	}
+
+	/**
+	 * Get details about the filesystem, e.g. the health status.
+	 * @param params An array containing the following fields:
+	 *   \em devicefile The device file to check.
+	 * @param context The context of the caller.
+	 * @return A string that contains the details about the given device.
+	 */
+	public function getDetails($params, $context) {
+		$this->validateMethodContext($context, [
+			"role" => OMV_ROLE_ADMINISTRATOR
+		]);
+		$this->validateMethodParams($params, "rpc.filesystemmgmt.getdetails");
+		$fs = \OMV\System\Filesystem\Filesystem::assertGetImpl(
+			$params['devicefile']);
+		return $fs->getDetails();
 	}
 }

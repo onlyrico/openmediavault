@@ -1,10 +1,978 @@
-openmediavault (6.0.46-1) stable; urgency=low
+openmediavault (7.6.1-1) stable; urgency=low
 
+  * Issue #1912: Fix pinning of backports repository.
+
+ -- Volker Theile <volker.theile@openmediavault.org>  Thu, 30 Jan 2025 18:07:22 +0100
+
+openmediavault (7.6.0-1) stable; urgency=low
+
+  * Update locale files.
+  * Add option to disable the automatic installation of security
+    updates.
+
+ -- Volker Theile <volker.theile@openmediavault.org>  Fri, 17 Jan 2025 15:18:02 +0100
+
+openmediavault (7.5.2-1) stable; urgency=low
+
+  * Update locale files.
+  * Fix database migration issue introduced by issue #1875.
+  * Issue #1898: When IPv6 is deactivated, the environment
+    variable OMV_NGINX_SITE_WEBGUI_LISTEN_IPV4_ADDRESS isn't
+    taken into account when deploying the nginx configuration.
+
+ -- Volker Theile <volker.theile@openmediavault.org>  Fri, 17 Jan 2025 15:18:02 +0100
+
+openmediavault (7.5.1-1) stable; urgency=low
+
+  * Improve the quick disk wiping feature. Increase the amount of data
+    wiped at the head and tail of the device from 4 to 10 MiB to ensure
+    that all metadata/signatures are removed.
+  * Issue #1890: Improve parsing of the SMART attribute flags
+    field. This will fix the display of the temperature for
+    some devices.
+
+ -- Volker Theile <volker.theile@openmediavault.org>  Fri, 10 Jan 2025 14:20:09 +0100
+
+openmediavault (7.5.0-1) stable; urgency=low
+
+  * Try to prevent connection errors when installing plugins
+    or package updates via UI.
+  * Issue #1875: Add option to select the Wi-Fi frequency band.
+  * Issue #1878: Fix netplan config parsing errors.
+  * Issue #1883: Modify the hint for the extended attributes
+    setting in the SMB share form. Enable them by default.
+
+ -- Volker Theile <volker.theile@openmediavault.org>  Mon, 30 Dec 2024 13:10:58 +0100
+
+openmediavault (7.4.17-2) stable; urgency=low
+
+  * Fix a translation problem with several form fields.
+  * Add the `Follow symlinks` and `Wide links` options to SMB shares
+    and home directories.
+  * Fix usage threshold render issue in datatable progress bars.
+
+ -- Volker Theile <volker.theile@openmediavault.org>  Mon, 16 Dec 2024 09:36:39 +0100
+
+openmediavault (7.4.16-1) stable; urgency=low
+
+  * Several improvements.
+
+ -- Volker Theile <volker.theile@openmediavault.org>  Mon, 09 Dec 2024 19:55:12 +0100
+
+openmediavault (7.4.15-1) stable; urgency=low
+
+  * Issue #1865: Remove support for WPA3 authentication for wireless
+    connections. netplan does not support that in Debian 12.
+
+ -- Volker Theile <volker.theile@openmediavault.org>  Thu, 05 Dec 2024 19:28:18 +0100
+
+openmediavault (7.4.15-2) stable; urgency=low
+
+  * Several improvements.
+
+ -- Volker Theile <volker.theile@openmediavault.org>  Tue, 26 Nov 2024 19:58:29 +0100
+
+openmediavault (7.4.14-1) stable; urgency=low
+
+  * Add rudimentary support for the obsolete file systems `reiserfs`
+    and `reiser4`. The userland apps must be installed manually via
+    the Debian packages `reiserfsprogs` and `reiser4progs`.
+  * Issue #1859: Fix a problem when disabling the user home directory.
+  * Issue #1862: Use LC_ALL environment variable instead of LANG.
+
+ -- Volker Theile <volker.theile@openmediavault.org>  Mon, 18 Nov 2024 15:02:55 +0100
+
+openmediavault (7.4.13-1) stable; urgency=low
+
+  * Fix apticron cron script.
+
+ -- Volker Theile <volker.theile@openmediavault.org>  Sat, 16 Nov 2024 10:13:25 +0100
+
+openmediavault (7.4.12-3) stable; urgency=low
+
+  * Update locale files.
+  * Add APT notification settings.
+
+ -- Volker Theile <volker.theile@openmediavault.org>  Sat, 02 Nov 2024 18:12:21 +0100
+
+openmediavault (7.4.11-1) stable; urgency=low
+
+  * Several improvements.
+  * Update the DNS setting to be a mandatory configuration for
+    both Ethernet and WiFi network interfaces.
+  * Issue #1835: Unlink mount directory only if empty.
+
+ -- Volker Theile <volker.theile@openmediavault.org>  Sat, 12 Oct 2024 12:13:43 +0200
+
+openmediavault (7.4.10-1) stable; urgency=low
+
+  * Issue #1830: Add alternative MAC address support for bridge
+    network interfaces.
+
+ -- Volker Theile <volker.theile@openmediavault.org>  Mon, 07 Oct 2024 20:21:44 +0200
+
+openmediavault (7.4.9-2) stable; urgency=low
+
+  * Update locale files.
+  * Several improvements.
+
+ -- Volker Theile <volker.theile@openmediavault.org>  Sun, 29 Sep 2024 10:51:09 +0200
+
+openmediavault (7.4.8-1) stable; urgency=low
+
+  * Update locale files.
+  * Unify the sorting order of displayed data in the `Disk Temperatures`
+    and `S.M.A.R.T. Status` dashboard widgets for a consistent user
+    experience.
+  * Issue #1825: Support Xen predictive network interface naming.
+
+ -- Volker Theile <volker.theile@openmediavault.org>  Tue, 03 Sep 2024 22:43:45 +0200
+
+openmediavault (7.4.7-1) stable; urgency=low
+
+  * Support host names according to RFC1123.
+
+ -- Volker Theile <volker.theile@openmediavault.org>  Thu, 29 Aug 2024 15:45:46 +0200
+
+openmediavault (7.4.6-1) stable; urgency=low
+
+  * Update locale files.
+  * Add UDEV rule to fix the duplicate serial number issue for
+    Congdi 2.5-Inch USB 3.1 Type-C hard drive enclosures.
+  * Add UDEV rule to fix the duplicate serial number issue for
+    Insignia 2-Bay HDD docking stations.
+  * Use `subtree_check` to reduce subtree attacks in the NFSv4
+    pseudo file system export. This can be modified via the
+    `OMV_NFSD_V4_PSEUDO_ROOT_OPTIONS` environment variable.
+  * Remove support to create Ext3 file systems from the UI.
+  * Use of the internal quotas of Ext4 for new file systems to
+    be created.
+  * Improve file system quota Salt state.
+  * Issue #1813: Return the configured mount point for each file
+    system in the `FileSystemMgmt::enumerateMountedFilesystems`
+    RPC instead of the dynamically determined one.
+
+ -- Volker Theile <volker.theile@openmediavault.org>   Mon, 19 Aug 2024 19:26:45 +0200
+
+openmediavault (7.4.5-1) stable; urgency=low
+
+  * Issue #1809: Add the ability to customize the apticron
+    configuration file via environment variables.
+
+ -- Volker Theile <volker.theile@openmediavault.org>  Sun, 11 Aug 2024 19:34:56 +0200
+
+openmediavault (7.4.4-1) stable; urgency=low
+
+  * Update locale files.
+  * Get correct client IP in login message when system is behind
+    a reverse proxy.
+  * Rename `Diagnostics | Performance Statistics | Disk Usage` to
+    `File System Usage` to differentiate with `Disk I/O`.
+  * Issue #1635: Switch to `@siemens/ngx-datatable` component.
+  * Issue #1799: Do not use a login shell in the cron script
+    `openmediavault-update-smart-drivedb`.
+  * Issue #1801: Support requesting multiple files from a remote
+    host, e.g. `user@host:/dir1 :/dir2 :/dir3`, in rsync jobs.
+
+ -- Volker Theile <volker.theile@openmediavault.org>  Thu, 25 Jul 2024 11:37:57 +0200
+
+openmediavault (7.4.3-1) stable; urgency=low
+
+  * Make sure the Armbian default netplan configuration file
+    does not break our netplan configuration.
+  * Make the system accessible again via mDNS/Zeroconf after
+    changing the system's hostname.
+
+ -- Volker Theile <volker.theile@openmediavault.org>  Tue, 23 Jul 2024 19:40:18 +0200
+
+openmediavault (7.4.2-2) stable; urgency=low
+
+  * Make sure security packages are not hold back on several Debian
+    derivatives. Remove the "APT::Default-Release" setting from all
+    APT configuration files.
+
+ -- Volker Theile <volker.theile@openmediavault.org>  Sat, 20 Jul 2024 15:52:13 +0200
+
+openmediavault (7.4.1-3) stable; urgency=low
+
+  * Make sure security packages are not hold back on several Debian
+    derivatives.
+
+ -- Volker Theile <volker.theile@openmediavault.org>  Sun, 14 Jul 2024 10:50:41 +0200
+
+openmediavault (7.4.0-2) stable; urgency=low
+
+  * Add StorageDeviceInterface::isHotPluggable() method.
+  * Add `Diagnostics | Services | NFS` page.
+
+ -- Volker Theile <volker.theile@openmediavault.org>  Fri, 05 Jul 2024 21:49:41 +0200
+
+openmediavault (7.3.1-1) stable; urgency=low
+
+  * Update locale files.
+  * Fix the error of automatic reloading of several dashboard widgets,
+    e.g. the system time widget.
+  * Fixed a bug in unattended-upgrades that causes all new packages to
+    be installed instead of just security updates.
+  * Hardening of the quota Salt state to cope with situations where
+    there are multiple mount points for a device.
+  * Do not activate the IPv6 privacy extension for network interfaces.
+    If necessary this can be done individually using `sysctl`.
+
+ -- Volker Theile <volker.theile@openmediavault.org>  Sat, 29 Jun 2024 18:37:56 +0200
+
+openmediavault (7.3.0-5) stable; urgency=low
+
+  * Update locale files.
+  * Refactor the RPC parameter handling.
+  * Refactor UI to get rid of `::ng-deep`, which was an obstacle to
+    migrating to Angular >= 15.
+  * Add `Power Mode` and `Temperature` datatable column to the
+    `Storage | Disks` page. Note, the columns are hidden by default.
+    If the device is in standby mode, no temperature is displayed.
+  * Issue #1774: Improve foundation for plugins.
+
+ -- Volker Theile <volker.theile@openmediavault.org>  Tue, 11 Jun 2024 17:45:42 +0200
+
+openmediavault (7.2.1-1) stable; urgency=low
+
+  * Refactor the `download.php` RPC infrastructure.
+  * Issue #1748: Enable TCP for NFS v2 and v3.
+  * Issue #1766: Harden the daily SSL certificate expiration cron job.
+  * Issue #1769: Add support for setting SMTP server to `localhost` in
+    notification settings page.
+
+ -- Volker Theile <volker.theile@openmediavault.org>  Fri, 24 May 2024 17:46:40 +0200
+
+openmediavault (7.1.1-1) stable; urgency=low
+
+  * Remove NFS configuration file that is generated on upgrade to
+    Debian 12.
+  * Issue #1763: Allow creating logical volumes even if a file
+    system signature is detected.
+
+ -- Volker Theile <volker.theile@openmediavault.org>  Mon, 13 May 2024 19:09:22 +0200
+
+openmediavault (7.1.0-2) stable; urgency=low
+
+  * Update locale files.
+  * Issue #1731: Display file system details.
+  * Issue #1736: Add support to create yearly scheduled shared
+    folder snapshots.
+  * Issue #1737: Add support for WPA3 authentication for wireless
+    connections.
+
+ -- Volker Theile <volker.theile@openmediavault.org>  Fri, 29 Mar 2024 19:22:33 +0100
+
+openmediavault (7.0.4-2) stable; urgency=low
+
+  * Replace hdparm with smartctl in UDEV helper script.
+
+ -- Volker Theile <volker.theile@openmediavault.org>  Sat, 16 Mar 2024 12:33:17 +0100
+
+openmediavault (7.0.3-1) stable; urgency=low
+
+  * Add functionality required by plugins.
+
+ -- Volker Theile <volker.theile@openmediavault.org>  Sat, 16 Mar 2024 11:05:17 +0100
+
+openmediavault (7.0.2-2) stable; urgency=low
+
+  * Fix problem when deploying file system quota.
+  * Issue #1725: Add search field to shared folder page.
+
+ -- Volker Theile <volker.theile@openmediavault.org>  Sat, 09 Mar 2024 16:48:27 +0100
+
+openmediavault (7.0.1-1) stable; urgency=low
+
+  * Several improvements.
+  * Add UI functionality required by plugins.
+
+ -- Volker Theile <volker.theile@openmediavault.org>  Sun, 03 Mar 2024 12:51:23 +0100
+
+openmediavault (7.0-32) unstable; urgency=low
+
+  * Upgrade to Debian 12 (Bookworm).
+  * Relocate Linux MD device (Software RAID) management into a
+    separate plugin.
+  * Add support for network ethernet devices using device tree
+    aliases, e.g. `endX`.
+  * Replace the `cron-apt` package with `unattended-upgrades`
+    and `apticron`. The former ensures that security updates
+    are installed automatically, and the latter ensures that
+    notifications are sent when new package updates are available.
+  * The `apt-listchanges` package will send you an email with
+    a summary of the latest changes whenever packages are
+    upgraded.
+  * Add the ability to authenticate an RPC call by using the
+    `X-OPENMEDIAVAULT-SESSIONID` header instead of a cookie.
+    The session ID is returned with the response of the
+    `Session::login` RPC.
+  * Reduce the query time when determining the SMART information
+    by reducing the query parameters to the minimum.
+  * Add a dashboard widget to display the temperatures of all
+    physical disks.
+  * Add support for choosing between the RSA and Ed25519 types
+    when creating an SSH key in the UI.
+  * Remove support of importing SSH DSA keys.
+  * Enhance file system quota deployment.
+  * Issue #1649: Rearrange the `Storage | Shared Folders | ACL`
+    page.
+  * Issue #1676: Add an UI endpoint to trigger a download via RPC.
+    Plugins can use `/download?service=xxx&method=xxx&params=xxx`
+    to start a download that is implemented in the specified RPC.
+    Note, the JSON content of the `params` argument may be encoded.
+    Check the `encodeURIComponent` JS function for more details.
+  * Issue #1690: Replace hdparm with smartctl for better hardware
+    support.
+  * Issue #1706: Add support for ed25519-sk SSH keys.
+
+ -- Volker Theile <volker.theile@openmediavault.org>  Mon, 24 Jul 2023 13:17:39 +0200
+
+openmediavault (6.9.14-1) stable; urgency=low
+
+  * Issue #1703: Try to list devices in `SMART | Devices` page,
+    even if smartctl fails.
+
+ -- Volker Theile <volker.theile@openmediavault.org>  Mon, 05 Feb 2024 21:55:58 +0100
+
+openmediavault (6.9.13-1) stable; urgency=low
+
+  * Issue #1699: Fix problem with configuring WiFi network
+    interfaces in omv-firstaid.
+
+ -- Volker Theile <volker.theile@openmediavault.org>  Fri, 02 Feb 2024 16:40:07 +0100
+
+openmediavault (6.9.12-3) stable; urgency=low
+
+  * Various improvements.
+  * Create the missing SSH runtime directory so that testing
+    the SSH configuration is successful.
+  * Fix a bug in root file system detection that allowed the
+    unmounting of the root file system in some situations.
+  * Add UDEV rule to fix the duplicate serial number issue on Qnap
+    TR-002 devices.
+  * Issue #1698: Show only monitored devices in the SMART dashboard
+    widget
+
+ -- Volker Theile <volker.theile@openmediavault.org>  Fri, 05 Jan 2024 21:00:15 +0100
+
+openmediavault (6.9.11-4) stable; urgency=low
+
+  * Fix issue in NFS configuration.
+
+ -- Volker Theile <volker.theile@openmediavault.org>  Wed, 20 Dec 2023 19:36:08 +0100
+
+openmediavault (6.9.10-5) stable; urgency=low
+
+  * Add omv-release-upgrade to allow users to migrate their
+    systems to OMV7 (Sandworm) which is based on Debian 12
+    (Bookworm).
+  * Add UTF8 support for creating SSL certs via UI.
+  * Add email to SSL certificate's SAN in its own field.
+
+ -- Volker Theile <volker.theile@openmediavault.org>  Fri, 08 Dec 2023 11:48:57 +0100
+
+openmediavault (6.9.9-1) stable; urgency=low
+
+  * Configure exports only for enabled NFS versions.
+  * Enhance database query to prevent an error when trying
+    to run a SMART scheduled task via UI.
+  * Fix bug in Avahi configuration.
+  * Issue #485: Display device temperatures in the SMART
+    dashboard widget.
+
+ -- Volker Theile <volker.theile@openmediavault.org>  Fri, 17 Nov 2023 23:53:24 +0100
+
+openmediavault (6.9.8-1) stable; urgency=low
+
+  * Display RPI CM4 CPU model in system information.
+  * Fix an error in the weekly cron job that is downloading the
+    SMART database.
+  * Hardening `omv-sfsnapadm` by skipping snapshots with invalid
+    naming schema.
+
+ -- Volker Theile <volker.theile@openmediavault.org>  Sun, 12 Nov 2023 17:40:53 +0100
+
+openmediavault (6.9.7-3) stable; urgency=low
+
+  * Various improvements.
+  * Prevent the creation of Btrfs snapshots from snapshots.
+  * Do not delete Btrfs snapshots that are used as shared folders.
+  * Skip the deletion of Btrfs snapshots with subordinate subvolumes.
+
+ -- Volker Theile <volker.theile@openmediavault.org>  Mon, 06 Nov 2023 20:05:35 +0100
+
+openmediavault (6.9.6-2) stable; urgency=low
+
+  * Issue #1619: Refactor SMART device type detection.
+
+ -- Volker Theile <volker.theile@openmediavault.org>  Wed, 01 Nov 2023 12:46:15 +0100
+
+openmediavault (6.9.5-1) stable; urgency=low
+
+  * Various improvements.
+
+ -- Volker Theile <volker.theile@openmediavault.org>  Sat, 21 Oct 2023 15:31:38 +0200
+
+openmediavault (6.9.4-2) stable; urgency=low
+
+  * Update locale files.
+  * Various UI enhancements.
+
+ -- Volker Theile <volker.theile@openmediavault.org>  Sun, 08 Oct 2023 15:35:47 +0200
+
+openmediavault (6.9.3-1) stable; urgency=low
+
+  * Update locale files.
+  * Relocate `Logout` option to user settings menu.
+  * Disable the `Edit` button for file systems without fstab entry
+    (e.g. mergerfs) on the `Storage | File Systems` page.
+  * Issue #1605: Wrong syntax of SMB transport encryption option.
+
+ -- Volker Theile <volker.theile@openmediavault.org>  Sun, 01 Oct 2023 14:06:27 +0200
+
+openmediavault (6.9.2-1) stable; urgency=low
+
+  * Various improvements related to networking in the PHP backend.
+  * Disable the caching of UI files to prevent annoying browser
+    cache flushing.
+  * Remove support of `venet` ethernet network devices names.
+    Predictable devices names are used instead nowadays.
+  * Add better support for `veth` virtual ethernet devices that
+    are used by containers.
+  * Issue #1596: Support DSA network interfaces.
+
+ -- Volker Theile <volker.theile@openmediavault.org>  Tue, 26 Sep 2023 17:24:48 +0200
+
+openmediavault (6.9.1-1) stable; urgency=low
+
+  * Security related improvements.
+
+ -- Volker Theile <volker.theile@openmediavault.org>  Mon, 25 Sep 2023 18:02:27 +0200
+
+openmediavault (6.9.0-1) stable; urgency=low
+
+  * Update locale files.
+  * Fix UI regression. Hide form fields that should be hidden.
+  * Issue #1592: Enhance SMB `Home directories` settings.
+
+ -- Volker Theile <volker.theile@openmediavault.org>  Wed, 06 Sep 2023 21:52:10 +0200
+
+openmediavault (6.8.0-1) stable; urgency=low
+
+  * Update locale files.
+  * Change default governor to `schedutil` on ARM systems. This can
+    be customized via the `OMV_CPUFREQUTILS_GOVERNOR` environment
+    variable.
+  * Add setting to choose the minimum SMB protocol version. This
+    way SMB1 can be enabled to allow legacy systems to access your
+    SMB shares.
+  * Issue #1588: Support SMART information for devices connected
+    via RTL9210B-CG.
+  * Issue #1589: Fix a problem in the netplan.io configuration for
+    ethernet network interfaces with non-permanent MAC addresses.
+
+ -- Volker Theile <volker.theile@openmediavault.org>  Mon, 28 Aug 2023 20:28:10 +0200
+
+openmediavault (6.7.1-2) stable; urgency=low
+
+  * Update locale files.
+  * Various improvements.
+  * Change the `Comment` fields in the `System | Certificates | SSL`
+    and `System | Certificates | SSH` pages to `Tags`.
+  * Issue #1586: Various improvements in SSL cert management.
+
+ -- Volker Theile <volker.theile@openmediavault.org>  Sat, 26 Aug 2023 17:11:41 +0200
+
+openmediavault (6.7.0-3) stable; urgency=low
+
+  * Various improvements.
+  * Display correct size of Btrfs file systems.
+  * Improve calculation of CPU utilization.
+  * Rename properties in System::getInformation RPC response.
+  * Add System::getCpuStats RPC.
+  * Issue #1576: Getting rid of `@angular/flex-layout`.
+  * Issue #1584: omv-btrfs-dfree doesn't report the correct size.
+
+ -- Volker Theile <volker.theile@openmediavault.org>  Sat, 19 Aug 2023 14:32:14 +0200
+
+openmediavault (6.6.0-2) stable; urgency=low
+
+  * Various improvements.
+  * Do not forward error to UI from SMART device enumeration.
+  * Fix bug in NFS configuration.
+  * Limit width of page body to 1920px. The page content will be
+    centered for greater browser window sizes.
+  * Issue #1579: Add NetBIOS knob to SMB settings. This replaces
+    the `OMV_SAMBA_NMBD_ENABLE` environment variable. Enable this
+    to add support for name resolution and network discovery of
+    legacy systems.
+
+ -- Volker Theile <volker.theile@openmediavault.org>  Thu, 10 Aug 2023 21:57:35 +0200
+
+openmediavault (6.5.7-1) stable; urgency=low
+
+  * Various improvements.
+  * Remove useless Salt state `omv.setup.resolvconf`.
+  * Fix bug in NFS configuration.
+
+ -- Volker Theile <volker.theile@openmediavault.org>  Tue, 08 Aug 2023 16:52:37 +0200
+
+openmediavault (6.5.6-1) stable; urgency=low
+
+  * Fix public key error in APT.
+
+ -- Volker Theile <volker.theile@openmediavault.org>  Sun, 06 Aug 2023 17:24:53 +0200
+
+openmediavault (6.5.5-1) stable; urgency=low
+
+  * Issue #1572: Set `shadow:localtime = no` in smb.conf because
+    several users reported that `Previous Versions` is not working
+    in Windows. Note, Windows will display `Date modified` in UTC,
+    but this is the compromise to get the them displayed at all.
+
+ -- Volker Theile <volker.theile@openmediavault.org>  Tue, 01 Aug 2023 20:06:33 +0200
+
+openmediavault (6.5.4-1) stable; urgency=low
+
+  * Various improvements.
+  * Enhance cleanup after removing plugins.
+  * Issue #1569: Shared folder references are not correctly queried.
+
+ -- Volker Theile <volker.theile@openmediavault.org>  Sat, 29 Jul 2023 14:51:43 +0200
+
+openmediavault (6.5.3-1) stable; urgency=low
+
+  * Various improvements.
+
+ -- Volker Theile <volker.theile@openmediavault.org>  Sat, 29 Jul 2023 00:14:19 +0200
+
+openmediavault (6.5.2-1) stable; urgency=low
+
+  * Upgrade Salt to version 3006.0.
+
+ -- Volker Theile <volker.theile@openmediavault.org>  Wed, 26 Jul 2023 22:30:04 +0200
+
+openmediavault (6.5.1-2) stable; urgency=low
+
+  * Update locale files.
+  * Fix a home directory issue in Samba when a share has enabled
+    the `Time machine` option.
+
+ -- Volker Theile <volker.theile@openmediavault.org>  Thu, 20 Jul 2023 15:35:02 +0200
+
+openmediavault (6.5.0-3) stable; urgency=low
+
+  * Add ability to specify the supported NFS protocol versions.
+  * Improve Debian security repository cleanup.
+  * Issue #1564: Add alternative MAC address support for wired,
+    wireless and VLAN network interfaces.
+
+ -- Volker Theile <volker.theile@openmediavault.org>  Thu, 13 Jul 2023 13:14:36 +0200
+
+openmediavault (6.4.9-1) stable; urgency=low
+
+  * Improve `omv-btrfs-dfree` command which is used by Samba on
+    Btrfs file systems. Use the free space determined via statfs
+    and df instead of the estimated value which was causing
+    problems on several systems.
+  * Get PCI vendor/subsystem ID of NVMe devices via sysfs.
+  * Add the `OMV_NFSD_OPTS` environment variable to add custom
+    arguments for rpc.nfsd. This can be used to specify the
+    supported versions of NFS for example. Please check the
+    rpc.nfsd man page for more information.
+
+ -- Volker Theile <volker.theile@openmediavault.org>  Sat, 08 Jul 2023 12:05:13 +0200
+
+openmediavault (6.4.8-1) stable; urgency=low
+
+  * Ensure the .snapshot directory exists when creating a scheduled
+    snapshot of a shared folder.
+  * Disable SSH socket activation which is activated by default on
+    several Debian derivatives.
+  * Add option `--append-dirty` to `omv-salt deploy run` to append
+    states that are marked as dirty.
+
+ -- Volker Theile <volker.theile@openmediavault.org>  Tue, 04 Jul 2023 08:07:18 +0200
+
+openmediavault (6.4.7-1) stable; urgency=low
+
+  * Update locale files.
+  * Ensure systemd-networkd and systemd-resolved services are unmasked
+    and enabled.
+
+ -- Volker Theile <volker.theile@openmediavault.org>  Tue, 27 Jun 2023 20:20:55 +0200
+
+openmediavault (6.4.6-1) stable; urgency=low
+
+  * Various improvements in UI.
+  * Improve `omv-btrfs-dfree` to display correct free space on
+    Windows.
+  * Add `OMV_POSTFIX_MASTER_SMTPD_ENABLED` environment variable to
+    enable/disable smtpd in Postfix. Defaults to `yes`.
+
+ -- Volker Theile <volker.theile@openmediavault.org>  Wed, 21 Jun 2023 18:45:01 +0200
+
+openmediavault (6.4.5-1) stable; urgency=low
+
+  * Disable smtpd in Postfix. It is not necessary in sent-only
+    satellite mode.
+  * Workaround bug in SaltStack `pkg.del_repo` module.
+  * Improve the security of the Debian backports and security
+    repositories by using `signed-by`.
+
+ -- Volker Theile <volker.theile@openmediavault.org>  Tue, 13 Jun 2023 18:31:48 +0200
+
+openmediavault (6.4.4-1) stable; urgency=low
+
+  * Issue #420: Fix SMB issue with Btrfs subvolumes. The incorrect
+    displayed share size in Windows should be fixed as well.
+    Samba will call `omv-btrfs-dfree` to fetch the disk stats and
+    cache them for 30 seconds.
+
+ -- Volker Theile <volker.theile@openmediavault.org>  Wed, 07 Jun 2023 00:14:51 +0200
+
+openmediavault (6.4.3-1) stable; urgency=low
+
+  * Issue #1558: Fix file system creation on bcache devices.
+
+ -- Volker Theile <volker.theile@openmediavault.org>  Mon, 05 Jun 2023 00:12:24 +0200
+
+openmediavault (6.4.2-1) stable; urgency=low
+
+  * Improve the security of the openmediavault package repository
+    by using `signed-by`.
+
+ -- Volker Theile <volker.theile@openmediavault.org>  Fri, 02 Jun 2023 21:07:59 +0200
+
+openmediavault (6.4.1-2) stable; urgency=low
+
+  * Update locale files.
+  * Respect timezone when exposing shared folder snapshots to
+    Windows clients as shadow copies via Samba.
+  * Issue #1556: Use correct color theme in code input field when
+    dark mode is enabled.
+
+ -- Volker Theile <volker.theile@openmediavault.org>  Thu, 01 Jun 2023 19:24:21 +0200
+
+openmediavault (6.4.0-3) stable; urgency=low
+
+  * Update locale files.
+  * Various improvements.
+  * Upgrade to Angular 14.
+  * Improve omv-btrfs-scrub and scheduled Btrfs error checks.
+    Deduplicate file system UUID to prevent unnecessary work.
+  * Configure DHCP overrides in Netplan.io.
+  * Fix bug in the bonding network interface configuration page.
+    The `Primary` field is only used by the `active-backup`,
+    `balance-tlb` and `balance-alb` modes.
+  * Improve DNS configuration. systemd-resolved is now fully
+    responsible for network name resolution. It is operated in
+    stub mode.
+  * Add snapshot lifecycle management to clean up snapshots of shared
+    folders according to given rules. The tool `omv-sfsnapadm` is
+    called hourly by a cron job to do the cleanup. The settings can
+    be found at `Storage | Shared Folders | All Snapshots` in the UI.
+    This feature is disabled by default.
+
+ -- Volker Theile <volker.theile@openmediavault.org>  Fri, 19 May 2023 14:54:50 +0200
+
+openmediavault (6.3.12-1) stable; urgency=low
+
+  * Prevent custom network interface search domain settings from
+    being overwritten by settings provided via DHCP.
+
+ -- Volker Theile <volker.theile@openmediavault.org>  Mon, 15 May 2023 20:44:19 +0200
+
+openmediavault (6.3.11-2) stable; urgency=low
+
+  * Update locale files.
+  * Upgrade Salt to version 3005.1.
+  * Issue #1485: Add option to enforce transport encryption per SMB
+    share. Defaults to disabled.
+  * Issue #1542: Add transmit hash policy support to bond network
+    interfaces.
+
+ -- Volker Theile <volker.theile@openmediavault.org>  Tue, 25 Apr 2023 19:09:12 +0200
+
+openmediavault (6.3.10-2) stable; urgency=low
+
+  * Issue #1537: `findmnt` is using tree-like output on some systems
+    which breaks the parsing of the content.
+  * Enhance the UDEV rules to workaround the duplicate serial number
+    bug of various disk enclosures. Now the `disk/by-uuid` symlinks
+    are created as well if a file system UUID exists.
+
+ -- Volker Theile <volker.theile@openmediavault.org>  Sat, 22 Apr 2023 10:03:02 +0200
+
+openmediavault (6.3.9-1) stable; urgency=low
+
+  * Add the environment variable `OMV_BTRFS_SCRUB_PERIOD`. The supported
+    values are `weekly` and `monthly`. Defaults to `monthly`.
+  * Relocate the Cron Btrfs scrubbing script into a separate CLI tool
+    named `omv-btrfs-scrub`. If you need to run the scrub jobs at a
+    certain date, you may disable the built-in cron jobs via the
+    environment variable `OMV_BTRFS_SCRUB_ENABLED`. Finally, create
+    your custom scheduled tasks via the UI by typing `omv-btrfs-scrub` in
+    the `Command` form field.
+  * Add UDEV rule to fix the duplicate serial number issue on Qnap
+    TR-004 devices.
+  * Perform scheduled Btrfs scrub and scan tasks on file system mount
+    points rather than devices.
+  * Fix `hdparm` configuration. Use `force_spindown_time` to apply settings
+    to non-APM devices.
+
+ -- Volker Theile <volker.theile@openmediavault.org>  Tue, 11 Apr 2023 16:44:59 +0200
+
+openmediavault (6.3.8-1) stable; urgency=low
+
+  * Update locale files.
+  * Issue #1528: Fix the error `The "constraint" or "deps" property
+    is required`.
+
+ -- Volker Theile <volker.theile@openmediavault.org>  Tue, 04 Apr 2023 22:51:27 +0200
+
+openmediavault (6.3.7-5) stable; urgency=low
+
+  * Update locale files.
+  * Improve `omv-env list` command. The directories `/etc/cron.*`
+    will be parsed for environment variables as well now.
+  * Improve Salt configuration.
+  * Always populate basic IPv6 configuration in /etc/hosts. This will
+    lead to a dramatically speed improvement of the Salt deployment.
+
+ -- Volker Theile <volker.theile@openmediavault.org>  Mon, 03 Apr 2023 21:17:25 +0200
+
+openmediavault (6.3.6-2) stable; urgency=low
+
+  * Improve the scheduled Btrfs cron tasks by skipping the
+    subvolumes of a file system, which prevents the file
+    system from being processed multiple times.
+  * Perform automatic scrubbing of all Btrfs file systems
+    monthly instead weekly.
+  * Fix a validation bug in the `Gateway` form field on the Wi-Fi
+    network interface page.
+
+ -- Volker Theile <volker.theile@openmediavault.org>  Thu, 23 Mar 2023 22:14:10 +0100
+
+openmediavault (6.3.5-2) stable; urgency=low
+
+  * Update locale files.
+  * Do not configure monit alerts for `CPU usage` and `Memory usage`
+    if they are disabled in the UI.
+  * Set metadata to 'DUP' when creating a Btrfs file system with
+    the 'Single' profile (default since Kernel version 5.15).
+  * Perform a daily scheduled cron task that checks Btrfs file
+    systems for errors. An email will be sent when errors are
+    detected. Use the OMV_BTRFS_ERROR_CHECK_ENABLED environment
+    variable to disable this check.
+  * Perform a weekly scheduled cron task that scrubs all mounted
+    Btrfs file systems. A report will be emailed afterwards.
+    Use the OMV_BTRFS_SCRUB_ENABLED environment variable to disable
+    this task. Use the additional variables OMV_BTRFS_SCRUB_PRIORITY
+    and OMV_BTRFS_SCRUB_READONLY to customize the scrub task.
+  * Improve cron scripts by added better logging output.
+  * Display Cron expressions in human-readable descriptions on
+    forms and in datatable columns.
+  * Issue #1516: Adapt the UI so that it works properly behind
+    reverse proxies.
+
+ -- Volker Theile <volker.theile@openmediavault.org>  Thu, 23 Mar 2023 19:06:34 +0100
+
+openmediavault (6.3.4-1) stable; urgency=low
+
+  * Update locale files.
+  * Rename various navigation menu items in the UI.
+  * Add `All Snapshots` button in the `Storage | Shared Folders`
+    page to manage the snapshots of all shared folders that are
+    located on a Btrfs file system.
+
+ -- Volker Theile <volker.theile@openmediavault.org>  Sun, 12 Mar 2023 21:54:03 +0100
+
+openmediavault (6.3.3-1) stable; urgency=low
+
+  * Update locale files.
+  * Display hostname in page title.
+  * The `OMV_SSL_CERTIFICATE_CHECK_EXPIRY_ENABLED` environment
+    variable has been added to be able to disable the daily SSL
+    certificate expiration cron job. Defaults to `yes`.
+  * Add a prefix to shared folder snapshots that are created
+    via scheduled tasks, e.g. `images@daily_20230228T095758`.
+    Please delete your existing scheduled tasks and recreate
+    them to take advantage of the new naming scheme.
+  * Add the ability to specify the metric (relative priority)
+    of the default route set via the `Gateway` option in the
+    network interface page.
+
+ -- Volker Theile <volker.theile@openmediavault.org>  Tue, 28 Feb 2023 00:08:49 +0100
+
+openmediavault (6.3.2-2) stable; urgency=low
+
+  * Update locale files.
+  * Issue #1490: Support SMB shadow copies for home directories
+    when the shared folder is located on a Btrfs file system.
+  * Issue #1500: Use ISO 8601 basic format in the snapshot
+    naming schema because Windows does not support `:` in
+    file names. Note that due to this change, earlier snapshots
+    with the ISO 8601 extended format are no longer listed under
+    Windows in `Previous Versions`. Please delete and recreate
+    scheduled snapshot tasks as well.
+  * Issue #1502: Add support for hidden WiFi networks.
+
+ -- Volker Theile <volker.theile@openmediavault.org>  Mon, 20 Feb 2023 01:39:54 +0100
+
+openmediavault (6.3.1-1) stable; urgency=low
+
+  * Update locale files.
+  * Issue #1489: Add UI to manage scheduled snapshots of shared
+    folders.
+
+ -- Volker Theile <volker.theile@openmediavault.org>  Tue, 14 Feb 2023 18:02:33 +0100
+
+openmediavault (6.3.0-2) stable; urgency=low
+
+  * Add an infrastructure to allow plugins to append additional
+    file systems to the file system creation page in the UI.
+  * Enhance the Btrfs file system creation page by adding support
+    of profiles to create various RAID levels.
+  * Issue #1241: Use Btrfs subvolumes for shared folders on Btrfs
+    file systems. Snapshots can be created per shared folder.
+    The snapshot management UI allows to create and delete those
+    snapshots. A restore feature has not been implemented by
+    intention because those shared folders need to be unreferenced
+    from every service beforehand. Instead a shared folders should
+    be created from these snapshots, which is a less error-prone
+    approach. The snapshots are stored in the `.snapshots` folder
+    in the root subvolume of the Btrfs file system.
+  * Issue #1490: Support SMB shadow copies for shared folders that
+    are located on a Btrfs file system.
+
+ -- Volker Theile <volker.theile@openmediavault.org>  Tue, 31 Jan 2023 12:31:57 +0100
+
+openmediavault (6.2.0-2) stable; urgency=low
+
+  * Relocate FTP service into a separate plugin. Please install
+    the plugin if you are using the service. The configuration
+    will be migrated.
+  * Lock the database during the deployment of the configurations.
+
+ -- Volker Theile <volker.theile@openmediavault.org>  Mon, 30 Jan 2023 08:27:41 +0100
+
+openmediavault (6.1.9-1) stable; urgency=low
+
+  * Update locale files.
+  * Add 'Configure time zone' option to omv-firstaid.
+
+ -- Volker Theile <volker.theile@openmediavault.org>  Wed, 25 Jan 2023 07:55:00 +0100
+
+openmediavault (6.1.8-1) stable; urgency=low
+
+  * Update locale files.
+  * Various improvements.
+
+ -- Volker Theile <volker.theile@openmediavault.org>  Mon, 23 Jan 2023 17:52:37 +0100
+
+openmediavault (6.1.7-1) stable; urgency=low
+
+  * Update locale files.
+  * Fix reload loop bug on shared folder ACL page.
+  * Issue #1310: Store UI settings on the server as well instead
+    of the browser only. Settings are stored in two separate
+    profiles, `desktop` and `mobile`. Note, existing settings in
+    the browser are not adopted. Thanks to jpspringall for his
+    contribution.
+
+ -- Volker Theile <volker.theile@openmediavault.org>  Thu, 19 Jan 2023 07:26:55 +0100
+
+openmediavault (6.1.6-2) stable; urgency=low
+
+  * Update locale files.
+  * Various bug fixes and improvements.
+  * Display additional SMART data in the `Device Information` page.
+  * Issue #1466: Add hint about issues with SMART check interval.
+
+ -- Volker Theile <volker.theile@openmediavault.org>  Sun, 15 Jan 2023 14:23:58 +0100
+
+openmediavault (6.1.5-2) stable; urgency=low
+
+  * Update locale files.
+  * Various bug fixes and improvements.
+  * Display SSL fingerprints in the details page.
+  * Fix bug related to the `archive` flag in the Rsync task page.
+  * Fix bug on FTP statistics page when ban rules are activated.
+  * Issue #1459: Improve error message when obsolete cached data
+    has been found.
+  * Issue #1467: Add SMART support for ASMedia ASM2362 USB to NVMe
+    bridge.
+
+ -- Volker Theile <volker.theile@openmediavault.org>  Thu, 05 Jan 2023 12:58:10 +0100
+
+openmediavault (6.1.4-2) stable; urgency=low
+
+  * Update locale files.
+  * Various bug fixes and improvements.
+  * Add tags form field.
+  * Convert `Comments` field into `Tags` on various pages across
+    the whole UI. Please check and adapt your settings if necessary.
+  * Issue #1447: Display a notification if updates are available.
+
+ -- Volker Theile <volker.theile@openmediavault.org>  Wed, 28 Dec 2022 00:02:23 +0100
+
+openmediavault (6.1.3-1) stable; urgency=low
+
+  * Various improvements.
+  * Issue #1447: Display number of available updates as badge.
+
+ -- Volker Theile <volker.theile@openmediavault.org>  Wed, 21 Dec 2022 20:46:00 +0100
+
+openmediavault (6.1.2-1) stable; urgency=low
+
+  * Update locale files.
+  * Various improvements.
+  * Validate `/etc/ssh/sshd_config` after deployment.
+  * Fix faulty pending confirmation request on Dashboard settings
+    page.
+  * Issue #1442: Enhance network interface dashboard widget (grid).
+  * Issue #1443: Fix datatable search field render issue when
+    dark mode is enabled.
+
+ -- Volker Theile <volker.theile@openmediavault.org>  Wed, 07 Dec 2022 18:44:42 +0100
+
+openmediavault (6.1.1-1) stable; urgency=low
+
+  * Do not request a confirmation after the shared folders ACL page
+    has been saved and is exited.
+  * Issue #1435: Disable the animation in the login screen if the
+    `prefers-reduced-motion` preference is set to `reduce`.
+
+ -- Volker Theile <volker.theile@openmediavault.org>  Sun, 04 Dec 2022 13:19:18 +0100
+
+openmediavault (6.1.0-1) stable; urgency=low
+
+  * Update locale files.
+  * Various improvements.
+  * Fixed a bug in the file system page. Allow unmounting of read-only
+    file systems.
+  * Fix render bug in the notification sidebar.
+  * Migrate to Transloco i18n library in the UI.
+  * Request confirmation to discard pending changes when leaving
+    a page.
+  * Attach to running background task if UI is reloaded.
+
+ -- Volker Theile <volker.theile@openmediavault.org>  Tue, 15 Nov 2022 18:12:42 +0100
+
+openmediavault (6.0.46-5) stable; urgency=low
+
+  * Update locale files.
+  * Various improvements.
+  * Hardening the quota deployment script. Skip users/groups that
+    do not exists anymore.
   * Finally fixing the /run/proftpd issue the systemd way.
   * Issue #1377: Display some information about the dirty modules
     in the "Apply configuration" toolbar.
 
- -- Volker Theile <volker.theile@openmediavault.org>  Wed, 26 Oct 2022 06:53:58 +0200
+ -- Volker Theile <volker.theile@openmediavault.org>  Tue, 01 Nov 2022 11:11:04 +0200
 
 openmediavault (6.0.45-1) stable; urgency=low
 
@@ -83,7 +1051,7 @@ openmediavault (6.0.39-1) stable; urgency=low
     The 'System time' and 'System updates' widget have been
     added as examples.
   * Issue #1384: Incorrect disk usage warning is displayed for
-    BTRFS file systems.
+    Btrfs file systems.
 
  -- Volker Theile <volker.theile@openmediavault.org>  Wed, 31 Aug 2022 22:17:25 +0200
 
@@ -418,7 +1386,7 @@ openmediavault (6.0.6-1) unstable; urgency=low
   * Fix PAM faillock issue related to missing directory.
   * Issue #618: Remove backslash in Monit notification email.
   * Issue #1159: Add enhanced server-side copy offload for SMB
-    shares residing on BTRFS file systems.
+    shares residing on Btrfs file systems.
   * Issue #1160: Improve S.M.A.R.T. overall status assessment.
   * Issue #1166: SMB user password is not updated.
 
@@ -598,7 +1566,7 @@ openmediavault (5.6.15-1) stable; urgency=low
 
   * Set correct time zone in proftpd.
   * Skip missing file systems when applying quotas.
-  * Do not show used devices, e.g. that of a BTRFS RAID, in the file
+  * Do not show used devices, e.g. that of a Btrfs RAID, in the file
     system creation dialog.
 
  -- Volker Theile <volker.theile@openmediavault.org>  Thu, 26 Aug 2021 18:39:49 +0200
@@ -784,7 +1752,7 @@ openmediavault (5.5.22-1) stable; urgency=low
 
 openmediavault (5.5.21-1) stable; urgency=low
 
-  * Fixing a bug related to BTRFS which crashed the filesystem UI page.
+  * Fixing a bug related to Btrfs which crashed the filesystem UI page.
   * Improve UDEV rules to workaround a JMicron bug. Debugging should be
     easier now because the serial_id helper tool behaves like scsi_id and
     prints out the environment variable ID_SERIAL_SHORT.
@@ -811,7 +1779,7 @@ openmediavault (5.5.20-1) stable; urgency=low
 
   * Improved PHP and Python block device and filesystem implementation.
     Re-add usage of /dev/disk/by-uuid device files for all filesystems
-    (except BTRFS) to workaround problems with JMicron based USB enclosures.
+    (except Btrfs) to workaround problems with JMicron based USB enclosures.
   * Issue #894: Disabled cron jobs are still executed.
   * Issue #896: Improve UDEV rule to fix issues with JMS567 SATA 6Gb/s
     bridge based USB enclosures.
@@ -1195,7 +2163,7 @@ openmediavault (5.3.2-1) unstable; urgency=low
 
   * Update locales.
   * Fix issue in the S.M.A.R.T. scheduled tests page.
-  * Issue #601: Error listing mount points when using BTRFS subvolumes.
+  * Issue #601: Error listing mount points when using Btrfs subvolumes.
 
  -- Volker Theile <volker.theile@openmediavault.org>  Wed, 12 Feb 2020 13:20:00 +0100
 
@@ -1257,14 +2225,14 @@ openmediavault (5.2.4-1) unstable; urgency=low
 openmediavault (5.2.3-2) unstable; urgency=low
 
   * Issue #564: Improve openmediavault.fs.Filesystem::get_parent_device_file()
-    to handle BTRFS subvolumes.
+    to handle Btrfs subvolumes.
 
  -- Volker Theile <volker.theile@openmediavault.org>  Mon, 13 Jan 2020 23:05:01 +0100
 
 openmediavault (5.2.3-1) unstable; urgency=low
 
   * Issue #564: Improve openmediavault.fs.Filesystem::get_parent_device_file()
-    to handle BTRFS subvolumes.
+    to handle Btrfs subvolumes.
 
  -- Volker Theile <volker.theile@openmediavault.org>  Sat, 11 Jan 2020 15:57:07 +0100
 
@@ -1278,7 +2246,7 @@ openmediavault (5.2.1-1) unstable; urgency=low
 
   * Issue #542: Add OMV_WATCHDOG_CONF_WATCHDOG_TIMEOUT to customize
     the watchdog timeout.
-  * Issue #543: Fix BTRFS mounting issue.
+  * Issue #543: Fix Btrfs mounting issue.
 
  -- Volker Theile <volker.theile@openmediavault.org>  Sun, 22 Dec 2019 22:18:16 +0100
 
@@ -1521,7 +2489,7 @@ openmediavault (4.1.32-1) stable; urgency=low
 openmediavault (4.1.31-1) stable; urgency=low
 
   * Issue #430: Fix grid column render issue.
-  * Issue #550: Fix bug in detecting BTRFS filesystems.
+  * Issue #550: Fix bug in detecting Btrfs filesystems.
 
  -- Volker Theile <volker.theile@openmediavault.org>  Wed, 01 Jan 2020 18:20:01 +0100
 
@@ -1529,7 +2497,7 @@ openmediavault (4.1.30-1) stable; urgency=low
 
   * Allow to use veth* and venet* network interfaces in bonded
     interfaces.
-  * Issue #543: Fix BTRFS mounting issue.
+  * Issue #543: Fix Btrfs mounting issue.
 
  -- Volker Theile <volker.theile@openmediavault.org>  Wed, 18 Dec 2019 17:21:52 +0100
 
@@ -1940,7 +2908,7 @@ openmediavault (4.0.10-1) stable; urgency=low
 openmediavault (4.0.9-1) stable; urgency=low
 
   * Various improvements.
-  * Mantis 0001844: BTRFS RAID filesystems shows twice in OMV filesystems view.
+  * Mantis 0001844: Btrfs RAID filesystems shows twice in OMV filesystems view.
 
  -- Volker Theile <volker.theile@openmediavault.org>  Tue, 31 Oct 2017 17:05:47 +0100
 
@@ -2134,7 +3102,7 @@ openmediavault (3.0.85) stable; urgency=low
     open S.M.A.R.T. details.
   * Mantis 0001777: Memory leak when calling Guru Meditation window.
   * Mantis 0001781: Increase granularity on SSH "Permit root login" setting.
-  * Mantis 0001782: BTRFS multi device listing is wrong formatted.
+  * Mantis 0001782: Btrfs multi device listing is wrong formatted.
 
  -- Volker Theile <volker.theile@openmediavault.org>  Mon, 17 Jul 2017 17:55:39 +0200
 
@@ -2284,7 +3252,7 @@ openmediavault (3.0.68) stable; urgency=low
   * Various bug fixes and improvements.
   * Add 'omv-confdbadm exists' command.
   * Do not use /etc/fstab entries like UUID=<xxx> anymore because this
-    will make problems with LV/BTRFS snapshots. Use /dev/disk/by-xxx/xxx
+    will make problems with LV/Btrfs snapshots. Use /dev/disk/by-xxx/xxx
     device files instead.
   * Improve the datamodel to be able to resolve shared folder references.
   * File systems will be mounted according to FHS below /srv now.
@@ -2779,7 +3747,7 @@ openmediavault (3.0.12) stable; urgency=low
   * Update locales.
   * Add ability to configure global HTTP/HTTPS/FTP proxy servers using the
     menu 'System | Network | Proxy'.
-  * Mantis 0001424: Improve BTRFS file system backend.
+  * Mantis 0001424: Improve Btrfs file system backend.
   * Mantis 0001469: 20authorized_keys mkconf file typo.
   * Mantis 0001471: Updating smartmontools db fails due to address redirection.
 
@@ -2791,7 +3759,7 @@ openmediavault (3.0.11) stable; urgency=low
   * Various improvements.
   * Output more detailed S.M.A.R.T. error description via tooltip in
     the device overview.
-  * Mantis 0001424: Improve BTRFS file system backend.
+  * Mantis 0001424: Improve Btrfs file system backend.
   * Mantis 0001464: Unable to create rsync rule.
   * Mantis 0001466: New rsync via ssh. Add SSH port.
 
@@ -2811,9 +3779,9 @@ openmediavault (3.0.9) stable; urgency=low
   * Update locales.
   * Mantis 0001294: Add the ability to execute a rsync job via SSH and
     authenticate via public key.
-  * Mantis 0001424: Duplicate BTRFS file systems are displayed.
+  * Mantis 0001424: Duplicate Btrfs file systems are displayed.
   * Mantis 0001442: Add APT terminal output and history logs to log viewer.
-  * Mantis 0001459: Allow formatting single HDD with the BTRFS filesystem.
+  * Mantis 0001459: Allow formatting single HDD with the Btrfs filesystem.
   * Mantsi 0001462: Hide private SSH/SSL key in the WebGUI.
 
  -- Volker Theile <volker.theile@openmediavault.org>  Fri, 12 Feb 2016 15:32:52 +0100

@@ -5,14 +5,14 @@ Priority: optional
 Maintainer: Volker Theile <volker.theile@openmediavault.org>
 Build-Depends: debhelper (>= 12), gettext
 Standards-Version: 3.9.6
-Homepage: http://www.openmediavault.org
+Homepage: https://www.openmediavault.org
 
 Package: openmediavault-usbbackup
 Architecture: all
-Depends: hdparm, rsync, openmediavault (>= 6.0.25)
+Depends: smartmontools, rsync, openmediavault (>= 7.4.0)
 Priority: optional
-Description: openmediavault USB/eSATA backup plugin
- Automatically synchronise a shared folder to an USB/eSATA device and vice
- verse when it is plugged in.
+Description: openmediavault USB/eSATA/SAS/SD backup plugin
+ Automatically synchronise a shared folder to an USB/eSATA/SAS/SD device
+ and vice verse when it is plugged in.
  The device is put into sleep mode after synchronisation to signal that it
  can be removed safely.

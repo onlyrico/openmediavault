@@ -6,11 +6,11 @@ Priority: optional
 Maintainer: Volker Theile <volker.theile@openmediavault.org>
 Build-Depends: debhelper (>= 12), gettext
 Standards-Version: 3.9.6
-Homepage: http://www.openmediavault.org
+Homepage: https://www.openmediavault.org
 
 Package: openmediavault-s3
 Architecture: all
-Depends: openmediavault (>= 6.0.43), podman
+Depends: openmediavault (>= 7.0), podman, catatonit
 Priority: optional
 Description: openmediavault S3 plugin
  A standalone high performance object storage based on MinIO.

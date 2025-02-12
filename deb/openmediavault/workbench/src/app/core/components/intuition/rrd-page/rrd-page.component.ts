@@ -3,7 +3,7 @@
  *
  * @license   http://www.gnu.org/licenses/gpl.html GPL Version 3
  * @author    Volker Theile <volker.theile@openmediavault.org>
- * @copyright Copyright (c) 2009-2022 Volker Theile
+ * @copyright Copyright (c) 2009-2025 Volker Theile
  *
  * OpenMediaVault is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,10 +17,9 @@
  */
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, Inject, OnInit } from '@angular/core';
-import { ActivatedRoute } from '@angular/router';
-import { marker as gettext } from '@biesbjerg/ngx-translate-extract-marker';
+import { ActivatedRoute, Router } from '@angular/router';
+import { marker as gettext } from '@ngneat/transloco-keys-manager/marker';
 import * as _ from 'lodash';
-import { BlockUI, NgBlockUI } from 'ng-block-ui';
 import { EMPTY } from 'rxjs';
 import { catchError, finalize } from 'rxjs/operators';
 
@@ -32,6 +31,7 @@ import {
 import { format, formatDeep, unixTimeStamp } from '~/app/functions.helper';
 import { Icon } from '~/app/shared/enum/icon.enum';
 import { AuthSessionService } from '~/app/shared/services/auth-session.service';
+import { BlockUiService } from '~/app/shared/services/block-ui.service';
 import { DataStoreService } from '~/app/shared/services/data-store.service';
 import { RpcService } from '~/app/shared/services/rpc.service';
 
@@ -41,9 +41,6 @@ import { RpcService } from '~/app/shared/services/rpc.service';
   styleUrls: ['./rrd-page.component.scss']
 })
 export class RrdPageComponent extends AbstractPageComponent<RrdPageConfig> implements OnInit {
-  @BlockUI()
-  blockUI: NgBlockUI;
-
   public monitoringEnabled = true;
   public error: HttpErrorResponse;
   public icon = Icon;
@@ -54,20 +51,26 @@ export class RrdPageComponent extends AbstractPageComponent<RrdPageConfig> imple
     graphs: Array<RrdPageGraphConfig>;
   }> = [];
 
+  public monitoringDisabledMessage: string = gettext(
+    "System monitoring is disabled. To enable it, please go to the <a href='#/system/monitoring'>settings page</a>."
+  );
+
   constructor(
     @Inject(ActivatedRoute) activatedRoute: ActivatedRoute,
     @Inject(AuthSessionService) authSessionService: AuthSessionService,
+    @Inject(Router) router: Router,
+    private blockUiService: BlockUiService,
     private dataStoreService: DataStoreService,
     private rpcService: RpcService
   ) {
-    super(activatedRoute, authSessionService);
+    super(activatedRoute, authSessionService, router);
     // Check if monitoring is enabled.
     this.rpcService.request('PerfStats', 'get').subscribe((resp) => {
       this.monitoringEnabled = _.get(resp, 'enable', false);
     });
   }
 
-  ngOnInit(): void {
+  override ngOnInit(): void {
     super.ngOnInit();
     this.time = unixTimeStamp();
     if (this.config?.store) {
@@ -97,12 +100,12 @@ export class RrdPageComponent extends AbstractPageComponent<RrdPageConfig> imple
   }
 
   onGenerate() {
-    this.blockUI.start(gettext('Please wait, the statistic graphs will be regenerated ...'));
+    this.blockUiService.start(gettext('Please wait, the statistic graphs will be regenerated ...'));
     this.rpcService
       .requestTask('Rrd', 'generate')
       .pipe(
         finalize(() => {
-          this.blockUI.stop();
+          this.blockUiService.stop();
         })
       )
       .subscribe(() => {

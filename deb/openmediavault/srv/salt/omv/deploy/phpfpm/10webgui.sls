@@ -2,7 +2,7 @@
 #
 # @license   http://www.gnu.org/licenses/gpl.html GPL Version 3
 # @author    Volker Theile <volker.theile@openmediavault.org>
-# @copyright Copyright (c) 2009-2022 Volker Theile
+# @copyright Copyright (c) 2009-2025 Volker Theile
 #
 # OpenMediaVault is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -19,13 +19,13 @@
 
 configure_phpfpm_webgui:
   file.managed:
-    - name: "/etc/php/7.4/fpm/pool.d/openmediavault-webgui.conf"
+    - name: "/etc/php/8.2/fpm/pool.d/openmediavault-webgui.conf"
     - contents: |
         [openmediavault-webgui]
         user = openmediavault-webgui
         group = openmediavault-webgui
 
-        listen = /run/php/php7.4-fpm-openmediavault-webgui.sock
+        listen = /run/php/php8.2-fpm-openmediavault-webgui.sock
         listen.owner = www-data
         listen.group = www-data
         listen.mode = 0600
@@ -60,7 +60,7 @@ configure_phpfpm_webgui:
 
         ; Name of the session (used as cookie name).
         ; http://php.net/session.name
-        php_value[session.name] = X-OPENMEDIAVAULT-SESSIONID
+        php_value[session.name] = OPENMEDIAVAULT-SESSIONID
 
         ; Whether or not to add the httpOnly flag to the cookie, which makes it
         ; inaccessible to browser scripting languages such as JavaScript.
@@ -86,5 +86,3 @@ configure_phpfpm_webgui:
         ; Note: This directive is hardcoded to 0 for the CLI SAPI
         php_value[max_execution_time] = 90
     - mode: 644
-    - watch_in:
-      - service: restart_phpfpm_service

@@ -4,7 +4,7 @@
  *
  * @license   http://www.gnu.org/licenses/gpl.html GPL Version 3
  * @author    Volker Theile <volker.theile@openmediavault.org>
- * @copyright Copyright (c) 2009-2022 Volker Theile
+ * @copyright Copyright (c) 2009-2025 Volker Theile
  *
  * OpenMediaVault is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -31,7 +31,7 @@ abstract class ServiceAbstract {
 	use \OMV\DebugTrait;
 
 	private $registeredMethods = [];
-	private $registeredMethodSequences = [];
+	private $registeredMutatingMethods = [];
 
 	/**
 	 * Get the name of the RPC service.
@@ -65,32 +65,33 @@ abstract class ServiceAbstract {
 	}
 
 	/**
-	 * Create a combined RPC service method call sequence of the original
-	 * method and the passed method. The passed method is called with the
-	 * parameters of the original RPC service method.
-	 * @param service The name of the RPC service.
-	 * @param method The name of the original RPC service method.
-	 * @param method2 The name of the method that should be called after
-	 *   the original RPC service method.
+	 * Registers a method that can mutate the response of another RPC.
+	 * The passed method is called with the parameters of the origin RPC,
+	 * it's context and the response of it. The function header should look
+	 * like:
+	 * ```
+	 * myMutatingMethod($params, $context, $result)
+	 * ```
+	 * @param method The name of the method that should be called after
+	 *   the origin RPC service method.
+	 * @param origService The name of the origin RPC service.
+	 * @param origMethod The name of the origin RPC method.
 	 * @return TRUE on success, otherwise an exception is thrown.
 	 */
-	final protected function registerMethodSequence($service, $method,
-	  $method2) {
+	final protected function registerMutatingMethod($method, $origService, $origMethod) {
 		$rpcServiceMngr = &\OMV\Rpc\ServiceManager::getInstance();
 		if (FALSE === ($rpcService = $rpcServiceMngr->getService(
-		  $service))) {
+		  $origService))) {
 			throw new Exception("RPC service '%s' not found.",
-			  $service);
+			  $origService);
 		}
-		if (FALSE === $rpcService->hasMethod($method)) {
-			throw new Exception(
-			  "The method '%s' does not exist for RPC service '%s'.",
-			  $method, $service);
-		}
-		$rpcService->registeredMethodSequences[$method] = [
+		// Do not test whether the method of the specified service exists.
+		// It is possible that it is not yet registered at this time.
+		$rpcService->registeredMutatingMethods[$origMethod][] = [
 			"service" => $this->getName(),
-			"method" => $method2
+			"method" => $method
 		];
+		return TRUE;
 	}
 
 	/**
@@ -107,9 +108,10 @@ abstract class ServiceAbstract {
 	 * @param name The name of the method.
 	 * @param params The method parameters.
 	 * @param context The context of the caller.
+	 * @param args Additional arguments passed to the method.
 	 * @return Returns the return value of the RPC service method.
 	 */
-	final public function callMethod($name, $params, $context) {
+	final public function callMethod($name, $params, $context, ...$args) {
 //		$this->debug(var_export(func_get_args(), TRUE));
 		// Do not check if the method is registered, but ensure that the
 		// class implements the given method. Thus we can call other public
@@ -120,14 +122,18 @@ abstract class ServiceAbstract {
 				$name, $this->getName());
 		}
 		$result = call_user_func_array(array($this, $name), [
-			$params, $context
+			$params, $context, ...$args
 		]);
 		// Process registered RPC service method hooks.
-		if (array_key_exists($name, $this->registeredMethodSequences)) {
-			foreach ($this->registeredMethodSequences[$name] as
+		if (array_key_exists($name, $this->registeredMutatingMethods)) {
+			foreach ($this->registeredMutatingMethods[$name] as
 					$hookk => $hookv) {
-				\OMV\Rpc\Rpc::call($hookv['service'], $hookv['method'],
-					$params, $context);
+				$rpcServiceMngr = &\OMV\Rpc\ServiceManager::getInstance();
+				if (FALSE !== ($rpcService = $rpcServiceMngr->getService(
+						$hookv['service']))) {
+					$result = $rpcService->callMethod($hookv['method'],
+						$params, $context, $result);
+				}
 			}
 		}
 		return $result;
@@ -269,6 +275,34 @@ abstract class ServiceAbstract {
 	}
 
 	/**
+	 * Helper function to determine all running background processes.
+	 * @return An associative array containing status information of all
+	 *   running background processes. The `key` is the name of the
+	 *   status file and the `value` is an associative array containing
+	 *   some information about the corresponding background process.
+	 */
+	final protected function enumerateRunningBgProcStatus() {
+		$pattern = sprintf("%s/bgstatus*", sys_get_temp_dir());
+		if (FALSE === ($files = glob($pattern))) {
+			return NULL;
+		}
+		$result = [];
+		foreach ($files as $file) {
+			try {
+				$status = $this->getBgProcStatus($file);
+				if (TRUE === $status['running']) {
+					$result[$file] = [
+						"startTime" => $status['startTime']
+					];
+				}
+			} catch (\Exception $e) {
+				// Nothing to do here.
+			}
+		}
+		return $result;
+	}
+
+	/**
 	 * Helper function to create the file containing the background
 	 * process output.
 	 * @return The name of the background process output file.
@@ -301,14 +335,15 @@ abstract class ServiceAbstract {
 	 * @return The background process status.
 	 */
 	final protected function initializeBgProcStatus($filename, $pid) {
-		$jsonFile = new \OMV\Json\File($filename);
-		$jsonFile->open("r+");
+		$file = new \OMV\Rpc\BgStatusFile($filename);
+		$file->open("r+");
 		$status = [
 			"pid" => $pid,
-			"running" => TRUE
+			"running" => TRUE,
+			"startTime" => time()
 		];
-		$jsonFile->write($status);
-		$jsonFile->close();
+		$file->write($status);
+		$file->close();
 		return $status;
 	}
 
@@ -330,12 +365,12 @@ abstract class ServiceAbstract {
 			// createBgProcStatus() simply creates an empty file which is
 			// filled with valid JSON by initializeBgProcStatus().
 			$initialized = FALSE;
-			$jsonFile = new \OMV\Json\File($filename);
+			$file = new \OMV\Rpc\BgStatusFile($filename);
 			try {
-				$jsonFile->open("r+");
-				$initialized = !$jsonFile->isEmpty();
+				$file->open("r+");
+				$initialized = !$file->isEmpty();
 			} finally {
-				$jsonFile->close();
+				$file->close();
 			}
 			if ($initialized)
 				return;
@@ -358,11 +393,12 @@ abstract class ServiceAbstract {
 	 */
 	final protected function finalizeBgProcStatus($filename,
 	  $result = NULL, $exception = NULL) {
-		$jsonFile = new \OMV\Json\File($filename);
-		$jsonFile->open("r+");
-		$status = $jsonFile->read();
+		$file = new \OMV\Rpc\BgStatusFile($filename);
+		$file->open("r+");
+		$status = $file->read();
 		$status['pid'] = posix_getpid();
 		$status['running'] = FALSE;
+		$status['endTime'] = time();
 		$status['result'] = $result;
 		$status['error'] = NULL;
 		if ($exception instanceof \Exception) {
@@ -372,13 +408,13 @@ abstract class ServiceAbstract {
 				"trace" => $exception->__toString()
 			];
 		}
-		$jsonFile->write($status);
-		$jsonFile->close();
+		$file->write($status);
+		$file->close();
 		return $status;
 	}
 
 	/**
-	 * Helper function to update informations of the background process
+	 * Helper function to update information's of the background process
 	 * status file.
 	 * @param filename The name of the status file.
 	 * @param key The name of the field to be modified.
@@ -386,14 +422,14 @@ abstract class ServiceAbstract {
 	 * @return The background process status.
 	 */
 	final protected function updateBgProcStatus($filename, $key, $value) {
-		$jsonFile = new \OMV\Json\File($filename);
-		$jsonFile->open("r+");
-		$status = $jsonFile->read();
+		$file = new \OMV\Rpc\BgStatusFile($filename);
+		$file->open("r+");
+		$status = $file->read();
 		$status['pid'] = posix_getpid();
 		$status['running'] = TRUE;
 		$status[$key] = $value;
-		$jsonFile->write($status);
-		$jsonFile->close();
+		$file->write($status);
+		$file->close();
 		return $status;
 	}
 
@@ -403,14 +439,15 @@ abstract class ServiceAbstract {
 	 * @return The background process status.
 	 */
 	final protected function getBgProcStatus($filename) {
-		$jsonFile = new \OMV\Json\File($filename);
-		$jsonFile->open("r");
-		$status = $jsonFile->read();
-		$jsonFile->close();
+		$file = new \OMV\Rpc\BgStatusFile($filename);
+		$file->open("r");
+		$status = $file->read();
+		$file->close();
 		// Check if the process is really still running.
 		if (TRUE === $status['running']) {
-			if (!is_dir(sprintf("/proc/%d", $status['pid'])))
+			if (!is_dir(sprintf("/proc/%d", $status['pid']))) {
 				$status['running'] = FALSE;
+			}
 		}
 		return $status;
 	}
@@ -421,16 +458,16 @@ abstract class ServiceAbstract {
 	 * @return void
 	 */
 	final protected function unlinkBgProcStatus($filename) {
-		$jsonFile = new \OMV\Json\File($filename);
-		$jsonFile->open("r");
-		$status = $jsonFile->read();
-		$jsonFile->close();
+		$file = new \OMV\Rpc\BgStatusFile($filename);
+		$file->open("r");
+		$status = $file->read();
+		$file->close();
 		// Unlink the command output file if defined.
 		if (array_key_exists("outputfilename", $status) && !empty(
 		  $status['outputfilename'])) {
 			@unlink($status['outputfilename']);
 		}
-		$jsonFile->unlink();
+		$file->unlink();
 	}
 
 	/**
@@ -455,6 +492,7 @@ abstract class ServiceAbstract {
 			2 => [ "pipe", "w" ]  // STDERR
 		];
 		// Execute the command.
+		$command = strval($command);
 		$this->debug("Executing command '%s'", $command);
 		$process = proc_open($command, $descriptors, $pipes);
 		if ((FALSE === $process) || !is_resource($process))
@@ -468,12 +506,14 @@ abstract class ServiceAbstract {
 		// Read the output from STDOUT/STDERR.
 		while (TRUE) {
 			$read = [];
+			$write = NULL;
+			$except = NULL;
 			// Collect the reading streams to monitor.
 			if (!is_null($pipes[1])) $read[] = $pipes[1];
 			if (!is_null($pipes[2])) $read[] = $pipes[2];
-			if (FALSE === ($r = stream_select($read, $write = NULL,
-			  $except = NULL, 1)))
+			if (FALSE === ($r = stream_select($read, $write, $except, 1))) {
 				break;
+			}
 			foreach ($read as $readk => $readv) {
 				if ($readv == $pipes[1]) { // STDOUT
 					// Read the STDOUT command output.
@@ -549,22 +589,22 @@ abstract class ServiceAbstract {
 	}
 
 	/**
-	 * Execute the specified anonymous function as a background process by
-	 * forking the main process.
-	 * @param Closure $childProc An anonymous function that expects
+	 * Execute the specified anonymous function as a background process
+	 * by forking the main process.
+	 * @param Closure $childFn An anonymous function that expects
 	 *   the parameters \em $bgStatusFilename and \em $bgOutputFilename.
 	 *   It should return a string with the process output.
-	 * @param Closure $error An anonymous function that expects the
+	 * @param Closure $errorFn An anonymous function that expects the
 	 *   parameters \em $bgStatusFilename and \em $bgOutputFilename. It
-	 *   will be called in case of an exception within the \$childProc
+	 *   will be called in case of an exception within the \$childFn
 	 *   closure.
-	 * @param Closure $finally An anonymous function without arguments. It
-	 *   will always be executed after the background process has been
+	 * @param Closure $finallyFn An anonymous function without arguments.
+	 *   It will always be executed after the background process has been
 	 *   finished successfully or it has been failed.
-	 * @return The name of the background process status file.
+	 * @return string The name of the background process status file.
 	 */
-	public function execBgProc(\Closure $childProc, \Closure $error = NULL,
-	  \Closure $finally = NULL) {
+	public function execBgProc(\Closure $childFn, \Closure $errorFn = NULL,
+	  \Closure $finallyFn = NULL) {
 		// Create the background process status file.
 		$bgStatusFilename = $this->createBgProcStatus();
 		$pid = $this->fork();
@@ -585,32 +625,44 @@ abstract class ServiceAbstract {
 			  $bgOutputFilename);
 			// Execute the anonymous function that contains the code
 			// the be executed in the child process.
-			$output = $childProc($bgStatusFilename, $bgOutputFilename);
+			$output = $childFn($bgStatusFilename, $bgOutputFilename);
 			// Finalize the background process status file.
 			$this->finalizeBgProcStatus($bgStatusFilename, $output);
 			$status = 0;
 		} catch (\Exception $e) {
-			if (is_closure($error))
-				$error($bgStatusFilename, $bgOutputFilename);
+			syslog(LOG_ERR, sprintf("Executing background process failed: ".
+				"%s (file=%s, line=%d)",
+				$e->getMessage(), $e->getFile(), $e->getLine()));
+			if (is_closure($errorFn)) {
+				$errorFn($bgStatusFilename, $bgOutputFilename);
+			}
 			// Finalize the background process status file.
 			$this->finalizeBgProcStatus($bgStatusFilename, "", $e);
 		} finally {
-			if (is_closure($finally))
-				$finally();
+			if (is_closure($finallyFn)) {
+				$finallyFn();
+			}
 		}
 		exit($status);
 	}
 
 	/**
-	 * Execute the specified anonymous function as an asynchronous process by
-	 * forking the main process.
-	 * @param Closure $child An anonymous function that should return
+	 * Execute the specified anonymous function as an asynchronous process
+	 * by forking the main process.
+	 * @param Closure $childFn An anonymous function that should return
 	 *   the process output.
+	 * @param Closure $errorFn An anonymous function that is called in case
+	 *   of an exception within the \$childFn closure. The exception object
+	 *   will be passed as parameter to the function.
+	 *   Return `FALSE` to skip the process, otherwise return an array
+	 *   with the properties `result` and `error`. Check the source code
+	 *   how the `error` array must be populated.
 	 * @param int $maxRunTime The maximum time the process should run.
 	 *   Defaults to 300 seconds.
 	 * @return array Returns an array containing process information.
 	 */
-	public function asyncProc(\Closure $child, $maxRunTime = 300) : array {
+	public function asyncProc(\Closure $childFn, \Closure $errorFn = NULL,
+	  $maxRunTime = 300) : array {
 		if (FALSE === @socket_create_pair(AF_UNIX, SOCK_STREAM, 0, $sockets)) {
 			throw new Exception("Failed to create socket: %s",
 				socket_strerror(socket_last_error()));
@@ -632,21 +684,28 @@ abstract class ServiceAbstract {
 		@socket_close($childSocket);
 		try {
 			$data = [
-				"result" => $child(),
+				"result" => $childFn(),
 				"error" => FALSE
 			];
 		} catch(\Exception $e) {
-			$data = [
-				"result" => NULL,
-				"error" => [
-					"code" => $e->getCode(),
-					"message" => $e->getMessage(),
-					"trace" => $e->__toString(),
-					"http_status_code" =>
-					    ($e instanceof \OMV\BaseException) ?
-					    $e->getHttpStatusCode() : 500
-				]
-			];
+			syslog(LOG_ERR, sprintf("Executing async process failed: ".
+				"%s (file=%s, line=%d)",
+				$e->getMessage(), $e->getFile(), $e->getLine()));
+			if (is_closure($errorFn)) {
+				$data = $errorFn($e);
+			} else {
+				$data = [
+					"result" => NULL,
+					"error" => [
+						"code" => $e->getCode(),
+						"message" => $e->getMessage(),
+						"trace" => $e->__toString(),
+						"http_status_code" =>
+							($e instanceof \OMV\BaseException) ?
+							$e->getHttpStatusCode() : 500
+					]
+				];
+			}
 		}
 		@socket_write($parentSocket, serialize($data));
 		@socket_close($parentSocket);
@@ -685,6 +744,14 @@ abstract class ServiceAbstract {
 					}
 					@socket_close($procv['socket']);
 					$data = unserialize($data);
+					// Skip processes that do not return valid data.
+					if (
+						!is_assoc_array($data) ||
+						!array_key_exists("result", $data) ||
+					  	!array_key_exists("error", $data)
+					) {
+						continue;
+					}
 					// Handle errors that may have occurred in the child
 					// process. Rethrow this exception again in this
 					// (the parent) process.

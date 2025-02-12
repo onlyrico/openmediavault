@@ -3,7 +3,7 @@
  *
  * @license   http://www.gnu.org/licenses/gpl.html GPL Version 3
  * @author    Volker Theile <volker.theile@openmediavault.org>
- * @copyright Copyright (c) 2009-2022 Volker Theile
+ * @copyright Copyright (c) 2009-2025 Volker Theile
  *
  * OpenMediaVault is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,6 +16,7 @@
  * GNU General Public License for more details.
  */
 import { MatFormDatatableAction } from '~/app/core/components/intuition/material/mat-form-datatable/mat-form-datatable.component';
+import { FormFieldName } from '~/app/core/components/intuition/models/form.type';
 import { Constraint } from '~/app/shared/models/constraint.type';
 import { DataStore } from '~/app/shared/models/data-store.type';
 import { DatatableColumn } from '~/app/shared/models/datatable-column.type';
@@ -36,6 +37,8 @@ export type FormFieldConfig = {
   // | hint        | Displays a text and an icon.                         |
   // | codeEditor  | A code editor width support for different languages  |
   // |             | and syntax highlighting.                             |
+  // | tagInput    | Displays a list of tags. The value is stored as a    |
+  // |             | string. The separator defaults to a comma.           |
   // | ...         | ...                                                  |
   // | container   | Align child fields in horizontal order.              |
   // '--------------------------------------------------------------------'
@@ -63,8 +66,9 @@ export type FormFieldConfig = {
     | 'slider'
     | 'container'
     | 'hint'
-    | 'codeEditor';
-  name?: string;
+    | 'codeEditor'
+    | 'tagInput';
+  name?: FormFieldName;
   label?: string;
   placeholder?: string;
   tooltip?: string;
@@ -131,6 +135,7 @@ export type FormFieldConfig = {
       | 'groupName'
       | 'shareName'
       | 'email'
+      | 'macAddress'
       | 'ip'
       | 'ipv4'
       | 'ipv6'
@@ -153,6 +158,7 @@ export type FormFieldConfig = {
       | 'sshPubKey'
       | 'sshPubKeyRfc4716'
       | 'sshPubKeyOpenSsh'
+      | 'pgpPubKey'
       | 'netmask'
       | 'wordChars'
       | 'binaryUnit';
@@ -167,7 +173,7 @@ export type FormFieldConfig = {
   fields?: Array<FormFieldConfig>;
   // Fields in a container will respect the 'flex' configuration.
   // Specifies the size of the field in percent.
-  flex?: number;
+  flex?: 10 | 20 | 25 | 33 | 45 | 50 | 66 | 75 | 80 | 90 | 100;
 
   // --- button | hint ---
   text?: string;
@@ -189,6 +195,10 @@ export type FormFieldConfig = {
     progressMessage?: string;
     // Display a notification when the request was successful.
     successNotification?: string;
+    // Copy the specified template to the clipboard.
+    // Example:
+    // "{{ _response['token'] }}"
+    successCopyToClipboard?: string;
     // Navigate to this URL when the request was successful.
     // The URL will be formatted using the values from the parent
     // form. The RPC response is accessible via '_response'.
@@ -210,7 +220,7 @@ export type FormFieldConfig = {
   dirType?: 'sharedfolder' | 'mntent';
   // The name of the field that contains the UUID of the
   // shared folder or mount point configuration object.
-  dirRefIdField?: string;
+  dirRefIdField?: FormFieldName;
   // Set to `true` to show the path of the database object
   // specified with `dirType` and `dirRefIdField`.
   // Defaults to `false`.
@@ -249,7 +259,7 @@ export type FormFieldConfig = {
 
   // --- codeEditor ---
   lineNumbers?: boolean;
-  language?: 'json' | 'shell' | 'xml' | 'yaml';
+  language?: 'json' | 'python' | 'shell' | 'xml' | 'yaml';
 
   // --- fileInput ---
   // Takes a comma-separated list of one or more file types, or
@@ -263,19 +273,22 @@ export type FormFieldConfig = {
   // otherwise `false`.
   trim?: boolean;
 
-  // --- select ---
-  multiple?: boolean;
+  // --- select | textInput ---
   // Defaults to `value`.
   valueField?: string;
   // Defaults to `text`.
   textField?: string;
   store?: DataStore;
+
+  // --- select ---
+  multiple?: boolean;
   // Add an empty option to be able to clear the selection.
   // Defaults to `false`.
   hasEmptyOption?: boolean;
   // The text displayed in the option with the empty value.
   // Defaults to `None`.
   emptyOptionText?: string;
+  // Internal only.
   selectionChange?: (value: any) => void;
 
   // --- sharedFolderSelect | sshCertSelect | sslCertSelect ---
@@ -294,14 +307,23 @@ export type FormFieldConfig = {
   selectionType?: 'none' | 'single' | 'multi';
   limit?: number;
   sorters?: Array<Sorter>;
+  sortType?: 'single' | 'multi';
   actions?: Array<MatFormDatatableAction>;
   // Specifies the type of the array items. Defaults to `object`.
   valueType?: 'string' | 'integer' | 'number' | 'object';
 
   // --- hint ---
-  hintType?: 'info' | 'warning';
+  hintType?: 'info' | 'warning' | 'tip';
   dismissible?: boolean;
   stateId?: string;
+
+  // --- tagInput ---
+  separator?: string;
+
+  // --- textInput ---
+  // Display a dropdown box with suggestions. This requires
+  // the `store` property to be set. Defaults to `false`.
+  suggestions?: boolean;
 };
 
 export type FormFieldConstraintValidator = {
@@ -333,7 +355,22 @@ export type FormFieldModifier = {
   // Apply the opposite type, e.g. `disabled` for `enabled`, if the
   // constraint is falsy. Defaults to `true`.
   opposite?: boolean;
-  // The constraint can access the current form field
-  // values, e.g. '{ field: '<NAME>' }'
-  constraint: Constraint;
+  // When the constraint is truthy, then the modifier gets applied.
+  // The form fields that this modifier depends on are extracted from
+  // the `prop` fields of the constraint. Whenever the value of one
+  // of those form fields changes, then the modifier is triggered.
+  // The constraint has access to the current form values and the
+  // context of the page which includes the following variables:
+  // - `_session.username`
+  // - `_session.permissions`
+  // - `_routeConfig`
+  // - `_routeParams`
+  // - `_routeQueryParams`
+  // - `_routeUrlSegments`
+  // Note: both options `constraint` and `deps` are mutually exclusive.
+  constraint?: Constraint;
+  // A list of form field names that this modifier depends on. If one
+  // of the specified fields is changed, the modifier gets triggered.
+  // Note: both options `constraint` and `deps` are mutually exclusive.
+  deps?: Array<FormFieldName>;
 };

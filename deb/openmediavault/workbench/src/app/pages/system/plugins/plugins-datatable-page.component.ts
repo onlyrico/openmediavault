@@ -3,7 +3,7 @@
  *
  * @license   http://www.gnu.org/licenses/gpl.html GPL Version 3
  * @author    Volker Theile <volker.theile@openmediavault.org>
- * @copyright Copyright (c) 2009-2022 Volker Theile
+ * @copyright Copyright (c) 2009-2025 Volker Theile
  *
  * OpenMediaVault is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,7 +16,7 @@
  * GNU General Public License for more details.
  */
 import { Component, OnInit, TemplateRef, ViewChild } from '@angular/core';
-import { marker as gettext } from '@biesbjerg/ngx-translate-extract-marker';
+import { marker as gettext } from '@ngneat/transloco-keys-manager/marker';
 
 import { DatatablePageConfig } from '~/app/core/components/intuition/models/datatable-page-config.type';
 
@@ -154,7 +154,6 @@ export class PluginsDatatablePageComponent implements OnInit {
           taskDialog: {
             config: {
               title: gettext('Install plugin'),
-              width: '75%',
               startOnInit: true,
               buttons: {
                 start: {
@@ -169,7 +168,8 @@ export class PluginsDatatablePageComponent implements OnInit {
                 method: 'install',
                 params: {
                   packages: ['{{ _selected[0].name }}']
-                }
+                },
+                maxRetries: 5
               }
             },
             successUrl: '/reload'
@@ -194,7 +194,6 @@ export class PluginsDatatablePageComponent implements OnInit {
           taskDialog: {
             config: {
               title: gettext('Uninstall plugin'),
-              width: '75%',
               startOnInit: true,
               buttons: {
                 start: {

@@ -3,30 +3,42 @@
   "compilerOptions": {
     "baseUrl": "./",
     "paths": {
-      "~/*": ["src/*"]
+      "~/*": [
+        "src/*"
+      ]
     },
     "outDir": "./dist/out-tsc",
     "sourceMap": true,
     "strict": false,
-    "declaration": false,
+    "declaration": true,
+    "declarationMap": true,
     "noUnusedLocals": true,
     "noUnusedParameters": false,
     "noFallthroughCasesInSwitch": true,
+    "noImplicitOverride": true,
     "noImplicitThis": true,
     "noImplicitReturns": true,
     "noImplicitAny": false,
-    "module": "es2020",
+    "module": "es2022",
     "moduleResolution": "node",
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
     "importHelpers": true,
-    "target": "es2017",
+    "target": "es2022",
     "esModuleInterop": true,
-    "typeRoots": ["node_modules/@types"],
-    "lib": ["es2018", "dom"],
-    "downlevelIteration": true
+    "typeRoots": [
+      "node_modules/@types"
+    ],
+    "lib": [
+      "es2022",
+      "dom",
+      "dom.iterable"
+    ],
+    "downlevelIteration": true,
+    "incremental": true,
+    "useDefineForClassFields": false
   },
-  "exclude": ["dist", "node_modules"],
+  "exclude": ["cypress", "dist", "node_modules"],
   "angularCompilerOptions": {
     "enableI18nLegacyMessageIdFormat": false,
     "strictInjectionParameters": true,

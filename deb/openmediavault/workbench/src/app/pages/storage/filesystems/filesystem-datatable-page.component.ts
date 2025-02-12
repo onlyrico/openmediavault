@@ -3,7 +3,7 @@
  *
  * @license   http://www.gnu.org/licenses/gpl.html GPL Version 3
  * @author    Volker Theile <volker.theile@openmediavault.org>
- * @copyright Copyright (c) 2009-2022 Volker Theile
+ * @copyright Copyright (c) 2009-2025 Volker Theile
  *
  * OpenMediaVault is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,15 +15,22 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  */
-import { Component } from '@angular/core';
-import { marker as gettext } from '@biesbjerg/ngx-translate-extract-marker';
+import { Component, OnInit } from '@angular/core';
+import { marker as gettext } from '@ngneat/transloco-keys-manager/marker';
+import * as _ from 'lodash';
+import { Subscription } from 'rxjs';
 
 import { DatatablePageConfig } from '~/app/core/components/intuition/models/datatable-page-config.type';
+import { MkfsConfig, MkfsConfigService } from '~/app/core/services/mkfs-config.service';
+import { Unsubscribe } from '~/app/decorators';
 
 @Component({
   template: '<omv-intuition-datatable-page [config]="this.config"></omv-intuition-datatable-page>'
 })
-export class FilesystemDatatablePageComponent {
+export class FilesystemDatatablePageComponent implements OnInit {
+  @Unsubscribe()
+  private subscriptions: Subscription = new Subscription();
+
   public config: DatatablePageConfig = {
     stateId: '66d9d2ce-2fee-11ea-8386-e3eba0cf8f78',
     autoReload: 10000,
@@ -53,9 +60,12 @@ export class FilesystemDatatablePageComponent {
         sortable: true
       },
       {
-        name: gettext('Comment'),
+        name: gettext('Tags'),
         prop: 'comment',
-        cellTemplateName: 'text',
+        cellTemplateName: 'chip',
+        cellTemplateConfig: {
+          separator: ','
+        },
         flexGrow: 1,
         hidden: true,
         sortable: true
@@ -125,7 +135,8 @@ export class FilesystemDatatablePageComponent {
         cellTemplateName: 'progressBar',
         cellTemplateConfig: {
           text: '{{ used | tobytes | binaryunit | notavailable("-") }}',
-          warningThreshold: '{{ usagewarnthreshold | default(0) }}'
+          warningThreshold: '{{ usagewarnthreshold | default(0) }}',
+          decimalPlaces: 0
         }
       },
       {
@@ -167,41 +178,45 @@ export class FilesystemDatatablePageComponent {
         cellTemplateName: 'chip',
         cellTemplateConfig: {
           map: {
+            /* eslint-disable @typescript-eslint/naming-convention */
             1: { value: gettext('Online'), class: 'omv-background-color-pair-success' },
             2: { value: gettext('Initializing'), class: 'omv-background-color-pair-info' },
             3: { value: gettext('Missing'), class: 'omv-background-color-pair-error' }
+            /* eslint-enable @typescript-eslint/naming-convention */
           }
         }
       }
     ],
     actions: [
       {
+        type: 'iconButton',
+        text: gettext('Mount'),
+        icon: 'start',
+        tooltip: gettext('Mount an existing file system.'),
+        execute: {
+          type: 'url',
+          url: '/storage/filesystems/mount'
+        }
+      },
+      {
         type: 'menu',
         icon: 'add',
-        tooltip: gettext('Create | Mount'),
-        actions: [
-          {
-            template: 'create',
-            tooltip: gettext('Create a new file system.'),
-            execute: {
-              type: 'url',
-              url: '/storage/filesystems/create'
-            }
-          },
-          {
-            type: 'iconButton',
-            text: gettext('Mount'),
-            icon: 'start',
-            tooltip: gettext('Mount an existing file system.'),
-            execute: {
-              type: 'url',
-              url: '/storage/filesystems/mount'
-            }
-          }
-        ]
+        tooltip: gettext('Create and mount a file system.'),
+        actions: []
       },
       {
         template: 'edit',
+        enabledConstraints: {
+          minSelected: 1,
+          maxSelected: 1,
+          constraint: [
+            { operator: 'n', arg0: { prop: 'canonicaldevicefile' } },
+            // Enable button if the file system has a `/etc/fstab` entry.
+            // This is because monitoring the warning threshold is only
+            // possible for mounted file systems.
+            { operator: 'truthy', arg0: { prop: 'propfstab' } }
+          ]
+        },
         execute: {
           type: 'url',
           url: '/storage/filesystems/edit/{{ _selected[0].canonicaldevicefile | encodeuricomponent }}'
@@ -210,7 +225,7 @@ export class FilesystemDatatablePageComponent {
       {
         type: 'iconButton',
         icon: 'expand',
-        tooltip: gettext('Resize'),
+        tooltip: gettext('Grow'),
         enabledConstraints: {
           minSelected: 1,
           maxSelected: 1,
@@ -233,7 +248,7 @@ export class FilesystemDatatablePageComponent {
           type: 'request',
           request: {
             service: 'FileSystemMgmt',
-            method: 'resize',
+            method: 'grow',
             params: {
               id: '{{ _selected[0].uuid }}'
             }
@@ -261,6 +276,20 @@ export class FilesystemDatatablePageComponent {
         execute: {
           type: 'url',
           url: '/storage/filesystems/quota/{{ _selected[0].uuid }}'
+        }
+      },
+      {
+        type: 'iconButton',
+        icon: 'details',
+        tooltip: gettext('Show details'),
+        enabledConstraints: {
+          minSelected: 1,
+          maxSelected: 1,
+          constraint: [{ operator: 'n', arg0: { prop: 'canonicaldevicefile' } }]
+        },
+        execute: {
+          type: 'url',
+          url: '/storage/filesystems/details/{{ _selected[0].canonicaldevicefile | encodeuricomponent }}'
         }
       },
       {
@@ -310,4 +339,25 @@ export class FilesystemDatatablePageComponent {
       }
     ]
   };
+
+  constructor(private mkfsConfigService: MkfsConfigService) {}
+
+  ngOnInit(): void {
+    this.subscriptions.add(
+      this.mkfsConfigService.configs$.subscribe((configs: MkfsConfig[]) => {
+        // @ts-ignore
+        this.config.actions[1].actions = _.chain(configs)
+          .sortBy(['text'])
+          .map((config) => ({
+            type: 'button',
+            text: config.text,
+            execute: {
+              type: 'url',
+              url: config.url
+            }
+          }))
+          .value();
+      })
+    );
+  }
 }

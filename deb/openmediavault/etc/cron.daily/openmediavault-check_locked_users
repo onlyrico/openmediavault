@@ -1,10 +1,10 @@
-#!/bin/sh
+#!/usr/bin/env dash
 #
 # This file is part of OpenMediaVault.
 #
 # @license   http://www.gnu.org/licenses/gpl.html GPL Version 3
 # @author    Volker Theile <volker.theile@openmediavault.org>
-# @copyright Copyright (c) 2009-2022 Volker Theile
+# @copyright Copyright (c) 2009-2025 Volker Theile
 #
 # OpenMediaVault is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -18,17 +18,20 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with OpenMediaVault. If not, see <http://www.gnu.org/licenses/>.
+MAILTO=""
 
-set -e
+export LC_ALL=C.UTF-8
 
 . /etc/default/openmediavault
 . /usr/share/openmediavault/scripts/helper-functions
 
-[ "$(omv_config_get "//system/email/enable")" != "1" ] && exit 0
+set -e
 
 # Make sure the directory exists. Note, after a reboot this directory does not
 # exist until the PAM faillock module has been executed.
-[ ! -d "/var/run/faillock/" ] && exit 0
+[ -d "/var/run/faillock/" ] || exit 0
+
+omv_syslog_info "Checking for locked/banned users."
 
 # Check if there are locked users.
 # admin:
@@ -38,10 +41,13 @@ set -e
 # 2021-05-11 22:06:57 SVC   openmediavault                                       V
 # 2021-05-11 22:07:00 SVC   openmediavault                                       V
 # 2021-05-11 22:07:04 SVC   openmediavault                                       V
-if [ $(faillock | sed -E -e '/^[^:]+:$/d' -e '/^When/d' | wc -l) -gt 0 ]; then
+if [ "$(faillock | sed -E -e '/^[^:]+:$/d' -e '/^When/d' | wc -l)" -gt 0 ]; then
+  omv_syslog_warning "Several users are locked/banned or are candidates for too many failed login attempts."
 	(
-	echo "The following users are locked/banned or are candidates for too many failed login attempts:\n";
-	faillock;
-	echo "\nYou can reset their counters and unlock them via the omv-firstaid command."
+    echo "The following users are locked/banned or are candidates for too many failed login attempts:\n";
+    faillock;
+    echo "\nYou can reset their counters and unlock them via the omv-firstaid command."
 	) | mail -E -s "Locked users overview" root
+else
+  omv_syslog_info "No locked/banned users found."
 fi

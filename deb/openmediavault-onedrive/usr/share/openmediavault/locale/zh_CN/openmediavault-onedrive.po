@@ -9,18 +9,18 @@
 # 黃柏諺 <s8321414@gmail.com>, 2022
 # Herald Yu <yuhr123@gmail.com>, 2022
 # songming <by@songming.me>, 2022
-# 王大山, 2022
-# kochin <kochinc@outlook.com>, 2022
+# 王大山, 2023
+# kochin <kochinc@outlook.com>, 2024
 # 
 #, fuzzy
 msgid ""
 msgstr ""
 "Project-Id-Version: openmediavault-onedrive\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2022-09-17 09:37+0200\n"
+"POT-Creation-Date: 2024-10-01 20:04+0200\n"
 "PO-Revision-Date: 2022-04-13 15:28+0000\n"
-"Last-Translator: kochin <kochinc@outlook.com>, 2022\n"
-"Language-Team: Chinese (China) (https://www.transifex.com/openmediavault/teams/14254/zh_CN/)\n"
+"Last-Translator: kochin <kochinc@outlook.com>, 2024\n"
+"Language-Team: Chinese (China) (https://app.transifex.com/openmediavault/teams/14254/zh_CN/)\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
@@ -94,9 +94,17 @@ msgstr ""
 
 msgid ""
 "After enabling and deploying this service the first time please run the "
-"command <em>omv-onedrive-auth</em> in the CLI to authenticate the "
-"application in Microsoft OneDrive."
-msgstr "首次启用部署此服务时，请在终端执行<em>omv-onedrive-auth</em>命令，根据提示进行 OneDrive 应用授权。"
+"command <em>omv-onedrive-auth</em> as <em>root</em> user in the CLI to "
+"authenticate the application in Microsoft OneDrive."
+msgstr ""
+"在首次启用并部署此服务后，请在命令行中 <em>root</em> 用户执行命令 <em>omv-onedrive-auth</em> 以在 "
+"Microsoft OneDrive 中验证应用。"
+
+msgid "Clean up local files"
+msgstr "清理本地檔案"
+
+msgid "Clean up local files that have been removed online."
+msgstr "清理已經從線上移除的本地檔案。"
 
 msgid "Disabled"
 msgstr "禁用"
@@ -109,6 +117,9 @@ msgstr "只下载"
 
 msgid "Enabled"
 msgstr "已启用"
+
+msgid "Extra options"
+msgstr "額外選項"
 
 msgid "Full"
 msgstr "全部"
@@ -143,10 +154,11 @@ msgstr "在同步时，跳过点开头的文件和文件夹。"
 msgid "Skip dotfiles"
 msgstr "跳过点文件"
 
-msgid ""
-"The location of the media files. Make sure the user <em>onedrive</em> or "
-"group <em>users</em> can access the files."
-msgstr "本地媒体文件位置。请确保用户<em>onedrive</em>或用户组<em>users</em>有对应文件的读取权限。"
+msgid "The location to which the files are synchronised."
+msgstr "檔案被同步前去的位置。"
+
+msgid "The synchronised files and directories are owned by this user."
+msgstr "被同步的檔案和目錄是此用戶所擁有。"
 
 msgid "The wait time between each sync operation."
 msgstr "在每次同步操作之间的等待时间。"
@@ -159,3 +171,11 @@ msgstr "只上传"
 
 msgid "Upload/Download rate limit."
 msgstr "上传/下载速率限制。"
+
+msgid ""
+"Use the <em>omv-onedrive</em> command in the CLI to perform additional "
+"actions according to the documentation of the OneDrive Linux client."
+msgstr "在命令行使用 <em>omv-onedrive</em> 命令以根据 OneDrive Linux 客户端的文档进行额外操作。"
+
+msgid "User"
+msgstr "用戶"

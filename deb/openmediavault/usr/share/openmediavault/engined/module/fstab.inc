@@ -4,7 +4,7 @@
  *
  * @license   http://www.gnu.org/licenses/gpl.html GPL Version 3
  * @author    Volker Theile <volker.theile@openmediavault.org>
- * @copyright Copyright (c) 2009-2022 Volker Theile
+ * @copyright Copyright (c) 2009-2025 Volker Theile
  *
  * OpenMediaVault is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -25,6 +25,10 @@ class FSTab extends \OMV\Engine\Module\ServiceAbstract
 		implements \OMV\Engine\Notify\IListener {
 	public function getName() {
 		return "fstab";
+	}
+
+	public function getDescription() {
+		return gettext("Management of the file systems to be mounted.");
 	}
 
 	public function preDeploy() {
@@ -51,22 +55,29 @@ class FSTab extends \OMV\Engine\Module\ServiceAbstract
 		// already be wiped or the device is not accessible anymore, e.g.
 		// an unplugged USB device.
 		$mp = new \OMV\System\MountPoint($params['dir']);
-		if (FALSE === $mp->exists())
+		if ("/" == $mp->getPath()) {
+			throw new \OMV\Exception("Unmounting the root file system ".
+				"has been aborted.");
+		}
+		if (FALSE === $mp->exists()) {
 			return;
+		}
 		// Check whether the file system is mounted and unmount it if
 		// necessary.
-		if (TRUE === $mp->isMounted())
+		if (TRUE === $mp->isMounted()) {
 			$mp->umount(TRUE, TRUE);
+		}
 		// Check whether the directory is still a mount point. If this is
 		// the case, then throw an error, otherwise unlinking the
 		// directory might delete the file systems data. This can happen
 		// when the file system is unmounted but busy (e.g. NFS exports).
 		if (TRUE === $mp->isMountPoint()) {
-			throw new \OMV\Exception("Removing the directory '%s' has ".
+			throw new \OMV\Exception("Removing the mount directory '%s' has ".
 				"been aborted, the resource is busy.", $params['dir']);
 		}
-		// Finally unlink the mount point.
-		$mp->unlink();
+		// Finally unlink the mount point if it is empty (which should be
+		// the normal case).
+		$mp->unlink(FALSE, TRUE);
 	}
 
 	function bindListeners(\OMV\Engine\Notify\Dispatcher $dispatcher) {

@@ -2,7 +2,7 @@
 #
 # @license   http://www.gnu.org/licenses/gpl.html GPL Version 3
 # @author    Volker Theile <volker.theile@openmediavault.org>
-# @copyright Copyright (c) 2009-2022 Volker Theile
+# @copyright Copyright (c) 2009-2025 Volker Theile
 #
 # OpenMediaVault is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -26,13 +26,7 @@
 {% set smb_zeroconf_enabled = salt['pillar.get']('default:OMV_SAMBA_ZEROCONF_ENABLED', 1) %}
 {% set smb_zeroconf_name = salt['pillar.get']('default:OMV_SAMBA_ZEROCONF_NAME', '%h - SMB/CIFS') %}
 
-{% if not (smb_config.enable | to_bool and smb_zeroconf_enabled | to_bool) %}
-
-remove_avahi_service_smb:
-  file.absent:
-    - name: "/etc/avahi/services/smb.service"
-
-{% else %}
+{% if (smb_config.enable | to_bool) and (smb_zeroconf_enabled | to_bool) %}
 
 configure_avahi_service_smb:
   file.managed:

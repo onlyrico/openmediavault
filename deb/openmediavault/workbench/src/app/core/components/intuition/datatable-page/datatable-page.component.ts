@@ -3,7 +3,7 @@
  *
  * @license   http://www.gnu.org/licenses/gpl.html GPL Version 3
  * @author    Volker Theile <volker.theile@openmediavault.org>
- * @copyright Copyright (c) 2009-2022 Volker Theile
+ * @copyright Copyright (c) 2009-2025 Volker Theile
  *
  * OpenMediaVault is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,9 +17,8 @@
  */
 import { Component, Inject, ViewChild } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { marker as gettext } from '@biesbjerg/ngx-translate-extract-marker';
+import { marker as gettext } from '@ngneat/transloco-keys-manager/marker';
 import * as _ from 'lodash';
-import { BlockUI, NgBlockUI } from 'ng-block-ui';
 import { concat } from 'rxjs';
 import { finalize } from 'rxjs/operators';
 
@@ -46,6 +45,8 @@ import { DatatableAction } from '~/app/shared/models/datatable-action.type';
 import { DatatableSelection } from '~/app/shared/models/datatable-selection.model';
 import { RpcListResponse } from '~/app/shared/models/rpc.model';
 import { AuthSessionService } from '~/app/shared/services/auth-session.service';
+import { BlockUiService } from '~/app/shared/services/block-ui.service';
+import { ClipboardService } from '~/app/shared/services/clipboard.service';
 import { DataStoreService } from '~/app/shared/services/data-store.service';
 import { DialogService } from '~/app/shared/services/dialog.service';
 import { NotificationService } from '~/app/shared/services/notification.service';
@@ -57,9 +58,6 @@ import { RpcService } from '~/app/shared/services/rpc.service';
   styleUrls: ['./datatable-page.component.scss']
 })
 export class DatatablePageComponent extends AbstractPageComponent<DatatablePageConfig> {
-  @BlockUI()
-  blockUI: NgBlockUI;
-
   @ViewChild('table', { static: true })
   table: DatatableComponent;
 
@@ -70,19 +68,21 @@ export class DatatablePageComponent extends AbstractPageComponent<DatatablePageC
   constructor(
     @Inject(ActivatedRoute) activatedRoute: ActivatedRoute,
     @Inject(AuthSessionService) authSessionService: AuthSessionService,
+    @Inject(Router) router: Router,
+    private blockUiService: BlockUiService,
+    private clipboardService: ClipboardService,
     private dataStoreService: DataStoreService,
-    private router: Router,
     private rpcService: RpcService,
     private dialogService: DialogService,
     private notificationService: NotificationService
   ) {
-    super(activatedRoute, authSessionService);
+    super(activatedRoute, authSessionService, router);
   }
 
   /**
    * Append the current selection to the page context.
    */
-  get pageContext(): PageContext {
+  override get pageContext(): PageContext {
     const result = _.merge(
       {
         _selected: this.selection.selected
@@ -158,7 +158,15 @@ export class DatatablePageComponent extends AbstractPageComponent<DatatablePageC
     const postConfirmFn = () => {
       switch (action?.execute?.type) {
         case 'url':
-          this.navigate(action.execute.url);
+          const url: string = format(
+            action.execute.url,
+            _.merge(
+              {},
+              this.pageContext,
+              this.selection.hasSingleSelection ? this.selection.first() : {}
+            )
+          );
+          this.router.navigateByUrl(url);
           break;
         case 'request':
           const observables = [];
@@ -186,31 +194,45 @@ export class DatatablePageComponent extends AbstractPageComponent<DatatablePageC
           }
           // Block UI and display the progress message.
           if (_.isString(request.progressMessage)) {
-            this.blockUI.start(translate(request.progressMessage));
+            this.blockUiService.start(translate(request.progressMessage));
           }
           // Process each request one-by-one (NOT in parallel).
           concat(...observables)
             .pipe(
               finalize(() => {
                 if (_.isString(request.progressMessage)) {
-                  this.blockUI.stop();
+                  this.blockUiService.stop();
                 }
               })
             )
-            .subscribe(() => {
+            .subscribe((res: any) => {
+              const data: Record<any, any> = _.merge(
+                {},
+                this.pageContext,
+                isFormatable(res) ? { _response: res } : {}
+              );
               // Display a notification?
               if (_.isString(request.successNotification)) {
-                const message = format(
-                  request.successNotification,
-                  _.merge(
-                    {},
-                    this.pageContext,
-                    this.selection.hasSingleSelection ? this.selection.first() : {}
-                  )
+                const successNotification: string = format(request.successNotification, data);
+                this.notificationService.show(
+                  NotificationType.success,
+                  undefined,
+                  successNotification
                 );
-                this.notificationService.show(NotificationType.success, message);
               }
-              this.reloadData();
+              // Copy the response to the clipboard?
+              if (_.isString(request.successCopyToClipboard)) {
+                const successCopyToClipboard: string = format(request.successCopyToClipboard, data);
+                this.clipboardService.copy(successCopyToClipboard);
+              }
+              // Navigate to the specified URL or reload the datatable
+              // content.
+              if (_.isString(request.successUrl)) {
+                const successUrl: string = format(request.successUrl, data);
+                this.router.navigateByUrl(successUrl);
+              } else {
+                this.reloadData();
+              }
             });
           break;
         case 'taskDialog':
@@ -255,6 +277,17 @@ export class DatatablePageComponent extends AbstractPageComponent<DatatablePageC
           });
           // Reload datatable if pressed button returns `true`.
           formDialog.afterClosed().subscribe((res) => res && this.reloadData());
+          break;
+        case 'copyToClipboard':
+          const copyToClipboard: string = format(
+            action.execute.copyToClipboard,
+            _.merge(
+              {},
+              this.pageContext,
+              this.selection.hasSingleSelection ? this.selection.first() : {}
+            )
+          );
+          this.clipboardService.copy(copyToClipboard);
           break;
       }
     };
@@ -318,7 +351,7 @@ export class DatatablePageComponent extends AbstractPageComponent<DatatablePageC
     }
   }
 
-  protected sanitizeConfig() {
+  protected override sanitizeConfig() {
     _.defaultsDeep(this.config, {
       columnMode: 'flex',
       hasActionBar: true,
@@ -336,13 +369,16 @@ export class DatatablePageComponent extends AbstractPageComponent<DatatablePageC
       columns: [],
       actions: [],
       sorters: [],
+      sortType: 'single',
       buttonAlign: 'end',
       buttons: []
     });
     // Map icon from 'foo' to 'mdi:foo' if necessary.
     this.config.icon = _.get(Icon, this.config.icon, this.config.icon);
     // Pre-setup actions based on the specified template type.
-    this.sanitizeActions(this.config.actions);
+    this.sanitizeActionsConfig(this.config.actions);
+    // Set the default hint properties.
+    this.sanitizeHintsConfig();
     // Set the default values of the buttons.
     _.forEach(this.config.buttons, (button) => {
       const template = _.get(button, 'template');
@@ -373,7 +409,7 @@ export class DatatablePageComponent extends AbstractPageComponent<DatatablePageC
     }
   }
 
-  protected onRouteParams() {
+  protected override onRouteParams() {
     // Format tokenized configuration properties.
     this.formatConfig([
       'title',
@@ -383,15 +419,16 @@ export class DatatablePageComponent extends AbstractPageComponent<DatatablePageC
       'store.proxy.get.params',
       'store.filters'
     ]);
+    this.formatHintsConfig();
   }
 
-  private sanitizeActions(actions) {
+  private sanitizeActionsConfig(actions: DatatablePageActionConfig[]) {
     _.forEach(actions, (action: DatatablePageActionConfig) => {
       _.defaultsDeep(action, {
         click: this.onActionClick.bind(this)
       });
       if (_.isArray(action.actions)) {
-        this.sanitizeActions(action.actions);
+        this.sanitizeActionsConfig(action.actions);
       }
       // Map icon from 'foo' to 'mdi:foo' if necessary.
       action.icon = _.get(Icon, action.icon, action.icon);
@@ -458,6 +495,6 @@ export class DatatablePageComponent extends AbstractPageComponent<DatatablePageC
 
   private navigate(url: string) {
     const formattedUrl = format(url, this.pageContext);
-    this.router.navigate([formattedUrl]);
+    this.router.navigateByUrl(formattedUrl);
   }
 }

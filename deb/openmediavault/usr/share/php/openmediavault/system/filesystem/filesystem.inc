@@ -4,7 +4,7 @@
  *
  * @license   http://www.gnu.org/licenses/gpl.html GPL Version 3
  * @author    Volker Theile <volker.theile@openmediavault.org>
- * @copyright Copyright (c) 2009-2022 Volker Theile
+ * @copyright Copyright (c) 2009-2025 Volker Theile
  *
  * OpenMediaVault is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -612,10 +612,11 @@ class Filesystem extends \OMV\System\BlockDevice
 	}
 
 	/**
-	 * Get statistics from a mounted filesystem.
-	 * @return The filesystem statistics if successful, otherwise FALSE. The
-	 *   following fields are included: \em devicefile, \em type, \em blocks,
-	 *   \em size, \em used, \em available, \em percentage and \em mountpoint.
+	 * Get statistics about a mounted filesystem.
+	 * @return The filesystem statistics as an array if successful,
+	 *   otherwise FALSE. The following fields are included:
+	 *   \em devicefile, \em type, \em blocks, \em size, \em used,
+	 *   \em available, \em percentage and \em mountpoint.
 	 *   Please note, the fields \em size, \em used and \em available are
 	 *   strings and their unit is 'B' (bytes).
 	 * @throw \OMV\ExecException
@@ -665,12 +666,36 @@ class Filesystem extends \OMV\System\BlockDevice
 	}
 
 	/**
+	 * Get details about the filesystem, e.g. the health status.
+	 * @return A string that contains information and details about the
+	 *   filesystem. If the filesystem does not provide details, an
+	 *   \OMV\NotSupportedException exception is thrown.
+	 * @throw \OMV\ExecException
+	 * @throw \OMV\NotSupportedException
+	 */
+	public function getDetails() {
+		throw new \OMV\NotSupportedException("File system does not provide details.");
+	}
+
+	/**
 	 * Check if a filesystem is mounted.
 	 * @return TRUE if the filesystem is mounted, otherwise FALSE.
 	 * @throw \OMV\ExecException
 	 */
 	public function isMounted() {
 		return (FALSE === $this->getMountPoint()) ? FALSE : TRUE;
+	}
+
+	/**
+	 * Assert that the file system is mounted.
+	 * @throw \OMV\AssertException
+	 */
+	public function assertIsMounted() {
+		if (FALSE === $this->isMounted()) {
+			throw new \OMV\AssertException(
+				"The file system '%s' is not mounted.",
+				$this->getDeviceFile());
+		}
 	}
 
 	/**
@@ -842,11 +867,31 @@ class Filesystem extends \OMV\System\BlockDevice
 	public static function assertGetImpl($id) {
 		$result = self::getImpl($id);
 		if (is_null($result) || !$result->exists()) {
-			throw new \OMV\Exception(
+			throw new \OMV\AssertException(
 			  "Failed to get the file system implementation for '%s' ".
 			  "or the file system does not exist.", $id);
 		}
 		return $result;
+	}
+
+	/**
+	 * Get the object of the class which implements the file system
+	 * for the given type.
+	 * @param string $type The file system type, e.g. 'btrfs' or 'ext4'.
+	 * @param string $id The UUID or device path of the filesystem, e.g.
+	 *   <ul>
+	 *   \li 78b669c1-9183-4ca3-a32c-80a4e2c61e2d
+	 *   \li /dev/sde1
+	 *   \li /dev/disk/by-id/scsi-SATA_ST3200XXXX2AS_5XWXXXR6-part1
+	 *   </ul>
+	 * @return The class object (which implements the interface
+	 *   OMV\System\Filesystem\FilesystemInterface), otherwise NULL.
+	 */
+	public static function getImplByType($type, $id) {
+		$mngr = Backend\Manager::getInstance();
+		if (NULL == ($backend = $mngr->getBackendByType($type)))
+			return NULL;
+		return $backend->getImpl($id);
 	}
 
 	/**
@@ -868,8 +913,24 @@ class Filesystem extends \OMV\System\BlockDevice
 		// Try to get the backend using the filesystem type. This has
 		// to be done especially when using union filesystems.
 		$info = $mp->getInfo();
-		$mngr = Backend\Manager::getInstance();
-		$backend = $mngr->getBackendByType($info['fstype']);
-		return $backend->getImpl($info['source']);
+		return self::getImplByType($info['fstype'], $info['source']);
+	}
+
+	/**
+	 * Get the file system type of the given path.
+	 * @param string $filename Path to the file.
+	 * @return The file system type in human readable form, e.g.
+	 *   `btrfs` or `ext2/ext3`, otherwise FALSE.
+	 */
+	public static function getTypeByPath($filename) {
+		$cmdArgs = [];
+		$cmdArgs[] = "--file-system";
+		$cmdArgs[] = "--format=%T";
+		$cmdArgs[] = escapeshellarg($filename);
+		$cmd = new \OMV\System\Process("stat", $cmdArgs);
+		$cmd->execute($output, $exitStatus);
+		if ($exitStatus !== 0)
+			return FALSE;
+		return $output[0];
 	}
 }

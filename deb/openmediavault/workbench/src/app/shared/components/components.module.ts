@@ -1,12 +1,12 @@
 import { CommonModule } from '@angular/common';
 import { NgModule } from '@angular/core';
-import { FlexLayoutModule } from '@angular/flex-layout';
 import { FormsModule } from '@angular/forms';
-import { TranslateModule } from '@ngx-translate/core';
-import { NgxDatatableModule } from '@swimlane/ngx-datatable';
+import { TranslocoModule } from '@ngneat/transloco';
+import { NgxDatatableModule } from '@siemens/ngx-datatable';
 
 import { MaterialModule } from '~/app/material.module';
 import { AlertPanelComponent } from '~/app/shared/components/alert-panel/alert-panel.component';
+import { BlockUiComponent } from '~/app/shared/components/block-ui/block-ui.component';
 import { DatatableComponent } from '~/app/shared/components/datatable/datatable.component';
 import { DatatableActionsComponent } from '~/app/shared/components/datatable-actions/datatable-actions.component';
 import { ModalDialogComponent } from '~/app/shared/components/modal-dialog/modal-dialog.component';
@@ -24,7 +24,8 @@ import { PipesModule } from '~/app/shared/pipes/pipes.module';
     SubmitButtonComponent,
     TaskDialogComponent,
     DatatableActionsComponent,
-    ProgressBarComponent
+    ProgressBarComponent,
+    BlockUiComponent
   ],
   exports: [
     AlertPanelComponent,
@@ -32,16 +33,16 @@ import { PipesModule } from '~/app/shared/pipes/pipes.module';
     SubmitButtonComponent,
     DatatableComponent,
     DatatableActionsComponent,
-    ProgressBarComponent
+    ProgressBarComponent,
+    BlockUiComponent
   ],
   imports: [
     CommonModule,
     PipesModule,
     MaterialModule,
     NgxDatatableModule,
-    TranslateModule.forChild(),
+    TranslocoModule,
     FormsModule,
-    FlexLayoutModule,
     DirectivesModule
   ]
 })

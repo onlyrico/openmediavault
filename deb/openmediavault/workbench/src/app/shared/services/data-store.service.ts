@@ -3,7 +3,7 @@
  *
  * @license   http://www.gnu.org/licenses/gpl.html GPL Version 3
  * @author    Volker Theile <volker.theile@openmediavault.org>
- * @copyright Copyright (c) 2009-2022 Volker Theile
+ * @copyright Copyright (c) 2009-2025 Volker Theile
  *
  * OpenMediaVault is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -37,7 +37,10 @@ export type DataStoreResponse = {
   providedIn: 'root'
 })
 export class DataStoreService {
-  constructor(private http: HttpClient, private rpcService: RpcService) {}
+  constructor(
+    private http: HttpClient,
+    private rpcService: RpcService
+  ) {}
 
   /**
    * Load the data. If a proxy is defined, then the RPC is called and the
@@ -185,6 +188,10 @@ export class DataStoreService {
       _.forEach(store.filters, (filter: Constraint) => {
         data = ConstraintService.filter(data, filter);
       });
+    }
+    // Make sure the data is unique.
+    if (_.isString(store.uniqBy)) {
+      data = _.uniqBy(data, store.uniqBy);
     }
     // Sort data?
     if (_.isArray(store.sorters)) {
